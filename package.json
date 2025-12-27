@@ -1,0 +1,16 @@
+{
+  "name": "favorite",
+  "version": "1.0.0",
+  "description": "Preview Flaticon icons as favicons on hover",
+  "scripts": {
+    "build": "node build.js",
+    "build:tsc": "tsc",
+    "watch": "tsc --watch",
+    "clean": "node -e \"require('fs').rmSync('dist', {recursive: true, force: true})\"",
+    "dev": "npm run clean && npm run build && npm run watch"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.254",
+    "typescript": "^5.3.3"
+  }
+}

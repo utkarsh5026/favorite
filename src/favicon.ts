@@ -1,5 +1,7 @@
 import { CONFIG, state } from './state';
-import type { FaviconShape } from './types';
+import type { FaviconShape, CustomFavicon, CustomFavicons } from './types';
+
+const CUSTOM_FAVICONS_KEY = 'customFavicons';
 
 /**
  * Changes the page favicon to the specified URL with optional shape masking
@@ -150,5 +152,58 @@ export function saveOriginalFavicon(): void {
 export function restoreOriginalFavicon(): void {
   if (state.originalFavicon) {
     changeFavicon(state.originalFavicon, false);
+  }
+}
+
+async function getCustomFavicon(hostname: string) {
+  const customFavicons = await getCustomFavicons();
+  return customFavicons[hostname] || null;
+}
+
+export async function setCustomFavicon(
+  hostname: string,
+  faviconURL: string,
+  onSuccess: () => void
+) {
+  if (!hostname || !faviconURL) return;
+
+  const customFavicon: CustomFavicon = {
+    url: faviconURL,
+    timestamp: Date.now(),
+  };
+
+  const customFavicons = await getCustomFavicons();
+  customFavicons[hostname] = customFavicon;
+
+  await chrome.storage.local.set({ customFavicons });
+
+  onSuccess();
+  await loadCustomFaviconSection(hostname);
+}
+
+async function getCustomFavicons() {
+  const result = await chrome.storage.local.get(CUSTOM_FAVICONS_KEY);
+  return (result.customFavicons || {}) as CustomFavicons;
+}
+
+export async function loadCustomFaviconSection(hostname: string): Promise<void> {
+  const customSection = document.getElementById('customFaviconSection');
+  const customImage = document.getElementById('customFaviconImage') as HTMLImageElement;
+  const customHint = document.getElementById('customFaviconHint');
+
+  if (!customSection || !customImage) return;
+
+  const customFavicon = await getCustomFavicon(hostname);
+  if (!customFavicon) {
+    customSection.classList.remove('visible');
+    return;
+  }
+
+  customImage.src = customFavicon.url;
+  customSection.classList.add('visible');
+
+  if (customHint) {
+    const date = new Date(customFavicon.timestamp);
+    customHint.textContent = `Set ${date.toLocaleDateString()}`;
   }
 }

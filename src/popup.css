@@ -18,9 +18,51 @@ body {
 h1 {
   font-size: 16px;
   font-weight: 600;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
   color: #fff;
   text-align: center;
+}
+
+.shortcut-hint {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 16px;
+}
+
+.shortcut-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.shortcut-row + .shortcut-row {
+  margin-top: 6px;
+}
+
+.shortcut-label {
+  font-size: 11px;
+  color: #888;
+}
+
+.shortcut-keys {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 10px;
+  color: #888;
+}
+
+.shortcut-keys kbd {
+  background: #333;
+  color: #fff;
+  padding: 3px 6px;
+  border-radius: 4px;
+  font-family: 'Cascadia Code', 'Consolas', monospace;
+  font-size: 10px;
+  border: 1px solid #555;
 }
 
 .site-toggle {
@@ -156,7 +198,7 @@ h1 {
   gap: 12px;
 }
 
-input[type="range"] {
+input[type='range'] {
   flex: 1;
   -webkit-appearance: none;
   appearance: none;
@@ -166,7 +208,7 @@ input[type="range"] {
   outline: none;
 }
 
-input[type="range"]::-webkit-slider-thumb {
+input[type='range']::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
   width: 16px;
@@ -177,11 +219,11 @@ input[type="range"]::-webkit-slider-thumb {
   transition: transform 0.2s ease;
 }
 
-input[type="range"]::-webkit-slider-thumb:hover {
+input[type='range']::-webkit-slider-thumb:hover {
   transform: scale(1.1);
 }
 
-input[type="range"]::-moz-range-thumb {
+input[type='range']::-moz-range-thumb {
   width: 16px;
   height: 16px;
   background: #fff;
@@ -360,20 +402,25 @@ input[type="range"]::-moz-range-thumb {
   stroke: #fff;
 }
 
+.button-row {
+  display: flex;
+  gap: 8px;
+}
+
 .download-btn {
-  width: 100%;
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 6px;
   background: #fff;
   border: none;
   border-radius: 8px;
-  padding: 12px;
+  padding: 10px 12px;
   cursor: pointer;
   transition: all 0.2s ease;
   color: #000;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
 }
@@ -393,8 +440,41 @@ input[type="range"]::-moz-range-thumb {
 }
 
 .download-icon {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
+}
+
+.set-default-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: #333;
+  border: 1px solid #555;
+  border-radius: 8px;
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+}
+
+.set-default-btn:hover:not(:disabled) {
+  background: #444;
+  border-color: #fff;
+}
+
+.set-default-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.set-default-btn svg {
+  width: 16px;
+  height: 16px;
 }
 
 .download-info {
@@ -412,4 +492,107 @@ input[type="range"]::-moz-range-thumb {
   font-family: 'Cascadia Code', 'Consolas', monospace;
   font-size: 10px;
   border: 1px solid #555;
+}
+
+/* Custom Favicon Section */
+.custom-favicon-section {
+  display: none;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #333;
+}
+
+.custom-favicon-section.visible {
+  display: block;
+}
+
+.custom-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: #333;
+  color: #fff;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.custom-icon {
+  width: 12px;
+  height: 12px;
+}
+
+.custom-favicon-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #1a1a1a;
+  border-radius: 8px;
+  padding: 12px;
+  border: 1px solid #333;
+}
+
+.custom-favicon-preview {
+  width: 40px;
+  height: 40px;
+  background: #0a0a0a;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 1px solid #333;
+}
+
+.custom-favicon-preview img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.custom-favicon-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.custom-favicon-label {
+  font-size: 12px;
+  color: #fff;
+  font-weight: 500;
+}
+
+.custom-favicon-hint {
+  font-size: 10px;
+  color: #888;
+}
+
+.remove-default-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: #333;
+  border: 1px solid #555;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.remove-default-btn:hover {
+  background: #500;
+  border-color: #f55;
+}
+
+.remove-default-btn svg {
+  width: 16px;
+  height: 16px;
+  stroke: #fff;
+}
+
+.remove-default-btn:hover svg {
+  stroke: #f55;
 }

@@ -1,111 +1,180 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Image Favicon Preview Settings</title>
-  <link rel="stylesheet" href="popup.css">
-</head>
-<body>
-  <div class="container">
-    <h1>Favicon Preview</h1>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Image Favicon Preview Settings</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <div class="container">
+      <h1>Favicon Preview</h1>
 
-    <div class="site-toggle" id="siteToggle">
-      <div class="site-info">
-        <span class="site-label">This site</span>
-        <span class="site-name" id="siteName">-</span>
-      </div>
-      <button class="toggle-btn" id="toggleBtn" title="Toggle tracking for this site">
-        <span class="toggle-text" id="toggleText">Enabled</span>
-      </button>
-    </div>
-
-    <div class="divider"></div>
-
-    <div class="setting-group">
-      <label class="setting-label">Shape</label>
-      <div class="shape-options">
-        <button class="shape-btn" data-shape="circle" title="Circle">
-          <div class="shape-preview circle"></div>
-        </button>
-        <button class="shape-btn" data-shape="rounded" title="Rounded">
-          <div class="shape-preview rounded"></div>
-        </button>
-        <button class="shape-btn" data-shape="square" title="Square">
-          <div class="shape-preview square"></div>
-        </button>
-      </div>
-    </div>
-
-    <div class="setting-group">
-      <label class="setting-label" for="hoverDelay">Hover Delay</label>
-      <div class="slider-container">
-        <input type="range" id="hoverDelay" min="0" max="500" step="50" value="100">
-        <span class="slider-value" id="hoverDelayValue">100ms</span>
-      </div>
-    </div>
-
-    <div class="setting-group">
-      <label class="setting-label" for="restoreDelay">Restore Delay</label>
-      <div class="slider-container">
-        <input type="range" id="restoreDelay" min="0" max="1000" step="100" value="200">
-        <span class="slider-value" id="restoreDelayValue">200ms</span>
-      </div>
-    </div>
-
-    <div class="setting-group">
-      <label class="setting-label" for="faviconSize">Favicon Size</label>
-      <div class="slider-container">
-        <input type="range" id="faviconSize" min="16" max="64" step="8" value="32">
-        <span class="slider-value" id="faviconSizeValue">32px</span>
-      </div>
-    </div>
-
-    <div class="divider"></div>
-
-    <div class="download-section">
-      <div class="section-header">
-        <label class="setting-label">Image to Download</label>
-        <span class="lock-badge" id="lockBadge">
-          <svg class="lock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-          </svg>
-          Locked
-        </span>
-      </div>
-      <div class="favicon-preview-container">
-        <div class="favicon-preview" id="faviconPreview">
-          <img id="faviconImage" alt="Current favicon" />
-          <div class="favicon-loading" id="faviconLoading">Loading...</div>
-          <div class="favicon-error" id="faviconError">No image</div>
+      <div class="shortcut-hint">
+        <div class="shortcut-row">
+          <span class="shortcut-label">Lock image:</span>
+          <span class="shortcut-keys"> <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>L</kbd> </span>
         </div>
-        <div class="favicon-info">
-          <span class="favicon-label" id="faviconLabel">Image</span>
-          <span class="favicon-size" id="faviconSizeLabel">-</span>
+        <div class="shortcut-row">
+          <span class="shortcut-label">Unlock:</span>
+          <span class="shortcut-keys"> <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>U</kbd> </span>
         </div>
-        <button class="unlock-btn" id="unlockBtn" title="Unlock image">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-            <path d="M7 11V7a5 5 0 0 1 9.9-1"/>
-          </svg>
+      </div>
+
+      <div class="site-toggle" id="siteToggle">
+        <div class="site-info">
+          <span class="site-label">This site</span>
+          <span class="site-name" id="siteName">-</span>
+        </div>
+        <button class="toggle-btn" id="toggleBtn" title="Toggle tracking for this site">
+          <span class="toggle-text" id="toggleText">Enabled</span>
         </button>
       </div>
-      <button class="download-btn" id="downloadBtn" disabled>
-        <svg class="download-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-          <polyline points="7 10 12 15 17 10"/>
-          <line x1="12" y1="15" x2="12" y2="3"/>
-        </svg>
-        <span>Download as ZIP</span>
-      </button>
-      <div class="download-info" id="downloadInfo">
-        Hover an image + press <kbd>L</kbd> to lock
-      </div>
-    </div>
 
-    <div class="status" id="status"></div>
-  </div>
-  <script src="popup.js"></script>
-</body>
+      <div class="divider"></div>
+
+      <div class="setting-group">
+        <label class="setting-label">Shape</label>
+        <div class="shape-options">
+          <button class="shape-btn" data-shape="circle" title="Circle">
+            <div class="shape-preview circle"></div>
+          </button>
+          <button class="shape-btn" data-shape="rounded" title="Rounded">
+            <div class="shape-preview rounded"></div>
+          </button>
+          <button class="shape-btn" data-shape="square" title="Square">
+            <div class="shape-preview square"></div>
+          </button>
+        </div>
+      </div>
+
+      <div class="setting-group">
+        <label class="setting-label" for="hoverDelay">Hover Delay</label>
+        <div class="slider-container">
+          <input type="range" id="hoverDelay" min="0" max="500" step="50" value="100" />
+          <span class="slider-value" id="hoverDelayValue">100ms</span>
+        </div>
+      </div>
+
+      <div class="setting-group">
+        <label class="setting-label" for="restoreDelay">Restore Delay</label>
+        <div class="slider-container">
+          <input type="range" id="restoreDelay" min="0" max="1000" step="100" value="200" />
+          <span class="slider-value" id="restoreDelayValue">200ms</span>
+        </div>
+      </div>
+
+      <div class="setting-group">
+        <label class="setting-label" for="faviconSize">Favicon Size</label>
+        <div class="slider-container">
+          <input type="range" id="faviconSize" min="16" max="64" step="8" value="32" />
+          <span class="slider-value" id="faviconSizeValue">32px</span>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="download-section">
+        <div class="section-header">
+          <label class="setting-label">Image to Download</label>
+          <span class="lock-badge" id="lockBadge">
+            <svg
+              class="lock-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
+            Locked
+          </span>
+        </div>
+        <div class="favicon-preview-container">
+          <div class="favicon-preview" id="faviconPreview">
+            <img id="faviconImage" alt="Current favicon" />
+            <div class="favicon-loading" id="faviconLoading">Loading...</div>
+            <div class="favicon-error" id="faviconError">No image</div>
+          </div>
+          <div class="favicon-info">
+            <span class="favicon-label" id="faviconLabel">Image</span>
+            <span class="favicon-size" id="faviconSizeLabel">-</span>
+          </div>
+          <button class="unlock-btn" id="unlockBtn" title="Unlock image">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+              <path d="M7 11V7a5 5 0 0 1 9.9-1" />
+            </svg>
+          </button>
+        </div>
+        <div class="button-row">
+          <button class="download-btn" id="downloadBtn" disabled>
+            <svg
+              class="download-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            <span>Download ZIP</span>
+          </button>
+          <button
+            class="set-default-btn"
+            id="setDefaultBtn"
+            disabled
+            title="Set as default favicon for this site"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+            </svg>
+            <span>Set Default</span>
+          </button>
+        </div>
+        <div class="download-info" id="downloadInfo">
+          Hover image + <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>L</kbd> to lock
+        </div>
+      </div>
+
+      <div class="custom-favicon-section" id="customFaviconSection">
+        <div class="section-header">
+          <label class="setting-label">Custom Favicon</label>
+          <span class="custom-badge" id="customBadge">
+            <svg
+              class="custom-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+            </svg>
+            Active
+          </span>
+        </div>
+        <div class="custom-favicon-container">
+          <div class="custom-favicon-preview" id="customFaviconPreview">
+            <img id="customFaviconImage" alt="Custom favicon" />
+          </div>
+          <div class="custom-favicon-info">
+            <span class="custom-favicon-label">Default for this site</span>
+            <span class="custom-favicon-hint" id="customFaviconHint">-</span>
+          </div>
+          <button class="remove-default-btn" id="removeDefaultBtn" title="Remove custom favicon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="status" id="status"></div>
+    </div>
+    <script src="popup.js"></script>
+  </body>
 </html>

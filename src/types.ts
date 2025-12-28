@@ -1,7 +1,7 @@
 /**
  * Configuration for the extension behavior
  */
-interface ExtensionConfig {
+export interface ExtensionConfig {
   /** Delay in milliseconds before changing favicon on hover */
   readonly hoverDelay: number;
   /** Delay in milliseconds before restoring original favicon */
@@ -15,7 +15,7 @@ interface ExtensionConfig {
 /**
  * State management for the extension
  */
-interface ExtensionState {
+export interface ExtensionState {
   /** Original favicon URL to restore later */
   originalFavicon: string | null;
   /** Timeout ID for hover delay */
@@ -31,7 +31,7 @@ interface ExtensionState {
 /**
  * Result of image URL extraction
  */
-interface ImageExtractionResult {
+export interface ImageExtractionResult {
   /** The extracted URL (can be data URL or http URL) */
   url: string;
   /** Type of image source */

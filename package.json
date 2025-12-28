@@ -11,7 +11,6 @@
   },
   "devDependencies": {
     "@types/chrome": "^0.0.254",
-    "esbuild": "^0.24.0",
     "typescript": "^5.3.3"
   },
   "dependencies": {

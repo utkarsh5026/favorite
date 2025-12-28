@@ -7,7 +7,9 @@
     "build:tsc": "tsc",
     "watch": "node watch.js",
     "clean": "node -e \"require('fs').rmSync('dist', {recursive: true, force: true})\"",
-    "dev": "npm run clean && npm run build && npm run watch"
+    "dev": "npm run clean && npm run build && npm run watch",
+    "release": "node release.js",
+    "release:dry": "node release.js --dry-run"
   },
   "devDependencies": {
     "@types/chrome": "^0.0.254",

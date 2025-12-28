@@ -2,7 +2,7 @@
 #  FAVORITE - Flaticon Favicon Preview Extension
 # ══════════════════════════════════════════════════════════════════════════════
 
-.PHONY: all build build-tsc watch clean dev install help
+.PHONY: all build build-tsc watch clean dev install release release-dry help
 
 # Colors
 CYAN    := \033[36m
@@ -54,6 +54,20 @@ clean: ## Clean the dist directory
 	@echo "$(YELLOW)🧹 Cleaning dist folder...$(RESET)"
 	@npm run clean
 	@echo "$(GREEN)✓ Cleaned$(RESET)"
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  RELEASE
+# ─────────────────────────────────────────────────────────────────────────────
+
+release: ## Create a GitHub release (build, zip, tag, publish)
+	@echo "$(MAGENTA)🚀 Creating GitHub release...$(RESET)"
+	@npm run release
+	@echo "$(GREEN)✓ Release published$(RESET)"
+
+release-dry: ## Dry run release (build and zip only)
+	@echo "$(YELLOW)🧪 Running release dry run...$(RESET)"
+	@npm run release:dry
+	@echo "$(GREEN)✓ Dry run complete$(RESET)"
 
 # ─────────────────────────────────────────────────────────────────────────────
 #  HELP

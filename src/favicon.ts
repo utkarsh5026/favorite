@@ -1,7 +1,11 @@
 import { CONFIG, state } from './state';
 import type { FaviconShape, CustomFavicon, CustomFavicons } from './types';
+import JSZip from 'jszip';
+import { resizeImage } from './image';
 
 const CUSTOM_FAVICONS_KEY = 'customFavicons';
+const CUSTOM_FAVICON_SECTION_ID = 'customFaviconSection';
+const FAVICON_SIZES = [16, 32, 48, 64, 128, 256] as const;
 
 /**
  * Changes the page favicon to the specified URL with optional shape masking
@@ -187,7 +191,7 @@ async function getCustomFavicons() {
 }
 
 export async function loadCustomFaviconSection(hostname: string): Promise<void> {
-  const customSection = document.getElementById('customFaviconSection');
+  const customSection = document.getElementById(CUSTOM_FAVICON_SECTION_ID);
   const customImage = document.getElementById('customFaviconImage') as HTMLImageElement;
   const customHint = document.getElementById('customFaviconHint');
 
@@ -206,4 +210,57 @@ export async function loadCustomFaviconSection(hostname: string): Promise<void> 
     const date = new Date(customFavicon.timestamp);
     customHint.textContent = `Set ${date.toLocaleDateString()}`;
   }
+}
+
+export async function removeCustomFavicon(hostname: string, onRemove: () => void): Promise<void> {
+  const customFavicons = await getCustomFavicons();
+  delete customFavicons[hostname];
+
+  await chrome.storage.local.set({ customFavicons });
+
+  onRemove();
+
+  const customSection = document.getElementById(CUSTOM_FAVICON_SECTION_ID);
+  if (customSection) {
+    customSection.classList.remove('visible');
+  }
+}
+
+export async function saveFaviconZIP(
+  img: HTMLImageElement,
+  faviconURL: string,
+  hostname: string
+): Promise<void> {
+  const zip = new JSZip();
+  const folder = zip.folder('favicons');
+
+  if (!folder) {
+    throw new Error('Failed to create folder in ZIP');
+  }
+
+  for (const size of FAVICON_SIZES) {
+    try {
+      const blob = await resizeImage(img, size);
+      const name = `favicon-${size}x${size}.png`;
+      folder.file(name, blob);
+    } catch (error) {
+      console.warn(`Failed to generate ${size}x${size}:`, error);
+    }
+  }
+
+  const original = await fetch(faviconURL);
+  const originalBlob = await original.blob();
+  const extension = faviconURL.endsWith('.ico') ? 'ico' : 'png';
+  folder.file(`favicon-original.${extension}`, originalBlob);
+
+  const content = await zip.generateAsync({ type: 'blob' });
+
+  const url = URL.createObjectURL(content);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `favicons-${hostname}.zip`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }

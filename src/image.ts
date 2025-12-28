@@ -46,14 +46,14 @@ export function getImageUrl(element: Element): ImageExtractionResult | null {
  */
 function fromLazyLoadedAttributes(element: HTMLElement): ImageExtractionResult | null {
   const lazyAttributes = ['src', 'lazySrc', 'original'];
-  
+
   for (const attr of lazyAttributes) {
     const url = element.dataset?.[attr];
     if (url) {
       return createExtractionRes(url, 'img');
     }
   }
-  
+
   return null;
 }
 
@@ -103,7 +103,7 @@ function fromCanvas(canvas: HTMLCanvasElement): ImageExtractionResult | null {
     const dataUrl = canvas.toDataURL('image/png');
     if (dataUrl === 'data:,') {
       return null;
-    };
+    }
     return createExtractionRes(dataUrl, 'canvas', true);
   } catch (error) {
     console.warn('Image Favicon Preview: Cannot extract from tainted canvas', error);
@@ -145,7 +145,7 @@ function fromBackgroundImage(element: Element): ImageExtractionResult | null {
       const url = urlMatch[1];
       if (url.startsWith('linear-gradient') || url.startsWith('radial-gradient')) {
         return null;
-      };
+      }
       return createExtractionRes(url, 'background');
     }
   }
@@ -242,12 +242,42 @@ export function hasBackgroundImage(element: Element): boolean {
   return !bgImage.startsWith('linear-gradient') && !bgImage.startsWith('radial-gradient');
 }
 
-
 /* * Helper to create ImageExtractionResult */
-function createExtractionRes(url: string, type: ImageType, isDataUrl?: boolean): ImageExtractionResult {
+function createExtractionRes(
+  url: string,
+  type: ImageType,
+  isDataUrl?: boolean
+): ImageExtractionResult {
   return {
     url,
     type,
     isDataUrl: isDataUrl === undefined ? url.startsWith('data:') : isDataUrl,
   };
+}
+
+export async function resizeImage(img: HTMLImageElement, size: number): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      reject(new Error('Failed to get canvas context'));
+      return;
+    }
+
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+
+    ctx.drawImage(img, 0, 0, size, size);
+
+    canvas.toBlob((blob) => {
+      if (blob) {
+        resolve(blob);
+      } else {
+        reject(new Error('Failed to create blob'));
+      }
+    }, 'image/png');
+  });
 }

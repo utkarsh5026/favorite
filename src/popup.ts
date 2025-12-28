@@ -1,11 +1,14 @@
-import type { FaviconShape, UserSettings, LockedImage } from './types';
+import type { FaviconShape, UserSettings, LockedImage, CustomFavicons } from './types';
 import { DEFAULT_SETTINGS } from './state';
-import JSZip from 'jszip';
+import {
+  setCustomFavicon,
+  loadCustomFaviconSection,
+  removeCustomFavicon,
+  saveFaviconZIP,
+} from './favicon';
 
-const FAVICON_SIZES = [16, 32, 48, 64, 128, 256];
 let currentFaviconUrl: string | null = null;
 let currentHostname: string | null = null;
-let isImageLocked = false;
 
 async function loadSettings(): Promise<UserSettings> {
   return new Promise((resolve) => {
@@ -28,14 +31,14 @@ async function getCurrentTabHostname(): Promise<string | null> {
   return new Promise((resolve) => {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       const tab = tabs[0];
-      if (tab?.url) {
-        try {
-          const url = new URL(tab.url);
-          resolve(url.hostname);
-        } catch {
-          resolve(null);
-        }
-      } else {
+      if (!tab?.url) {
+        resolve(null);
+        return;
+      }
+      try {
+        const url = new URL(tab.url);
+        resolve(url.hostname);
+      } catch {
         resolve(null);
       }
     });
@@ -47,7 +50,7 @@ async function isSiteDisabled(hostname: string): Promise<boolean> {
   return settings.disabledSites.includes(hostname);
 }
 
-async function toggleSite(hostname: string): Promise<boolean> {
+async function toggleSite(hostname: string) {
   const settings = await loadSettings();
   const disabledSites = [...settings.disabledSites];
   const index = disabledSites.indexOf(hostname);
@@ -91,7 +94,6 @@ async function getLockedImage(): Promise<LockedImage | null> {
 
 async function unlockImage(): Promise<void> {
   await chrome.storage.local.remove('lockedImage');
-  isImageLocked = false;
   showStatus('Image unlocked');
 
   // Refresh the UI
@@ -115,7 +117,7 @@ async function unlockImage(): Promise<void> {
     downloadBtn.disabled = true;
   }
   if (downloadInfo) {
-    downloadInfo.innerHTML = 'Hover an image + press <kbd>L</kbd> to lock';
+    downloadInfo.innerHTML = 'Hover image + <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>L</kbd> to lock';
   }
 
   currentFaviconUrl = null;
@@ -126,6 +128,7 @@ function updateLockUI(locked: boolean): void {
   const unlockBtn = document.getElementById('unlockBtn');
   const faviconLabel = document.getElementById('faviconLabel');
   const downloadInfo = document.getElementById('downloadInfo');
+  const setDefaultBtn = document.getElementById('setDefaultBtn') as HTMLButtonElement;
 
   if (lockBadge) {
     lockBadge.classList.toggle('visible', locked);
@@ -139,6 +142,9 @@ function updateLockUI(locked: boolean): void {
   if (downloadInfo && locked) {
     downloadInfo.textContent = 'Includes: 16x16, 32x32, 48x48, 64x64, 128x128, 256x256';
   }
+  if (setDefaultBtn) {
+    setDefaultBtn.disabled = !locked;
+  }
 }
 
 async function loadFaviconPreview(): Promise<void> {
@@ -149,11 +155,9 @@ async function loadFaviconPreview(): Promise<void> {
 
   if (!faviconPreview || !faviconImage) return;
 
-  // Check for locked image first
   const lockedImage = await getLockedImage();
 
   if (lockedImage) {
-    isImageLocked = true;
     updateLockUI(true);
 
     faviconImage.onload = () => {
@@ -179,37 +183,8 @@ async function loadFaviconPreview(): Promise<void> {
     return;
   }
 
-  // No locked image - show placeholder
   faviconPreview.classList.add('error');
   updateLockUI(false);
-}
-
-async function resizeImage(img: HTMLImageElement, size: number): Promise<Blob> {
-  return new Promise((resolve, reject) => {
-    const canvas = document.createElement('canvas');
-    canvas.width = size;
-    canvas.height = size;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) {
-      reject(new Error('Failed to get canvas context'));
-      return;
-    }
-
-    // Enable image smoothing for better quality downscaling
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
-
-    ctx.drawImage(img, 0, 0, size, size);
-
-    canvas.toBlob((blob) => {
-      if (blob) {
-        resolve(blob);
-      } else {
-        reject(new Error('Failed to create blob'));
-      }
-    }, 'image/png');
-  });
 }
 
 async function generateFaviconZip(): Promise<void> {
@@ -222,7 +197,6 @@ async function generateFaviconZip(): Promise<void> {
   downloadBtn.querySelector('span')!.textContent = 'Generating...';
 
   try {
-    // Load the image
     const img = new Image();
     img.crossOrigin = 'anonymous';
 
@@ -232,41 +206,8 @@ async function generateFaviconZip(): Promise<void> {
       img.src = currentFaviconUrl!;
     });
 
-    const zip = new JSZip();
-    const folder = zip.folder('favicons');
-
-    if (!folder) {
-      throw new Error('Failed to create folder in ZIP');
-    }
-
-    // Generate all sizes
-    for (const size of FAVICON_SIZES) {
-      try {
-        const blob = await resizeImage(img, size);
-        folder.file(`favicon-${size}x${size}.png`, blob);
-      } catch (error) {
-        console.warn(`Failed to generate ${size}x${size}:`, error);
-      }
-    }
-
-    // Also add the original
-    const originalResponse = await fetch(currentFaviconUrl);
-    const originalBlob = await originalResponse.blob();
-    const extension = currentFaviconUrl.endsWith('.ico') ? 'ico' : 'png';
-    folder.file(`favicon-original.${extension}`, originalBlob);
-
-    // Generate the ZIP
-    const content = await zip.generateAsync({ type: 'blob' });
-
-    // Trigger download
-    const url = URL.createObjectURL(content);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `favicons-${currentHostname || 'site'}.zip`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    if (!currentFaviconUrl) return;
+    await saveFaviconZIP(img, currentFaviconUrl, currentHostname || 'site');
 
     showStatus('Downloaded!');
   } catch (error) {
@@ -305,7 +246,6 @@ function updateToggleButton(isDisabled: boolean): void {
 async function init(): Promise<void> {
   const settings = await loadSettings();
 
-  // Get current site hostname
   currentHostname = await getCurrentTabHostname();
   const siteNameEl = document.getElementById('siteName');
   const toggleBtn = document.getElementById('toggleBtn');
@@ -386,12 +326,29 @@ async function init(): Promise<void> {
   // Load favicon preview and set up download
   await loadFaviconPreview();
 
+  if (currentHostname) await loadCustomFaviconSection(currentHostname);
+
   const downloadBtn = document.getElementById('downloadBtn');
   downloadBtn?.addEventListener('click', generateFaviconZip);
 
-  // Unlock button listener
   const unlockBtn = document.getElementById('unlockBtn');
   unlockBtn?.addEventListener('click', unlockImage);
+
+  const setDefaultBtn = document.getElementById('setDefaultBtn');
+  setDefaultBtn?.addEventListener('click', () => {
+    if (!currentFaviconUrl || !currentHostname) return;
+    setCustomFavicon(currentHostname, currentFaviconUrl, () => {
+      showStatus('Set as default!');
+    });
+  });
+
+  const removeDefaultBtn = document.getElementById('removeDefaultBtn');
+  removeDefaultBtn?.addEventListener('click', () => {
+    if (!currentHostname) return;
+    removeCustomFavicon(currentHostname, () => {
+      showStatus('Default removed');
+    });
+  });
 }
 
 document.addEventListener('DOMContentLoaded', init);

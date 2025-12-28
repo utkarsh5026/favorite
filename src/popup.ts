@@ -1,7 +1,11 @@
-import type { FaviconShape, UserSettings } from './types';
+import type { FaviconShape, UserSettings, LockedImage } from './types';
 import { DEFAULT_SETTINGS } from './state';
+import JSZip from 'jszip';
 
+const FAVICON_SIZES = [16, 32, 48, 64, 128, 256];
+let currentFaviconUrl: string | null = null;
 let currentHostname: string | null = null;
+let isImageLocked = false;
 
 async function loadSettings(): Promise<UserSettings> {
   return new Promise((resolve) => {
@@ -69,6 +73,209 @@ function showStatus(message: string): void {
     setTimeout(() => {
       status.classList.remove('show');
     }, 1500);
+  }
+}
+
+async function getLockedImage(): Promise<LockedImage | null> {
+  return new Promise((resolve) => {
+    chrome.storage.local.get('lockedImage', (result) => {
+      const lockedImage = result.lockedImage as LockedImage | undefined;
+      if (lockedImage && lockedImage.hostname === currentHostname) {
+        resolve(lockedImage);
+      } else {
+        resolve(null);
+      }
+    });
+  });
+}
+
+async function unlockImage(): Promise<void> {
+  await chrome.storage.local.remove('lockedImage');
+  isImageLocked = false;
+  showStatus('Image unlocked');
+
+  // Refresh the UI
+  updateLockUI(false);
+
+  // Clear current image and show placeholder
+  const faviconPreview = document.getElementById('faviconPreview');
+  const faviconImage = document.getElementById('faviconImage') as HTMLImageElement;
+  const downloadBtn = document.getElementById('downloadBtn') as HTMLButtonElement;
+  const downloadInfo = document.getElementById('downloadInfo');
+
+  if (faviconPreview) {
+    faviconPreview.classList.remove('loaded');
+    faviconPreview.classList.add('error');
+  }
+  if (faviconImage) {
+    faviconImage.classList.remove('loaded');
+    faviconImage.src = '';
+  }
+  if (downloadBtn) {
+    downloadBtn.disabled = true;
+  }
+  if (downloadInfo) {
+    downloadInfo.innerHTML = 'Hover an image + press <kbd>L</kbd> to lock';
+  }
+
+  currentFaviconUrl = null;
+}
+
+function updateLockUI(locked: boolean): void {
+  const lockBadge = document.getElementById('lockBadge');
+  const unlockBtn = document.getElementById('unlockBtn');
+  const faviconLabel = document.getElementById('faviconLabel');
+  const downloadInfo = document.getElementById('downloadInfo');
+
+  if (lockBadge) {
+    lockBadge.classList.toggle('visible', locked);
+  }
+  if (unlockBtn) {
+    unlockBtn.classList.toggle('visible', locked);
+  }
+  if (faviconLabel) {
+    faviconLabel.textContent = locked ? 'Locked Image' : 'Image';
+  }
+  if (downloadInfo && locked) {
+    downloadInfo.textContent = 'Includes: 16x16, 32x32, 48x48, 64x64, 128x128, 256x256';
+  }
+}
+
+async function loadFaviconPreview(): Promise<void> {
+  const faviconPreview = document.getElementById('faviconPreview');
+  const faviconImage = document.getElementById('faviconImage') as HTMLImageElement;
+  const faviconSizeLabel = document.getElementById('faviconSizeLabel');
+  const downloadBtn = document.getElementById('downloadBtn') as HTMLButtonElement;
+
+  if (!faviconPreview || !faviconImage) return;
+
+  // Check for locked image first
+  const lockedImage = await getLockedImage();
+
+  if (lockedImage) {
+    isImageLocked = true;
+    updateLockUI(true);
+
+    faviconImage.onload = () => {
+      currentFaviconUrl = lockedImage.url;
+      faviconImage.classList.add('loaded');
+      faviconPreview.classList.add('loaded');
+
+      if (faviconSizeLabel) {
+        faviconSizeLabel.textContent = `${faviconImage.naturalWidth}x${faviconImage.naturalHeight}`;
+      }
+
+      if (downloadBtn) {
+        downloadBtn.disabled = false;
+      }
+    };
+
+    faviconImage.onerror = () => {
+      faviconPreview.classList.add('error');
+      updateLockUI(false);
+    };
+
+    faviconImage.src = lockedImage.url;
+    return;
+  }
+
+  // No locked image - show placeholder
+  faviconPreview.classList.add('error');
+  updateLockUI(false);
+}
+
+async function resizeImage(img: HTMLImageElement, size: number): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      reject(new Error('Failed to get canvas context'));
+      return;
+    }
+
+    // Enable image smoothing for better quality downscaling
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+
+    ctx.drawImage(img, 0, 0, size, size);
+
+    canvas.toBlob((blob) => {
+      if (blob) {
+        resolve(blob);
+      } else {
+        reject(new Error('Failed to create blob'));
+      }
+    }, 'image/png');
+  });
+}
+
+async function generateFaviconZip(): Promise<void> {
+  const downloadBtn = document.getElementById('downloadBtn') as HTMLButtonElement;
+
+  if (!currentFaviconUrl || !downloadBtn) return;
+
+  downloadBtn.disabled = true;
+  downloadBtn.classList.add('loading');
+  downloadBtn.querySelector('span')!.textContent = 'Generating...';
+
+  try {
+    // Load the image
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+
+    await new Promise<void>((resolve, reject) => {
+      img.onload = () => resolve();
+      img.onerror = () => reject(new Error('Failed to load image'));
+      img.src = currentFaviconUrl!;
+    });
+
+    const zip = new JSZip();
+    const folder = zip.folder('favicons');
+
+    if (!folder) {
+      throw new Error('Failed to create folder in ZIP');
+    }
+
+    // Generate all sizes
+    for (const size of FAVICON_SIZES) {
+      try {
+        const blob = await resizeImage(img, size);
+        folder.file(`favicon-${size}x${size}.png`, blob);
+      } catch (error) {
+        console.warn(`Failed to generate ${size}x${size}:`, error);
+      }
+    }
+
+    // Also add the original
+    const originalResponse = await fetch(currentFaviconUrl);
+    const originalBlob = await originalResponse.blob();
+    const extension = currentFaviconUrl.endsWith('.ico') ? 'ico' : 'png';
+    folder.file(`favicon-original.${extension}`, originalBlob);
+
+    // Generate the ZIP
+    const content = await zip.generateAsync({ type: 'blob' });
+
+    // Trigger download
+    const url = URL.createObjectURL(content);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `favicons-${currentHostname || 'site'}.zip`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    showStatus('Downloaded!');
+  } catch (error) {
+    console.error('Failed to generate favicon ZIP:', error);
+    showStatus('Download failed');
+  } finally {
+    downloadBtn.disabled = false;
+    downloadBtn.classList.remove('loading');
+    downloadBtn.querySelector('span')!.textContent = 'Download as ZIP';
   }
 }
 
@@ -175,6 +382,16 @@ async function init(): Promise<void> {
     updateSliderValue('faviconSize', value, 'px');
     await saveSettings({ faviconSize: value });
   });
+
+  // Load favicon preview and set up download
+  await loadFaviconPreview();
+
+  const downloadBtn = document.getElementById('downloadBtn');
+  downloadBtn?.addEventListener('click', generateFaviconZip);
+
+  // Unlock button listener
+  const unlockBtn = document.getElementById('unlockBtn');
+  unlockBtn?.addEventListener('click', unlockImage);
 }
 
 document.addEventListener('DOMContentLoaded', init);

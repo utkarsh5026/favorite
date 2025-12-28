@@ -60,3 +60,15 @@ export interface ImageExtractionResult {
   /** Whether the URL is a data URL */
   isDataUrl: boolean;
 }
+
+/**
+ * Locked image data stored in chrome.storage.local
+ */
+export interface LockedImage {
+  /** The image URL */
+  url: string;
+  /** Hostname where the image was locked */
+  hostname: string;
+  /** Timestamp when the image was locked */
+  timestamp: number;
+}

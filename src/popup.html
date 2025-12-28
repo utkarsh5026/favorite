@@ -61,6 +61,49 @@
       </div>
     </div>
 
+    <div class="divider"></div>
+
+    <div class="download-section">
+      <div class="section-header">
+        <label class="setting-label">Image to Download</label>
+        <span class="lock-badge" id="lockBadge">
+          <svg class="lock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+          Locked
+        </span>
+      </div>
+      <div class="favicon-preview-container">
+        <div class="favicon-preview" id="faviconPreview">
+          <img id="faviconImage" alt="Current favicon" />
+          <div class="favicon-loading" id="faviconLoading">Loading...</div>
+          <div class="favicon-error" id="faviconError">No image</div>
+        </div>
+        <div class="favicon-info">
+          <span class="favicon-label" id="faviconLabel">Image</span>
+          <span class="favicon-size" id="faviconSizeLabel">-</span>
+        </div>
+        <button class="unlock-btn" id="unlockBtn" title="Unlock image">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+            <path d="M7 11V7a5 5 0 0 1 9.9-1"/>
+          </svg>
+        </button>
+      </div>
+      <button class="download-btn" id="downloadBtn" disabled>
+        <svg class="download-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        <span>Download as ZIP</span>
+      </button>
+      <div class="download-info" id="downloadInfo">
+        Hover an image + press <kbd>L</kbd> to lock
+      </div>
+    </div>
+
     <div class="status" id="status"></div>
   </div>
   <script src="popup.js"></script>

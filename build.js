@@ -34,20 +34,11 @@ async function build() {
   });
 
   console.log('📄 Copying popup files...');
-  fs.copyFileSync(
-    path.join(__dirname, 'src', 'popup.html'),
-    path.join(DIST_DIR, 'popup.html')
-  );
-  fs.copyFileSync(
-    path.join(__dirname, 'src', 'popup.css'),
-    path.join(DIST_DIR, 'popup.css')
-  );
+  fs.copyFileSync(path.join(__dirname, 'src', 'popup.html'), path.join(DIST_DIR, 'popup.html'));
+  fs.copyFileSync(path.join(__dirname, 'src', 'popup.css'), path.join(DIST_DIR, 'popup.css'));
 
   console.log('📄 Copying manifest.json...');
-  fs.copyFileSync(
-    path.join(__dirname, 'manifest.json'),
-    path.join(DIST_DIR, 'manifest.json')
-  );
+  fs.copyFileSync(path.join(__dirname, 'manifest.json'), path.join(DIST_DIR, 'manifest.json'));
 
   console.log('🖼️ Copying icons...');
   const iconsDir = path.join(__dirname, 'icons');
@@ -57,11 +48,8 @@ async function build() {
     fs.mkdirSync(distIconsDir, { recursive: true });
   }
 
-  fs.readdirSync(iconsDir).forEach(file => {
-    fs.copyFileSync(
-      path.join(iconsDir, file),
-      path.join(distIconsDir, file)
-    );
+  fs.readdirSync(iconsDir).forEach((file) => {
+    fs.copyFileSync(path.join(iconsDir, file), path.join(distIconsDir, file));
   });
 
   console.log('✅ Build complete! Load the extension from: dist/');

@@ -1,4 +1,9 @@
 /**
+ * Shape mask options for favicon display
+ */
+export type FaviconShape = 'circle' | 'square' | 'rounded';
+
+/**
  * Configuration for the extension behavior
  */
 export interface ExtensionConfig {
@@ -10,6 +15,10 @@ export interface ExtensionConfig {
   readonly imageSelectors: readonly string[];
   /** Minimum image dimensions to consider (pixels) */
   readonly minImageSize: number;
+  /** Shape mask to apply to favicon */
+  readonly faviconShape: FaviconShape;
+  /** Size of the favicon in pixels */
+  readonly faviconSize: number;
 }
 
 /**

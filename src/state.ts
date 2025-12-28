@@ -19,7 +19,9 @@ export const CONFIG: ExtensionConfig = {
     '.icon',
     '[role="img"]'
   ],
-  minImageSize: 16
+  minImageSize: 16,
+  faviconShape: 'circle',
+  faviconSize: 32
 } as const;
 
 export const state: ExtensionState = {

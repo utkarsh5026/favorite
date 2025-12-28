@@ -6,8 +6,10 @@ interface ExtensionConfig {
   readonly hoverDelay: number;
   /** Delay in milliseconds before restoring original favicon */
   readonly restoreDelay: number;
-  /** CSS selectors for icon container elements */
-  readonly iconSelectors: readonly string[];
+  /** CSS selectors for image elements */
+  readonly imageSelectors: readonly string[];
+  /** Minimum image dimensions to consider (pixels) */
+  readonly minImageSize: number;
 }
 
 /**
@@ -22,4 +24,18 @@ interface ExtensionState {
   currentRestoreTimeout: number | null;
   /** Whether the extension has been initialized */
   isInitialized: boolean;
+  /** Currently hovered element (for leave detection) */
+  currentHoveredElement: Element | null;
+}
+
+/**
+ * Result of image URL extraction
+ */
+interface ImageExtractionResult {
+  /** The extracted URL (can be data URL or http URL) */
+  url: string;
+  /** Type of image source */
+  type: 'img' | 'svg' | 'picture' | 'background' | 'canvas';
+  /** Whether the URL is a data URL */
+  isDataUrl: boolean;
 }

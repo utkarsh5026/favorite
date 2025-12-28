@@ -1,7 +1,7 @@
 {
   "name": "favorite",
   "version": "1.0.0",
-  "description": "Preview Flaticon icons as favicons on hover",
+  "description": "Preview any image as favicon on hover - works on any website",
   "scripts": {
     "build": "node build.js",
     "build:tsc": "tsc",

@@ -1,15 +1,15 @@
 {
   "manifest_version": 3,
-  "name": "Flaticon Favicon Preview",
-  "version": "1.0.0",
-  "description": "Preview Flaticon icons as favicons when you hover over them",
+  "name": "Image Favicon Preview",
+  "version": "2.0.0",
+  "description": "Preview any image as your browser favicon when you hover over it",
   "permissions": [],
   "host_permissions": [
-    "*://*.flaticon.com/*"
+    "<all_urls>"
   ],
   "content_scripts": [
     {
-      "matches": ["*://*.flaticon.com/*"],
+      "matches": ["<all_urls>"],
       "js": ["content.js"],
       "run_at": "document_idle"
     }

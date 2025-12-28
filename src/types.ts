@@ -29,6 +29,8 @@ export interface UserSettings {
   hoverDelay: number;
   restoreDelay: number;
   faviconSize: number;
+  /** List of hostnames where the extension is disabled */
+  disabledSites: string[];
 }
 
 /**

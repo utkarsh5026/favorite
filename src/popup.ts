@@ -1,34 +1,64 @@
-import type { FaviconShape } from './types';
+import type { FaviconShape, UserSettings } from './types';
+import { DEFAULT_SETTINGS } from './state';
 
-interface Settings {
-  faviconShape: FaviconShape;
-  hoverDelay: number;
-  restoreDelay: number;
-  faviconSize: number;
-}
+let currentHostname: string | null = null;
 
-const DEFAULT_SETTINGS: Settings = {
-  faviconShape: 'circle',
-  hoverDelay: 100,
-  restoreDelay: 200,
-  faviconSize: 32
-};
-
-async function loadSettings(): Promise<Settings> {
+async function loadSettings(): Promise<UserSettings> {
   return new Promise((resolve) => {
     chrome.storage.sync.get(DEFAULT_SETTINGS, (result) => {
-      resolve(result as Settings);
+      resolve(result as UserSettings);
     });
   });
 }
 
-async function saveSettings(settings: Partial<Settings>): Promise<void> {
+async function saveSettings(settings: Partial<UserSettings>): Promise<void> {
   return new Promise((resolve) => {
     chrome.storage.sync.set(settings, () => {
       showStatus('Settings saved');
       resolve();
     });
   });
+}
+
+async function getCurrentTabHostname(): Promise<string | null> {
+  return new Promise((resolve) => {
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      const tab = tabs[0];
+      if (tab?.url) {
+        try {
+          const url = new URL(tab.url);
+          resolve(url.hostname);
+        } catch {
+          resolve(null);
+        }
+      } else {
+        resolve(null);
+      }
+    });
+  });
+}
+
+async function isSiteDisabled(hostname: string): Promise<boolean> {
+  const settings = await loadSettings();
+  return settings.disabledSites.includes(hostname);
+}
+
+async function toggleSite(hostname: string): Promise<boolean> {
+  const settings = await loadSettings();
+  const disabledSites = [...settings.disabledSites];
+  const index = disabledSites.indexOf(hostname);
+
+  if (index === -1) {
+    disabledSites.push(hostname);
+  } else {
+    disabledSites.splice(index, 1);
+  }
+
+  await new Promise<void>((resolve) => {
+    chrome.storage.sync.set({ disabledSites }, resolve);
+  });
+
+  return index === -1; // Returns true if site is now disabled
 }
 
 function showStatus(message: string): void {
@@ -55,8 +85,45 @@ function updateSliderValue(id: string, value: number, suffix: string): void {
   }
 }
 
+function updateToggleButton(isDisabled: boolean): void {
+  const toggleBtn = document.getElementById('toggleBtn');
+  const toggleText = document.getElementById('toggleText');
+
+  if (toggleBtn && toggleText) {
+    toggleBtn.classList.toggle('disabled', isDisabled);
+    toggleText.textContent = isDisabled ? 'Disabled' : 'Enabled';
+  }
+}
+
 async function init(): Promise<void> {
   const settings = await loadSettings();
+
+  // Get current site hostname
+  currentHostname = await getCurrentTabHostname();
+  const siteNameEl = document.getElementById('siteName');
+  const toggleBtn = document.getElementById('toggleBtn');
+
+  if (siteNameEl && currentHostname) {
+    siteNameEl.textContent = currentHostname;
+    const isDisabled = await isSiteDisabled(currentHostname);
+    updateToggleButton(isDisabled);
+  } else if (siteNameEl) {
+    siteNameEl.textContent = 'N/A';
+    if (toggleBtn) {
+      toggleBtn.setAttribute('disabled', 'true');
+      (toggleBtn as HTMLButtonElement).style.opacity = '0.5';
+      (toggleBtn as HTMLButtonElement).style.cursor = 'not-allowed';
+    }
+  }
+
+  // Toggle button listener
+  toggleBtn?.addEventListener('click', async () => {
+    if (!currentHostname) return;
+
+    const isNowDisabled = await toggleSite(currentHostname);
+    updateToggleButton(isNowDisabled);
+    showStatus(isNowDisabled ? 'Site disabled' : 'Site enabled');
+  });
 
   // Set shape buttons
   updateShapeButtons(settings.faviconShape);

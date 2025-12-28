@@ -23,6 +23,68 @@ h1 {
   text-align: center;
 }
 
+.site-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #2a2a4a;
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.site-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.site-label {
+  font-size: 10px;
+  color: #a0a0a0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.site-name {
+  font-size: 13px;
+  color: #fff;
+  font-weight: 500;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.toggle-btn {
+  background: #4ade80;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.toggle-btn:hover {
+  opacity: 0.9;
+  transform: scale(1.02);
+}
+
+.toggle-btn.disabled {
+  background: #ef4444;
+}
+
+.toggle-text {
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.divider {
+  height: 1px;
+  background: #3a3a5a;
+  margin: 16px 0;
+}
+
 .setting-group {
   margin-bottom: 16px;
 }

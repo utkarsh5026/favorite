@@ -1,11 +1,15 @@
-import { CONFIG, state, loadSettings, listenForSettingsChanges } from './state';
+import { CONFIG, state, loadSettings, listenForSettingsChanges, isSiteDisabled } from './state';
 import { changeFavicon, saveOriginalFavicon, restoreOriginalFavicon } from './favicon';
 import { findImageElement, getImageUrl } from './image';
+
+let isCurrentSiteDisabled = false;
 
 /**
  * Handles mouseover events to change favicon on hover
  */
 function handleImageHover(event: MouseEvent): void {
+  if (isCurrentSiteDisabled) return;
+
   clearHoverTimeout();
   clearRestoreTimeout();
 
@@ -95,13 +99,53 @@ async function init(): Promise<void> {
   await loadSettings();
   listenForSettingsChanges();
 
-  console.log('Image Favicon Preview: Extension loaded on', window.location.hostname);
+  // Check if current site is disabled
+  const hostname = window.location.hostname;
+  isCurrentSiteDisabled = await isSiteDisabled(hostname);
+
+  if (isCurrentSiteDisabled) {
+    console.log('Image Favicon Preview: Disabled for', hostname);
+    state.isInitialized = true;
+    listenForSiteEnableChange(hostname);
+    return;
+  }
+
+  console.log('Image Favicon Preview: Extension loaded on', hostname);
 
   saveOriginalFavicon();
   document.addEventListener('mouseover', handleImageHover);
   document.addEventListener('mouseout', handleImageLeave);
+  listenForSiteEnableChange(hostname);
 
   state.isInitialized = true;
+}
+
+/**
+ * Listens for changes to the disabled sites list
+ */
+function listenForSiteEnableChange(hostname: string): void {
+  if (typeof chrome === 'undefined' || !chrome.storage) return;
+
+  chrome.storage.onChanged.addListener((changes, areaName) => {
+    if (areaName !== 'sync' || !changes.disabledSites) return;
+
+    const newDisabledSites = changes.disabledSites.newValue as string[];
+    const wasDisabled = isCurrentSiteDisabled;
+    isCurrentSiteDisabled = newDisabledSites.includes(hostname);
+
+    if (wasDisabled && !isCurrentSiteDisabled) {
+      // Site was re-enabled
+      console.log('Image Favicon Preview: Re-enabled for', hostname);
+      saveOriginalFavicon();
+      document.addEventListener('mouseover', handleImageHover);
+      document.addEventListener('mouseout', handleImageLeave);
+    } else if (!wasDisabled && isCurrentSiteDisabled) {
+      // Site was disabled
+      console.log('Image Favicon Preview: Disabled for', hostname);
+      cleanup();
+      state.isInitialized = true; // Keep initialized to prevent re-init
+    }
+  });
 }
 
 /**

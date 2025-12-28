@@ -1,10 +1,11 @@
 import type { ExtensionConfig, ExtensionState, UserSettings } from './types';
 
-const DEFAULT_SETTINGS: UserSettings = {
+export const DEFAULT_SETTINGS: UserSettings = {
   faviconShape: 'circle',
   hoverDelay: 100,
   restoreDelay: 200,
-  faviconSize: 32
+  faviconSize: 32,
+  disabledSites: []
 };
 
 export const CONFIG: ExtensionConfig = {
@@ -83,5 +84,22 @@ export function listenForSettingsChanges(): void {
     if (changes.faviconSize) {
       CONFIG.faviconSize = changes.faviconSize.newValue;
     }
+  });
+}
+
+/**
+ * Checks if the extension is disabled for a given hostname
+ */
+export async function isSiteDisabled(hostname: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    if (typeof chrome === 'undefined' || !chrome.storage) {
+      resolve(false);
+      return;
+    }
+
+    chrome.storage.sync.get({ disabledSites: [] }, (result) => {
+      const disabledSites = result.disabledSites as string[];
+      resolve(disabledSites.includes(hostname));
+    });
   });
 }

@@ -3,7 +3,7 @@
   "name": "Image Favicon Preview",
   "version": "2.0.0",
   "description": "Preview any image as your browser favicon when you hover over it",
-  "permissions": ["storage"],
+  "permissions": ["storage", "tabs"],
   "host_permissions": [
     "<all_urls>"
   ],

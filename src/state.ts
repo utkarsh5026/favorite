@@ -5,7 +5,7 @@ export const DEFAULT_SETTINGS: UserSettings = {
   hoverDelay: 100,
   restoreDelay: 200,
   faviconSize: 32,
-  disabledSites: []
+  disabledSites: [],
 };
 
 export const CONFIG: ExtensionConfig = {
@@ -25,11 +25,11 @@ export const CONFIG: ExtensionConfig = {
     '[class*="logo"]',
     'figure',
     '.icon',
-    '[role="img"]'
+    '[role="img"]',
   ],
   minImageSize: 16,
   faviconShape: DEFAULT_SETTINGS.faviconShape,
-  faviconSize: DEFAULT_SETTINGS.faviconSize
+  faviconSize: DEFAULT_SETTINGS.faviconSize,
 };
 
 export const state: ExtensionState = {
@@ -37,7 +37,7 @@ export const state: ExtensionState = {
   currentHoverTimeout: null,
   currentRestoreTimeout: null,
   isInitialized: false,
-  currentHoveredElement: null
+  currentHoveredElement: null,
 };
 
 /**

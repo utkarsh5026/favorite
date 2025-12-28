@@ -4,6 +4,11 @@
 export type FaviconShape = 'circle' | 'square' | 'rounded';
 
 /**
+ * Types of images that can be extracted
+  */
+export type ImageType = 'img' | 'svg' | 'picture' | 'background' | 'canvas';
+
+/**
  * Configuration for the extension behavior
  */
 export interface ExtensionConfig {
@@ -56,7 +61,7 @@ export interface ImageExtractionResult {
   /** The extracted URL (can be data URL or http URL) */
   url: string;
   /** Type of image source */
-  type: 'img' | 'svg' | 'picture' | 'background' | 'canvas';
+  type: ImageType;
   /** Whether the URL is a data URL */
   isDataUrl: boolean;
 }
@@ -72,3 +77,18 @@ export interface LockedImage {
   /** Timestamp when the image was locked */
   timestamp: number;
 }
+
+/**
+ * Custom favicon for a specific site
+ */
+export interface CustomFavicon {
+  /** The favicon image URL (data URL for persistence) */
+  url: string;
+  /** Timestamp when the favicon was set */
+  timestamp: number;
+}
+
+/**
+ * Map of hostnames to custom favicons
+ */
+export type CustomFavicons = Record<string, CustomFavicon>;

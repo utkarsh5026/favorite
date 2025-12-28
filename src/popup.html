@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Image Favicon Preview Settings</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Favicon Preview</h1>
+
+    <div class="setting-group">
+      <label class="setting-label">Shape</label>
+      <div class="shape-options">
+        <button class="shape-btn" data-shape="circle" title="Circle">
+          <div class="shape-preview circle"></div>
+        </button>
+        <button class="shape-btn" data-shape="rounded" title="Rounded">
+          <div class="shape-preview rounded"></div>
+        </button>
+        <button class="shape-btn" data-shape="square" title="Square">
+          <div class="shape-preview square"></div>
+        </button>
+      </div>
+    </div>
+
+    <div class="setting-group">
+      <label class="setting-label" for="hoverDelay">Hover Delay</label>
+      <div class="slider-container">
+        <input type="range" id="hoverDelay" min="0" max="500" step="50" value="100">
+        <span class="slider-value" id="hoverDelayValue">100ms</span>
+      </div>
+    </div>
+
+    <div class="setting-group">
+      <label class="setting-label" for="restoreDelay">Restore Delay</label>
+      <div class="slider-container">
+        <input type="range" id="restoreDelay" min="0" max="1000" step="100" value="200">
+        <span class="slider-value" id="restoreDelayValue">200ms</span>
+      </div>
+    </div>
+
+    <div class="setting-group">
+      <label class="setting-label" for="faviconSize">Favicon Size</label>
+      <div class="slider-container">
+        <input type="range" id="faviconSize" min="16" max="64" step="8" value="32">
+        <span class="slider-value" id="faviconSizeValue">32px</span>
+      </div>
+    </div>
+
+    <div class="status" id="status"></div>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>

@@ -11,6 +11,8 @@ async function build() {
   }
 
   console.log('🔨 Bundling TypeScript with esbuild...');
+
+  // Build content script
   await esbuild.build({
     entryPoints: ['src/content.ts'],
     bundle: true,
@@ -20,6 +22,26 @@ async function build() {
     sourcemap: true,
     minify: false,
   });
+
+  await esbuild.build({
+    entryPoints: ['src/popup.ts'],
+    bundle: true,
+    outfile: 'dist/popup.js',
+    format: 'iife',
+    target: 'es2020',
+    sourcemap: true,
+    minify: false,
+  });
+
+  console.log('📄 Copying popup files...');
+  fs.copyFileSync(
+    path.join(__dirname, 'src', 'popup.html'),
+    path.join(DIST_DIR, 'popup.html')
+  );
+  fs.copyFileSync(
+    path.join(__dirname, 'src', 'popup.css'),
+    path.join(DIST_DIR, 'popup.css')
+  );
 
   console.log('📄 Copying manifest.json...');
   fs.copyFileSync(

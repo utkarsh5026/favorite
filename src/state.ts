@@ -1,8 +1,15 @@
-import type { ExtensionConfig, ExtensionState } from './types';
+import type { ExtensionConfig, ExtensionState, UserSettings } from './types';
 
-export const CONFIG: ExtensionConfig = {
+const DEFAULT_SETTINGS: UserSettings = {
+  faviconShape: 'circle',
   hoverDelay: 100,
   restoreDelay: 200,
+  faviconSize: 32
+};
+
+export const CONFIG: ExtensionConfig = {
+  hoverDelay: DEFAULT_SETTINGS.hoverDelay,
+  restoreDelay: DEFAULT_SETTINGS.restoreDelay,
   imageSelectors: [
     'img',
     'svg',
@@ -20,9 +27,9 @@ export const CONFIG: ExtensionConfig = {
     '[role="img"]'
   ],
   minImageSize: 16,
-  faviconShape: 'circle',
-  faviconSize: 32
-} as const;
+  faviconShape: DEFAULT_SETTINGS.faviconShape,
+  faviconSize: DEFAULT_SETTINGS.faviconSize
+};
 
 export const state: ExtensionState = {
   originalFavicon: null,
@@ -31,3 +38,50 @@ export const state: ExtensionState = {
   isInitialized: false,
   currentHoveredElement: null
 };
+
+/**
+ * Loads user settings from chrome.storage and updates CONFIG
+ */
+export async function loadSettings(): Promise<void> {
+  return new Promise((resolve) => {
+    if (typeof chrome === 'undefined' || !chrome.storage) {
+      resolve();
+      return;
+    }
+
+    chrome.storage.sync.get(DEFAULT_SETTINGS, (result) => {
+      const settings = result as UserSettings;
+      CONFIG.faviconShape = settings.faviconShape;
+      CONFIG.hoverDelay = settings.hoverDelay;
+      CONFIG.restoreDelay = settings.restoreDelay;
+      CONFIG.faviconSize = settings.faviconSize;
+      resolve();
+    });
+  });
+}
+
+/**
+ * Listens for settings changes and updates CONFIG in real-time
+ */
+export function listenForSettingsChanges(): void {
+  if (typeof chrome === 'undefined' || !chrome.storage) {
+    return;
+  }
+
+  chrome.storage.onChanged.addListener((changes, areaName) => {
+    if (areaName !== 'sync') return;
+
+    if (changes.faviconShape) {
+      CONFIG.faviconShape = changes.faviconShape.newValue;
+    }
+    if (changes.hoverDelay) {
+      CONFIG.hoverDelay = changes.hoverDelay.newValue;
+    }
+    if (changes.restoreDelay) {
+      CONFIG.restoreDelay = changes.restoreDelay.newValue;
+    }
+    if (changes.faviconSize) {
+      CONFIG.faviconSize = changes.faviconSize.newValue;
+    }
+  });
+}

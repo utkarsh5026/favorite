@@ -8,17 +8,27 @@ export type FaviconShape = 'circle' | 'square' | 'rounded';
  */
 export interface ExtensionConfig {
   /** Delay in milliseconds before changing favicon on hover */
-  readonly hoverDelay: number;
+  hoverDelay: number;
   /** Delay in milliseconds before restoring original favicon */
-  readonly restoreDelay: number;
+  restoreDelay: number;
   /** CSS selectors for image elements */
-  readonly imageSelectors: readonly string[];
+  imageSelectors: string[];
   /** Minimum image dimensions to consider (pixels) */
-  readonly minImageSize: number;
+  minImageSize: number;
   /** Shape mask to apply to favicon */
-  readonly faviconShape: FaviconShape;
+  faviconShape: FaviconShape;
   /** Size of the favicon in pixels */
-  readonly faviconSize: number;
+  faviconSize: number;
+}
+
+/**
+ * User-configurable settings stored in chrome.storage
+ */
+export interface UserSettings {
+  faviconShape: FaviconShape;
+  hoverDelay: number;
+  restoreDelay: number;
+  faviconSize: number;
 }
 
 /**

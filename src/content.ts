@@ -1,4 +1,4 @@
-import { CONFIG, state } from './state';
+import { CONFIG, state, loadSettings, listenForSettingsChanges } from './state';
 import { changeFavicon, saveOriginalFavicon, restoreOriginalFavicon } from './favicon';
 import { findImageElement, getImageUrl } from './image';
 
@@ -86,11 +86,14 @@ function clearRestoreTimeout(): void {
 /**
  * Initializes the extension
  */
-function init(): void {
+async function init(): Promise<void> {
   if (state.isInitialized) {
     console.warn('Image Favicon Preview: Already initialized');
     return;
   }
+
+  await loadSettings();
+  listenForSettingsChanges();
 
   console.log('Image Favicon Preview: Extension loaded on', window.location.hostname);
 

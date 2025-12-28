@@ -7,45 +7,59 @@ import type { FaviconShape } from './types';
 export function changeFavicon(imageUrl: string, applyMask: boolean = true): void {
   if (applyMask && CONFIG.faviconShape !== 'square') {
     applyShapeMaskAndSetFavicon(imageUrl);
-  } else {
-    setFaviconDirectly(imageUrl);
+    return;
   }
+  setFaviconDirectly(imageUrl);
+}
+
+/**
+ * Determines the MIME type of an image based on its URL
+ */
+function getImageMimeType(imageUrl: string): string {
+  if (imageUrl.startsWith('data:image/svg')) {
+    return 'image/svg+xml';
+  }
+
+  if (imageUrl.startsWith('data:image/png') || imageUrl.endsWith('.png')) {
+    return 'image/png';
+  }
+
+  if (imageUrl.endsWith('.ico')) {
+    return 'image/x-icon';
+  }
+
+  if (imageUrl.endsWith('.gif')) {
+    return 'image/gif';
+  }
+
+  if (imageUrl.endsWith('.jpg') || imageUrl.endsWith('.jpeg')) {
+    return 'image/jpeg';
+  }
+
+  if (imageUrl.endsWith('.webp')) {
+    return 'image/webp';
+  }
+  return 'image/png';
 }
 
 /**
  * Sets the favicon directly without any processing
  */
-function setFaviconDirectly(imageUrl: string): void {
+const setFaviconDirectly = (imageUrl: string) => {
   const existingIcons = document.querySelectorAll<HTMLLinkElement>('link[rel*="icon"]');
   existingIcons.forEach((icon: HTMLLinkElement) => icon.remove());
 
-  const newFavicon = document.createElement('link');
-  newFavicon.rel = 'icon';
-
-  if (imageUrl.startsWith('data:image/svg')) {
-    newFavicon.type = 'image/svg+xml';
-  } else if (imageUrl.startsWith('data:image/png') || imageUrl.endsWith('.png')) {
-    newFavicon.type = 'image/png';
-  } else if (imageUrl.endsWith('.ico')) {
-    newFavicon.type = 'image/x-icon';
-  } else if (imageUrl.endsWith('.gif')) {
-    newFavicon.type = 'image/gif';
-  } else if (imageUrl.endsWith('.jpg') || imageUrl.endsWith('.jpeg')) {
-    newFavicon.type = 'image/jpeg';
-  } else if (imageUrl.endsWith('.webp')) {
-    newFavicon.type = 'image/webp';
-  } else {
-    newFavicon.type = 'image/png';
-  }
-
-  newFavicon.href = imageUrl;
-  document.head.appendChild(newFavicon);
-}
+  const fav = document.createElement('link');
+  fav.rel = 'icon';
+  fav.type = getImageMimeType(imageUrl);
+  fav.href = imageUrl;
+  document.head.appendChild(fav);
+};
 
 /**
  * Applies a shape mask to the image and sets it as favicon
  */
-function applyShapeMaskAndSetFavicon(imageUrl: string): void {
+const applyShapeMaskAndSetFavicon = (imageUrl: string) => {
   const img = new Image();
   img.crossOrigin = 'anonymous';
 
@@ -62,13 +76,11 @@ function applyShapeMaskAndSetFavicon(imageUrl: string): void {
         return;
       }
 
-      // Apply shape mask
       ctx.beginPath();
       applyShapePath(ctx, size, CONFIG.faviconShape);
       ctx.closePath();
       ctx.clip();
 
-      // Draw the image scaled to fit
       ctx.drawImage(img, 0, 0, size, size);
 
       const maskedDataUrl = canvas.toDataURL('image/png');
@@ -84,7 +96,7 @@ function applyShapeMaskAndSetFavicon(imageUrl: string): void {
   };
 
   img.src = imageUrl;
-}
+};
 
 /**
  * Applies the appropriate shape path to the canvas context

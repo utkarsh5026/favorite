@@ -1,83 +1,79 @@
 import { CONFIG } from './state';
-import type { ImageExtractionResult } from './types';
+import type { ImageExtractionResult, ImageType } from './types';
 
 /**
  * Extracts the image URL from any type of image element
  */
 export function getImageUrl(element: Element): ImageExtractionResult | null {
   if (element instanceof HTMLImageElement) {
-    return extractFromImg(element);
+    return fromImg(element);
   }
 
   if (element instanceof SVGSVGElement) {
-    return extractFromSvg(element);
+    return fromSvg(element);
   }
 
   if (element instanceof HTMLCanvasElement) {
-    return extractFromCanvas(element);
+    return fromCanvas(element);
   }
 
   if (element instanceof HTMLPictureElement) {
-    return extractFromPicture(element);
+    return fromPicture(element);
   }
 
-  const bgResult = extractFromBackgroundImage(element);
+  const bgResult = fromBackgroundImage(element);
   if (bgResult) {
     return bgResult;
   }
 
   const nestedImg = element.querySelector('img');
-  if (nestedImg) {
-    return extractFromImg(nestedImg);
+  if (nestedImg instanceof HTMLImageElement) {
+    return fromImg(nestedImg);
   }
 
   const nestedSvg = element.querySelector('svg');
   if (nestedSvg instanceof SVGSVGElement) {
-    return extractFromSvg(nestedSvg);
+    return fromSvg(nestedSvg);
   }
 
-  const htmlElement = element as HTMLElement;
-  if (htmlElement.dataset?.src) {
-    return { url: htmlElement.dataset.src, type: 'img', isDataUrl: false };
-  }
-  if (htmlElement.dataset?.lazySrc) {
-    return { url: htmlElement.dataset.lazySrc, type: 'img', isDataUrl: false };
-  }
-  if (htmlElement.dataset?.original) {
-    return { url: htmlElement.dataset.original, type: 'img', isDataUrl: false };
-  }
+  return fromLazyLoadedAttributes(element as HTMLElement);
+}
 
+/**
+ * Extracts URL from lazy-loaded attributes
+ * Common attributes: data-src, data-lazy-src, data-original
+ *
+ */
+function fromLazyLoadedAttributes(element: HTMLElement): ImageExtractionResult | null {
+  const lazyAttributes = ['src', 'lazySrc', 'original'];
+  
+  for (const attr of lazyAttributes) {
+    const url = element.dataset?.[attr];
+    if (url) {
+      return createExtractionRes(url, 'img');
+    }
+  }
+  
   return null;
 }
 
 /**
  * Extracts URL from an <img> element
  */
-function extractFromImg(img: HTMLImageElement): ImageExtractionResult | null {
+function fromImg(img: HTMLImageElement): ImageExtractionResult | null {
   const url = img.currentSrc || img.src;
 
   if (url && url !== 'about:blank' && !url.startsWith('data:image/gif;base64,R0lGOD')) {
-    return {
-      url,
-      type: 'img',
-      isDataUrl: url.startsWith('data:')
-    };
+    return createExtractionRes(url, 'img');
   }
 
-  if (img.dataset.src) {
-    return { url: img.dataset.src, type: 'img', isDataUrl: false };
-  }
-  if (img.dataset.lazySrc) {
-    return { url: img.dataset.lazySrc, type: 'img', isDataUrl: false };
-  }
-
-  return null;
+  return fromLazyLoadedAttributes(img);
 }
 
 /**
  * Converts inline SVG to data URL
  */
-function extractFromSvg(svg: SVGSVGElement): ImageExtractionResult | null {
+function fromSvg(svg: SVGSVGElement): ImageExtractionResult | null {
   try {
     const clonedSvg = svg.cloneNode(true) as SVGSVGElement;
     clonedSvg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
@@ -90,17 +86,9 @@ function extractFromSvg(svg: SVGSVGElement): ImageExtractionResult | null {
 
     const serializer = new XMLSerializer();
     const svgString = serializer.serializeToString(clonedSvg);
-    const encoded = encodeURIComponent(svgString)
-      .replace(/'/g, '%27')
-      .replace(/"/g, '%22');
+    const encoded = encodeURIComponent(svgString).replace(/'/g, '%27').replace(/"/g, '%22');
 
-    const dataUrl = `data:image/svg+xml,${encoded}`;
-
-    return {
-      url: dataUrl,
-      type: 'svg',
-      isDataUrl: true
-    };
+    return createExtractionRes(`data:image/svg+xml,${encoded}`, 'svg', true);
   } catch (error) {
     console.warn('Image Favicon Preview: Failed to serialize SVG', error);
     return null;
@@ -110,17 +98,13 @@ function extractFromSvg(svg: SVGSVGElement): ImageExtractionResult | null {
 /**
  * Extracts data URL from canvas element
  */
-function extractFromCanvas(canvas: HTMLCanvasElement): ImageExtractionResult | null {
+function fromCanvas(canvas: HTMLCanvasElement): ImageExtractionResult | null {
   try {
     const dataUrl = canvas.toDataURL('image/png');
     if (dataUrl === 'data:,') {
       return null;
-    }
-    return {
-      url: dataUrl,
-      type: 'canvas',
-      isDataUrl: true
     };
+    return createExtractionRes(dataUrl, 'canvas', true);
   } catch (error) {
     console.warn('Image Favicon Preview: Cannot extract from tainted canvas', error);
     return null;
@@ -130,18 +114,18 @@ function extractFromCanvas(canvas: HTMLCanvasElement): ImageExtractionResult | n
 /**
  * Extracts URL from <picture> element
  */
-function extractFromPicture(picture: HTMLPictureElement): ImageExtractionResult | null {
+function fromPicture(picture: HTMLPictureElement): ImageExtractionResult | null {
   const source = picture.querySelector('source');
   if (source instanceof HTMLSourceElement && source.srcset) {
     const firstUrl = parseSrcset(source.srcset);
     if (firstUrl) {
-      return { url: firstUrl, type: 'picture', isDataUrl: false };
+      return createExtractionRes(firstUrl, 'picture');
     }
   }
 
   const img = picture.querySelector('img');
   if (img) {
-    return extractFromImg(img);
+    return fromImg(img);
   }
 
   return null;
@@ -150,7 +134,7 @@ function extractFromPicture(picture: HTMLPictureElement): ImageExtractionResult 
 /**
  * Extracts URL from CSS background-image
  */
-function extractFromBackgroundImage(element: Element): ImageExtractionResult | null {
+function fromBackgroundImage(element: Element): ImageExtractionResult | null {
   const computedStyle = window.getComputedStyle(element);
   const bgImage = computedStyle.backgroundImage;
 
@@ -161,12 +145,8 @@ function extractFromBackgroundImage(element: Element): ImageExtractionResult | n
       const url = urlMatch[1];
       if (url.startsWith('linear-gradient') || url.startsWith('radial-gradient')) {
         return null;
-      }
-      return {
-        url,
-        type: 'background',
-        isDataUrl: url.startsWith('data:')
       };
+      return createExtractionRes(url, 'background');
     }
   }
 
@@ -195,12 +175,10 @@ export function findImageElement(target: Element): Element | null {
   const matched = target.closest(selector);
 
   if (matched) {
-    if (isImageElement(matched)) {
+    if (isImageElement(matched) || hasBackgroundImage(matched)) {
       return matched;
     }
-    if (hasBackgroundImage(matched)) {
-      return matched;
-    }
+
     const nestedImg = matched.querySelector('img, svg, canvas, picture');
     if (nestedImg && isImageElement(nestedImg)) {
       return nestedImg;
@@ -232,20 +210,12 @@ export function findImageElement(target: Element): Element | null {
  * Searches within an element for nested images, including background-image styles
  */
 function findNestedImageElement(container: Element): Element | null {
-  const imgElement = container.querySelector('img, svg, canvas, picture');
-  if (imgElement && isImageElement(imgElement)) {
-    return imgElement;
+  const img = container.querySelector('img, svg, canvas, picture');
+  if (img && isImageElement(img)) {
+    return img;
   }
 
-  // Search for elements with background-image style (common on Twitter, etc.)
-  const allDescendants = Array.from(container.querySelectorAll('*'));
-  for (const descendant of allDescendants) {
-    if (hasBackgroundImage(descendant)) {
-      return descendant;
-    }
-  }
-
-  return null;
+  return Array.from(container.querySelectorAll('*')).find(hasBackgroundImage) || null;
 }
 
 /**
@@ -270,4 +240,14 @@ export function hasBackgroundImage(element: Element): boolean {
     return false;
   }
   return !bgImage.startsWith('linear-gradient') && !bgImage.startsWith('radial-gradient');
+}
+
+
+/* * Helper to create ImageExtractionResult */
+function createExtractionRes(url: string, type: ImageType, isDataUrl?: boolean): ImageExtractionResult {
+  return {
+    url,
+    type,
+    isDataUrl: isDataUrl === undefined ? url.startsWith('data:') : isDataUrl,
+  };
 }

@@ -1,34 +1,51 @@
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
+const esbuild = require('esbuild');
 
 const DIST_DIR = path.join(__dirname, 'dist');
 
+async function build() {
+  // Ensure dist directory exists
+  if (!fs.existsSync(DIST_DIR)) {
+    fs.mkdirSync(DIST_DIR, { recursive: true });
+  }
 
-console.log('🔨 Compiling TypeScript...');
-execSync('node ./node_modules/typescript/bin/tsc', { stdio: 'inherit', cwd: __dirname });
+  console.log('🔨 Bundling TypeScript with esbuild...');
+  await esbuild.build({
+    entryPoints: ['src/content.ts'],
+    bundle: true,
+    outfile: 'dist/content.js',
+    format: 'iife',
+    target: 'es2020',
+    sourcemap: true,
+    minify: false,
+  });
 
+  console.log('📄 Copying manifest.json...');
+  fs.copyFileSync(
+    path.join(__dirname, 'manifest.json'),
+    path.join(DIST_DIR, 'manifest.json')
+  );
 
-console.log('📄 Copying manifest.json...');
-fs.copyFileSync(
-  path.join(__dirname, 'manifest.json'),
-  path.join(DIST_DIR, 'manifest.json')
-);
+  console.log('🖼️ Copying icons...');
+  const iconsDir = path.join(__dirname, 'icons');
+  const distIconsDir = path.join(DIST_DIR, 'icons');
 
+  if (!fs.existsSync(distIconsDir)) {
+    fs.mkdirSync(distIconsDir, { recursive: true });
+  }
 
-console.log('🖼️ Copying icons...');
-const iconsDir = path.join(__dirname, 'icons');
-const distIconsDir = path.join(DIST_DIR, 'icons');
+  fs.readdirSync(iconsDir).forEach(file => {
+    fs.copyFileSync(
+      path.join(iconsDir, file),
+      path.join(distIconsDir, file)
+    );
+  });
 
-if (!fs.existsSync(distIconsDir)) {
-  fs.mkdirSync(distIconsDir, { recursive: true });
+  console.log('✅ Build complete! Load the extension from: dist/');
 }
 
-fs.readdirSync(iconsDir).forEach(file => {
-  fs.copyFileSync(
-    path.join(iconsDir, file),
-    path.join(distIconsDir, file)
-  );
+build().catch((err) => {
+  console.error('Build failed:', err);
+  process.exit(1);
 });
-
-console.log('✅ Build complete! Load the extension from: dist/');

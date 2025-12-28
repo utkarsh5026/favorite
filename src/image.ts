@@ -208,12 +208,41 @@ export function findImageElement(target: Element): Element | null {
     return matched;
   }
 
+  const nestedImageElement = findNestedImageElement(target);
+  if (nestedImageElement) {
+    return nestedImageElement;
+  }
+
   let current: Element | null = target;
   while (current && current !== document.body) {
     if (hasBackgroundImage(current)) {
       return current;
     }
+    const nestedInAncestor = findNestedImageElement(current);
+    if (nestedInAncestor) {
+      return nestedInAncestor;
+    }
     current = current.parentElement;
+  }
+
+  return null;
+}
+
+/**
+ * Searches within an element for nested images, including background-image styles
+ */
+function findNestedImageElement(container: Element): Element | null {
+  const imgElement = container.querySelector('img, svg, canvas, picture');
+  if (imgElement && isImageElement(imgElement)) {
+    return imgElement;
+  }
+
+  // Search for elements with background-image style (common on Twitter, etc.)
+  const allDescendants = Array.from(container.querySelectorAll('*'));
+  for (const descendant of allDescendants) {
+    if (hasBackgroundImage(descendant)) {
+      return descendant;
+    }
   }
 
   return null;

@@ -1,15 +1,13 @@
-const fs = require("fs");
-const path = require("path");
-const { execSync } = require("child_process");
-const JSZip = require("jszip");
+const fs = require('fs');
+const path = require('path');
+const { execSync } = require('child_process');
+const JSZip = require('jszip');
 
-const DIST_DIR = path.join(__dirname, "dist");
-const RELEASE_DIR = path.join(__dirname, "releases");
+const DIST_DIR = path.join(__dirname, 'dist');
+const RELEASE_DIR = path.join(__dirname, 'releases');
 
 async function getVersion() {
-  const manifest = JSON.parse(
-    fs.readFileSync(path.join(__dirname, "manifest.json"), "utf8")
-  );
+  const manifest = JSON.parse(fs.readFileSync(path.join(__dirname, 'manifest.json'), 'utf8'));
   return manifest.version;
 }
 
@@ -26,7 +24,7 @@ async function createZip(version) {
       if (stat.isDirectory()) {
         addFilesToZip(filePath, zipFolder.folder(file));
       } else {
-        if (file.endsWith(".map")) continue;
+        if (file.endsWith('.map')) continue;
         const content = fs.readFileSync(filePath);
         zipFolder.file(file, content);
       }
@@ -40,7 +38,7 @@ async function createZip(version) {
   }
 
   const zipPath = path.join(RELEASE_DIR, zipFileName);
-  const content = await zip.generateAsync({ type: "nodebuffer" });
+  const content = await zip.generateAsync({ type: 'nodebuffer' });
   fs.writeFileSync(zipPath, content);
 
   console.log(`📦 Created: ${zipPath}`);
@@ -50,7 +48,7 @@ async function createZip(version) {
 function runCommand(cmd, options = {}) {
   console.log(`\n> ${cmd}`);
   try {
-    execSync(cmd, { stdio: "inherit", ...options });
+    execSync(cmd, { stdio: 'inherit', ...options });
   } catch (error) {
     if (!options.ignoreError) {
       throw error;
@@ -60,8 +58,8 @@ function runCommand(cmd, options = {}) {
 
 async function release() {
   const args = process.argv.slice(2);
-  const skipBuild = args.includes("--skip-build");
-  const dryRun = args.includes("--dry-run");
+  const skipBuild = args.includes('--skip-build');
+  const dryRun = args.includes('--dry-run');
 
   const version = await getVersion();
   const tag = `v${version}`;
@@ -69,16 +67,16 @@ async function release() {
   console.log(`\n🚀 Creating release ${tag}\n`);
 
   if (!skipBuild) {
-    console.log("📦 Building extension...");
-    runCommand("npm run build");
+    console.log('📦 Building extension...');
+    runCommand('npm run build');
   }
 
-  console.log("\n📦 Creating ZIP archive...");
+  console.log('\n📦 Creating ZIP archive...');
   const zipPath = await createZip(version);
 
   if (dryRun) {
-    console.log("\n✅ Dry run complete! ZIP created at:", zipPath);
-    console.log("   Skipping git tag and GitHub release.");
+    console.log('\n✅ Dry run complete! ZIP created at:', zipPath);
+    console.log('   Skipping git tag and GitHub release.');
     return;
   }
 
@@ -90,7 +88,7 @@ async function release() {
     console.log(`   Tag ${tag} may already exist, continuing...`);
   }
 
-  console.log("\n🎉 Creating GitHub release...");
+  console.log('\n🎉 Creating GitHub release...');
   const releaseNotes = `## Image Favicon Preview v${version}
 
 ### Installation
@@ -106,14 +104,14 @@ async function release() {
     runCommand(cmd);
     console.log(`\n✅ Release ${tag} created successfully!`);
   } catch (error) {
-    console.error("\n❌ Failed to create GitHub release.");
-    console.error("   Make sure you have the GitHub CLI installed and authenticated.");
-    console.error("   Run: gh auth login");
+    console.error('\n❌ Failed to create GitHub release.');
+    console.error('   Make sure you have the GitHub CLI installed and authenticated.');
+    console.error('   Run: gh auth login');
     process.exit(1);
   }
 }
 
 release().catch((err) => {
-  console.error("Release failed:", err);
+  console.error('Release failed:', err);
   process.exit(1);
 });

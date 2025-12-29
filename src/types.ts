@@ -5,7 +5,7 @@ export type FaviconShape = 'circle' | 'square' | 'rounded';
 
 /**
  * Types of images that can be extracted
-  */
+ */
 export type ImageType = 'img' | 'svg' | 'picture' | 'background' | 'canvas';
 
 /**

@@ -1,11 +1,6 @@
 import type { FaviconShape, LockedImage, UserSettings } from './types';
 import { DEFAULT_SETTINGS } from './state';
-import {
-  loadCustomFaviconSection,
-  removeCustomFavicon,
-  saveFaviconZIP,
-  setCustomFavicon,
-} from './favicon';
+import { saveFaviconZIP, CustomFaviconManager } from './favicon';
 import { applyShapeToPreview } from './shape';
 import { all, byID, downloadImage } from './utils';
 
@@ -366,7 +361,7 @@ function setupDefaultImage(btn: HTMLButtonElement, hostname: string, faviconURL:
   btn.classList.add('loading');
   btnText.textContent = 'Setting...';
 
-  setCustomFavicon(hostname, faviconURL, () => {
+  CustomFaviconManager.setCustomFavicon(hostname, faviconURL, () => {
     btn.classList.remove('loading');
     btn.classList.add('success');
     btnText.textContent = 'Done!';
@@ -404,7 +399,7 @@ async function init(): Promise<void> {
 
   if (currentHostname) {
     await loadFaviconPreview(currentHostname);
-    await loadCustomFaviconSection(currentHostname);
+    await CustomFaviconManager.loadCustomFaviconSection(currentHostname);
     listenForLockedImageChanges(currentHostname);
   }
 
@@ -426,7 +421,7 @@ async function init(): Promise<void> {
   const removeDefaultBtn = byID('removeDefaultBtn');
   removeDefaultBtn?.addEventListener('click', () => {
     if (!currentHostname) return;
-    removeCustomFavicon(currentHostname, () => {
+    CustomFaviconManager.removeCustomFavicon(currentHostname, () => {
       showStatus('Default removed');
     });
   });

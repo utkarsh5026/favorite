@@ -27,26 +27,27 @@ A lightweight Chrome extension that lets you preview any image on any website as
 
 ## Features
 
-| | Feature | Description |
-|:---:|:---|:---|
-| 🌐 | **Universal Support** | Works on any website |
-| 🖼️ | **Multiple Formats** | Supports `<img>`, `<svg>`, `<picture>`, `<canvas>`, CSS backgrounds |
-| ⚡ | **Instant Preview** | See the favicon change in real-time |
-| 🔄 | **Auto Restore** | Original favicon returns when you move away |
-| 🎯 | **Smart Filtering** | Ignores tiny images like tracking pixels |
-| 📦 | **Zero Config** | Just install and start browsing |
+|     | Feature               | Description                                                         |
+| :-: | :-------------------- | :------------------------------------------------------------------ |
+| 🌐  | **Universal Support** | Works on any website                                                |
+| 🖼️  | **Multiple Formats**  | Supports `<img>`, `<svg>`, `<picture>`, `<canvas>`, CSS backgrounds |
+| ⚡  | **Instant Preview**   | See the favicon change in real-time                                 |
+| 🔄  | **Auto Restore**      | Original favicon returns when you move away                         |
+| 🔒  | **Lock & Download**   | Lock favicons with keyboard shortcuts and download as ZIP           |
+| 🎯  | **Smart Filtering**   | Ignores tiny images like tracking pixels                            |
+| 📦  | **Zero Config**       | Just install and start browsing                                     |
 
 <br>
 
 ## Supported Image Types
 
-| Type | Status | Notes |
-|:---|:---:|:---|
-| `<img>` | ✅ | Including srcset and lazy-loaded |
-| `<svg>` | ✅ | Inline SVGs converted to data URL |
-| `<picture>` | ✅ | Respects source selection |
-| `<canvas>` | ⚠️ | Fails on cross-origin canvases |
-| CSS `background-image` | ✅ | Excludes gradients |
+| Type                   | Status | Notes                             |
+| :--------------------- | :----: | :-------------------------------- |
+| `<img>`                |   ✅   | Including srcset and lazy-loaded  |
+| `<svg>`                |   ✅   | Inline SVGs converted to data URL |
+| `<picture>`            |   ✅   | Respects source selection         |
+| `<canvas>`             |   ⚠️   | Fails on cross-origin canvases    |
+| CSS `background-image` |   ✅   | Excludes gradients                |
 
 <br>
 
@@ -57,6 +58,15 @@ A lightweight Chrome extension that lets you preview any image on any website as
 2. Hover over any image (≥16x16 pixels)
 3. Watch your browser tab favicon change
 ```
+
+### Keyboard Shortcuts
+
+| Shortcut       | Action                                    |
+| :------------- | :---------------------------------------- |
+| `Ctrl+Shift+.` | Lock the current hovered image as favicon |
+| `Ctrl+Shift+,` | Unlock and restore the original favicon   |
+
+**Note:** On Mac, use `Cmd` instead of `Ctrl`. These punctuation-based shortcuts are highly unique and won't conflict with browser or website shortcuts.
 
 <br>
 
@@ -73,6 +83,7 @@ npm run build
 ```
 
 Then in Chrome:
+
 1. Navigate to `chrome://extensions/`
 2. Enable **Developer mode**
 3. Click **Load unpacked** → select the `dist` folder

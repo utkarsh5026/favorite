@@ -10,10 +10,12 @@ export function byID<T extends HTMLElement>(id: string): T | null {
 /**
  * Gets all HTML elements matching a CSS selector with type safety
  * @param selector - The CSS selector to match elements
+ * @param container - Optional container to scope the search (defaults to document)
  * @returns An array of elements cast to the specified type
  */
-export function all<T extends HTMLElement>(selector: string): T[] {
-  return Array.from(document.querySelectorAll(selector)) as T[];
+export function all<T extends HTMLElement>(selector: string, container?: Element | Document): T[] {
+  const searchContainer = container || document;
+  return Array.from(searchContainer.querySelectorAll(selector)) as T[];
 }
 
 /**

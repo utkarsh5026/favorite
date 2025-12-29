@@ -310,7 +310,7 @@ export class CustomFaviconManager {
    * @param hostname - The hostname to retrieve the custom favicon for
    * @returns The custom favicon object or null if not found
    */
-  private static async getCustomFavicon(hostname: string) {
+  static async getCustomFavicon(hostname: string) {
     const customFavicons = await CustomFaviconManager.getCustomFavicons();
     return customFavicons[hostname] || null;
   }
@@ -386,6 +386,17 @@ export class CustomFaviconManager {
     const customSection = byID(CUSTOM_FAVICON_SECTION_ID);
     if (customSection) {
       customSection.classList.remove('visible');
+    }
+  }
+
+  /**
+   * Restores favicon to custom or original
+   */
+  static restoreToDefaultFavicon(customFaviconUrl: string | null): void {
+    if (customFaviconUrl) {
+      changeFavicon(customFaviconUrl);
+    } else {
+      restoreOriginalFavicon();
     }
   }
 }

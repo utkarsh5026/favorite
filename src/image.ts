@@ -1,5 +1,6 @@
 import { CONFIG } from './state';
 import type { ImageExtractionResult, ImageType } from './types';
+import { all } from './utils';
 
 /**
  * Extracts the image URL from any type of image element
@@ -229,133 +230,145 @@ export async function resizeImage(img: HTMLImageElement, size: number): Promise<
 }
 
 export class ImageFinder {
-  constructor(
-    private target: Element,
-    private mouseX?: number,
-    private mouseY?: number
-  ) {}
+  private mouseX: number;
+  private mouseY: number;
+  private target: Element;
+
+  constructor(target: Element, mouseX?: number, mouseY?: number) {
+    this.target = target;
+    this.mouseX = mouseX ?? 0;
+    this.mouseY = mouseY ?? 0;
+  }
+
+  find(): Element | null {
+    if (this.mouseX && this.mouseY) {
+      const found = this.findByVisualStack();
+      if (found) return found;
+    }
+
+    return this.findByDOMTraversal();
+  }
 
   /**
-   * Finds the image element from an event target, using mouse coordinates to detect
-   * the specific image when multiple nested images are present
+   * Use the browser's visual stacking order
+   * This handles z-index, transforms, positioning automatically
    */
-  find(): Element | null {
-    if (isImageElement(this.target)) {
-      return this.target;
+  private findByVisualStack(): Element | null {
+    const stack = document.elementsFromPoint(this.mouseX, this.mouseY);
+    const imageFinders = [
+      (el: Element) => this.isImageElement(el) && this.isVisible(el),
+      (el: Element) => this.hasBackgroundImage(el) && this.isVisible(el),
+      (el: Element) => this.hasPseudoElementImage(el),
+    ];
+
+    for (const finder of imageFinders) {
+      const img = stack.find(finder);
+      if (img) return img;
     }
 
-    if (this.mouseX !== undefined && this.mouseY !== undefined) {
-      const el = this.detectFromCoordinates();
-      if (el) return el;
-    }
-
-    const selector = CONFIG.imageSelectors.join(', ');
-    const matched = this.target.closest(selector);
-
-    if (matched) {
-      if (isImageElement(matched) || hasBackgroundImage(matched)) {
-        return matched;
-      }
-
-      const nested = this.getAllNestedImages(matched);
-      if (nested.length > 0) return nested[0];
-
-      return matched;
-    }
-
-    const el = this.findNestedImageElement(this.target);
-    if (el) return el;
     return null;
   }
 
   /**
-   * Gets all nested image elements within a container
+   * DOM traversal when coordinates unavailable
    */
-  private getAllNestedImages(container: Element): Element[] {
-    const elements = container.querySelectorAll('img, svg, canvas, picture, *');
-    return Array.from(elements).filter((el) => isImageElement(el));
-  }
+  private findByDOMTraversal(): Element | null {
+    const targetIsImage = this.isImageElement(this.target);
+    if (targetIsImage) return this.target;
 
-  private detectFromCoordinates(): Element | null {
-    let current: Element | null = this.target;
-    let level = 0;
+    const descendant = this.findImageDescendant(this.target);
+    if (descendant) return descendant;
 
-    while (current && current !== document.body && level < 8) {
-      level++;
-      console.log(`[Coordinate Detection] Level ${level}, checking:`, current);
+    let current = this.target.parentElement;
+    let depth = 0;
+    while (current && depth < 5) {
+      const isImg = this.isImageElement(current);
+      const hasBg = this.hasBackgroundImage(current);
 
-      if (isImageElement(current) && this.coversCoordinates(current)) {
+      if (isImg || hasBg) {
         return current;
       }
 
-      const imgs = this.getAllNestedImages(current);
-
-      if (imgs.length > 0) {
-        const imageAtCoords = this.getImageAtCoordinates(imgs);
-        if (imageAtCoords) {
-          return imageAtCoords;
-        }
+      const siblingImage = this.findImageDescendant(current);
+      if (siblingImage) {
+        return siblingImage;
       }
 
       current = current.parentElement;
+      depth++;
     }
 
-    console.log('[Coordinate Detection] ✗ No image found at coordinates');
     return null;
   }
 
   /**
-   * Finds the specific image element at the given coordinates
-   * Returns the smallest (most specific) image that contains the coordinates
+   * Find first image descendant using efficient selectors
    */
-  private getImageAtCoordinates(images: Element[]): Element | null {
-    let bestMatch: Element | null = null;
-    let smallestArea = Infinity;
-    const x = this.mouseX!;
-    const y = this.mouseY!;
-    let matchCount = 0;
-
-    for (const image of images) {
-      const rect = image.getBoundingClientRect();
-      const isMatch = x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
-      if (!isMatch) continue;
-
-      matchCount++;
-      const area = rect.width * rect.height;
-      if (area < smallestArea) {
-        smallestArea = area;
-        bestMatch = image;
-      }
+  private findImageDescendant(container: Element): Element | null {
+    const directImages = all(CONFIG.imageSelectors.join(','), container);
+    const visible = directImages.find((el) => this.isVisible(el));
+    if (visible) {
+      return visible;
     }
 
-    if (matchCount > 0) {
-      console.log(
-        `[Coordinate Match] Found ${matchCount} matching images, selected smallest (area: ${smallestArea.toFixed(0)}):`,
-        bestMatch
-      );
-    }
+    const background = all('*', container).find((el) => {
+      return this.hasBackgroundImage(el) && this.isVisible(el);
+    });
 
-    return bestMatch;
+    return background || null;
   }
 
-  private coversCoordinates(element: Element): boolean {
-    const rect = element.getBoundingClientRect();
+  private isImageElement(el: Element): boolean {
+    const tagName = el.tagName.toLowerCase();
+    if (['img', 'svg', 'canvas', 'picture', 'video'].includes(tagName)) {
+      return true;
+    }
+
     return (
-      this.mouseX! >= rect.left &&
-      this.mouseX! <= rect.right &&
-      this.mouseY! >= rect.top &&
-      this.mouseY! <= rect.bottom
+      tagName.includes('image') || tagName.includes('img') || el.getAttribute('role') === 'img'
     );
   }
 
-  /**
-   * Searches within an element for nested images, including background-image styles
-   */
-  private findNestedImageElement(container: Element): Element | null {
-    const img = container.querySelector('img, svg, canvas, picture');
-    if (img && isImageElement(img)) {
-      return img;
+  private hasBackgroundImage(el: Element): boolean {
+    const style = getComputedStyle(el);
+    const bg = style.backgroundImage;
+
+    if (!bg || bg === 'none') return false;
+    return bg.includes('url(');
+  }
+
+  private hasPseudoElementImage(el: Element): boolean {
+    const pseudos = ['::before', '::after'] as const;
+
+    const parse = (s: string) => {
+      return parseFloat(s) || 0;
+    };
+
+    return pseudos.some((pseudo) => {
+      try {
+        const style = getComputedStyle(el, pseudo);
+        const bg = style.backgroundImage;
+        if (bg && bg !== 'none' && bg.includes('url(')) {
+          return parse(style.width) > 0 && parse(style.height) > 0;
+        }
+      } catch (e) {}
+    });
+  }
+
+  private isVisible(el: Element): boolean {
+    const style = getComputedStyle(el);
+    const rect = el.getBoundingClientRect();
+
+    if (
+      style.display === 'none' ||
+      style.visibility === 'hidden' ||
+      parseFloat(style.opacity) === 0 ||
+      rect.width === 0 ||
+      rect.height === 0
+    ) {
+      return false;
     }
-    return Array.from(container.querySelectorAll('*')).find(hasBackgroundImage) || null;
+
+    return true;
   }
 }

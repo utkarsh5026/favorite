@@ -447,9 +447,19 @@ input[type='range']::-moz-range-thumb {
   letter-spacing: -0.2px;
 }
 
+.download-btn span {
+  transition: opacity 0.2s ease;
+}
+
 .download-btn:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), 0 0 0 0 rgba(240, 240, 242, 0.5);
+  animation: buttonGlow 1.5s ease-in-out infinite;
+}
+
+.download-btn:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
 }
 
 .download-btn:disabled {
@@ -459,11 +469,26 @@ input[type='range']::-moz-range-thumb {
 
 .download-btn.loading {
   pointer-events: none;
+  opacity: 0.7;
+}
+
+.download-btn.loading .download-icon {
+  animation: rotate 0.8s linear infinite;
+}
+
+.download-btn.success {
+  background: linear-gradient(135deg, #c8f4d4 0%, #b0e5c0 100%);
+  animation: successPulse 0.4s ease-out;
 }
 
 .download-icon {
   width: 16px;
   height: 16px;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.download-btn:active:not(:disabled) .download-icon {
+  transform: scale(0.9);
 }
 
 .set-default-btn {
@@ -485,10 +510,20 @@ input[type='range']::-moz-range-thumb {
   letter-spacing: -0.2px;
 }
 
+.set-default-btn span {
+  transition: opacity 0.2s ease;
+}
+
 .set-default-btn:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.08);
   border-color: rgba(255, 255, 255, 0.25);
   transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(255, 255, 255, 0.1);
+}
+
+.set-default-btn:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: none;
 }
 
 .set-default-btn:disabled {
@@ -496,9 +531,33 @@ input[type='range']::-moz-range-thumb {
   cursor: not-allowed;
 }
 
+.set-default-btn.loading {
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.set-default-btn.loading svg {
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+.set-default-btn.success {
+  background: rgba(120, 220, 150, 0.15);
+  border-color: rgba(120, 220, 150, 0.4);
+  animation: successPulse 0.4s ease-out;
+}
+
+.set-default-btn.success svg {
+  stroke: #78dc96;
+}
+
 .set-default-btn svg {
   width: 16px;
   height: 16px;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.set-default-btn:active:not(:disabled) svg {
+  transform: scale(0.9);
 }
 
 .download-info {
@@ -625,4 +684,56 @@ input[type='range']::-moz-range-thumb {
 
 .remove-default-btn:hover svg {
   stroke: #ff8888;
+}
+
+/* Animations
+ *
+ * Button states:
+ * - .loading: Shows loading animation (spinner for download, pulse for set-default)
+ * - .success: Shows success state with green highlight and pulse animation
+ *
+ * Usage in JavaScript:
+ * 1. Add 'loading' class when action starts
+ * 2. Remove 'loading' and add 'success' when action completes
+ * 3. Remove 'success' after 2 seconds to return to normal state
+ */
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(0.95);
+  }
+}
+
+@keyframes successPulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.03);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes buttonGlow {
+  0%, 100% {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), 0 0 0 0 rgba(240, 240, 242, 0.3);
+  }
+  50% {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), 0 0 12px 2px rgba(240, 240, 242, 0.15);
+  }
 }

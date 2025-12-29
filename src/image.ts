@@ -229,17 +229,33 @@ export async function resizeImage(img: HTMLImageElement, size: number): Promise<
   });
 }
 
+/**
+ * Finds image elements within the DOM using visual stacking order or DOM traversal.
+ * Supports various image types including img tags, background images, SVG, canvas, and pseudo-elements.
+ */
 export class ImageFinder {
   private mouseX: number;
   private mouseY: number;
   private target: Element;
 
+  /**
+   * Creates an ImageFinder instance
+   * @param target - The target element to search from
+   * @param mouseX - Optional X coordinate of mouse position for visual stack search
+   * @param mouseY - Optional Y coordinate of mouse position for visual stack search
+   */
   constructor(target: Element, mouseX?: number, mouseY?: number) {
     this.target = target;
     this.mouseX = mouseX ?? 0;
     this.mouseY = mouseY ?? 0;
   }
 
+  /**
+   * Finds an image element using the most appropriate strategy.
+   * Prefers visual stack search when mouse coordinates are available,
+   * falls back to DOM traversal otherwise.
+   * @returns The found image element, or null if none found
+   */
   find(): Element | null {
     if (this.mouseX && this.mouseY) {
       const found = this.findByVisualStack();
@@ -250,8 +266,10 @@ export class ImageFinder {
   }
 
   /**
-   * Use the browser's visual stacking order
-   * This handles z-index, transforms, positioning automatically
+   * Uses the browser's visual stacking order to find images at mouse coordinates.
+   * This method handles z-index, transforms, and positioning automatically.
+   * Checks for img elements, background images, and pseudo-element images in order.
+   * @returns The topmost visible image element at the mouse position, or null if none found
    */
   private findByVisualStack(): Element | null {
     const stack = document.elementsFromPoint(this.mouseX, this.mouseY);
@@ -270,7 +288,9 @@ export class ImageFinder {
   }
 
   /**
-   * DOM traversal when coordinates unavailable
+   * Traverses the DOM to find image elements when mouse coordinates are unavailable.
+   * Searches in order: target element, descendants, ancestors (up to 5 levels), and siblings.
+   * @returns The found image element, or null if none found within search depth
    */
   private findByDOMTraversal(): Element | null {
     const targetIsImage = this.isImageElement(this.target);
@@ -302,7 +322,10 @@ export class ImageFinder {
   }
 
   /**
-   * Find first image descendant using efficient selectors
+   * Finds the first visible image descendant within a container element.
+   * Uses efficient selectors to check direct images first, then background images.
+   * @param container - The container element to search within
+   * @returns The first visible image descendant, or null if none found
    */
   private findImageDescendant(container: Element): Element | null {
     const directImages = all(CONFIG.imageSelectors.join(','), container);
@@ -318,6 +341,12 @@ export class ImageFinder {
     return background || null;
   }
 
+  /**
+   * Checks if an element is recognized as an image element.
+   * Includes standard image tags and elements with image-related attributes.
+   * @param el - The element to check
+   * @returns True if the element is an image element, false otherwise
+   */
   private isImageElement(el: Element): boolean {
     const tagName = el.tagName.toLowerCase();
     if (['img', 'svg', 'canvas', 'picture', 'video'].includes(tagName)) {
@@ -329,6 +358,12 @@ export class ImageFinder {
     );
   }
 
+  /**
+   * Checks if an element has a CSS background-image with a URL.
+   * Excludes gradients and empty values.
+   * @param el - The element to check
+   * @returns True if the element has a background image URL, false otherwise
+   */
   private hasBackgroundImage(el: Element): boolean {
     const style = getComputedStyle(el);
     const bg = style.backgroundImage;
@@ -337,6 +372,12 @@ export class ImageFinder {
     return bg.includes('url(');
   }
 
+  /**
+   * Checks if an element has a visible background image on its pseudo-elements (::before or ::after).
+   * Validates that the pseudo-element has non-zero dimensions.
+   * @param el - The element to check for pseudo-element images
+   * @returns True if any pseudo-element has a visible background image, false otherwise
+   */
   private hasPseudoElementImage(el: Element): boolean {
     const pseudos = ['::before', '::after'] as const;
 
@@ -355,6 +396,12 @@ export class ImageFinder {
     });
   }
 
+  /**
+   * Checks if an element is visible in the viewport.
+   * Considers display, visibility, opacity, and element dimensions.
+   * @param el - The element to check for visibility
+   * @returns True if the element is visible, false otherwise
+   */
   private isVisible(el: Element): boolean {
     const style = getComputedStyle(el);
     const rect = el.getBoundingClientRect();

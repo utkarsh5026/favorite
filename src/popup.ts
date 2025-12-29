@@ -333,7 +333,7 @@ function setupSliders(settings: UserSettings): void {
     if (!el) return;
 
     el.value = String(settings[setting]);
-    updateSliderValue(elName, settings.hoverDelay, suffix);
+    updateSliderValue(elName, Number(settings[setting]), suffix);
 
     el.addEventListener('input', async () => {
       const value = Number(el.value);

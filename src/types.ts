@@ -52,6 +52,8 @@ export interface ExtensionState {
   isInitialized: boolean;
   /** Currently hovered element (for leave detection) */
   currentHoveredElement: Element | null;
+  /** ID for the current favicon loading request to prevent race conditions */
+  currentLoadingId: number;
 }
 
 /**

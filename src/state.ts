@@ -38,6 +38,7 @@ export const state: ExtensionState = {
   currentRestoreTimeout: null,
   isInitialized: false,
   currentHoveredElement: null,
+  currentLoadingId: 0,
 };
 
 /**

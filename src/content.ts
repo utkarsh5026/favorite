@@ -1,163 +1,146 @@
-import { CONFIG, state, loadSettings, listenForSettingsChanges, isSiteDisabled } from './state';
-import { changeFavicon, saveOriginalFavicon, restoreOriginalFavicon } from './favicon';
-import { findImageElement, getImageUrl } from './image';
-import type { LockedImage } from './types';
+import {
+  CONFIG,
+  state,
+  loadSettings,
+  listenForSettingsChanges,
+  isSiteDisabled,
+  clearHoverTimeout,
+  clearRestoreTimeout,
+} from './state';
+import {
+  changeFavicon,
+  saveOriginalFavicon,
+  restoreOriginalFavicon,
+  CustomFaviconManager,
+} from './favicon';
+import { ImageFinder, getImageUrl } from './image';
+import type { CustomFavicons } from './types';
+import { ImageLocker } from './lock';
 
 let isCurrentSiteDisabled = false;
-let currentHoveredImageUrl: string | null = null;
-let isLocked = false;
+let customFaviconUrl: string | null = null;
+
+const imageLocker = new ImageLocker(state);
 
 /**
  * Handles mouseover events to change favicon on hover
  */
 function handleImageHover(event: MouseEvent): void {
-  if (isCurrentSiteDisabled || isLocked) return;
+  if (isCurrentSiteDisabled || imageLocker.isImageLocked) return;
 
-  clearHoverTimeout();
-  clearRestoreTimeout();
+  clearHoverTimeout(state);
+  clearRestoreTimeout(state);
 
   const target = event.target as Element;
-  const imageElement = findImageElement(target);
+  const mouseX = event.clientX;
+  const mouseY = event.clientY;
 
-  if (!imageElement) return;
+  state.currentHoverTimeout = window.setTimeout(() => {
+    const imageElement = new ImageFinder(target, mouseX, mouseY).find();
 
-  if (!meetsMinimumSize(imageElement)) return;
-
-  const imageResult = getImageUrl(imageElement);
-
-  if (imageResult && imageResult.url) {
-    state.currentHoveredElement = imageElement;
-    currentHoveredImageUrl = imageResult.url;
-
-    state.currentHoverTimeout = window.setTimeout(() => {
-      changeFavicon(imageResult.url);
+    if (!imageElement) {
       state.currentHoverTimeout = null;
-    }, CONFIG.hoverDelay);
-  }
+      return;
+    }
+
+    if (!meetsMinimumSize(imageElement)) {
+      state.currentHoverTimeout = null;
+      return;
+    }
+
+    const imageResult = getImageUrl(imageElement);
+
+    if (imageResult && imageResult.url) {
+      state.currentHoveredElement = imageElement;
+      imageLocker.setCurrentHoveredImageUrl(imageResult.url);
+      changeFavicon(imageResult.url);
+    }
+
+    state.currentHoverTimeout = null;
+  }, CONFIG.hoverDelay);
 }
 
 /**
  * Handles mouseout events to restore original favicon
  */
-function handleImageLeave(event: MouseEvent): void {
-  if (isLocked) return;
+function handleImageLeave(_event: MouseEvent): void {
+  if (imageLocker.isImageLocked) return;
 
-  const target = event.target as Element;
-  const imageElement = findImageElement(target);
-
-  if (!imageElement) return;
-
-  const relatedTarget = event.relatedTarget as Node | null;
-  if (relatedTarget && imageElement.contains(relatedTarget)) {
-    return;
-  }
-
-  if (state.currentHoveredElement && state.currentHoveredElement !== imageElement) {
-    return;
-  }
-
-  clearHoverTimeout();
+  clearHoverTimeout(state);
   state.currentHoveredElement = null;
-  currentHoveredImageUrl = null;
+  imageLocker.setCurrentHoveredImageUrl(null);
 
   state.currentRestoreTimeout = window.setTimeout(() => {
-    restoreOriginalFavicon();
+    CustomFaviconManager.restoreToDefaultFavicon(customFaviconUrl);
     state.currentRestoreTimeout = null;
   }, CONFIG.restoreDelay);
-}
-
-/**
- * Locks the current hovered image
- */
-async function lockCurrentImage(): Promise<void> {
-  if (!currentHoveredImageUrl) return;
-
-  isLocked = true;
-  clearRestoreTimeout();
-
-  const lockedImage: LockedImage = {
-    url: currentHoveredImageUrl,
-    hostname: window.location.hostname,
-    timestamp: Date.now()
-  };
-
-  await chrome.storage.local.set({ lockedImage });
-  showLockNotification(true);
-}
-
-/**
- * Unlocks the current image
- */
-async function unlockImage(): Promise<void> {
-  isLocked = false;
-  currentHoveredImageUrl = null;
-
-  await chrome.storage.local.remove('lockedImage');
-  restoreOriginalFavicon();
-  showLockNotification(false);
-}
-
-/**
- * Shows a brief notification when locking/unlocking
- */
-function showLockNotification(locked: boolean): void {
-  const existingNotification = document.getElementById('favicon-lock-notification');
-  if (existingNotification) {
-    existingNotification.remove();
-  }
-
-  const notification = document.createElement('div');
-  notification.id = 'favicon-lock-notification';
-  notification.textContent = locked ? '🔒 Image locked - Open popup to download' : '🔓 Image unlocked';
-  notification.style.cssText = `
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    background: ${locked ? '#fff' : '#333'};
-    color: ${locked ? '#000' : '#fff'};
-    padding: 12px 20px;
-    border-radius: 8px;
-    font-family: 'Cascadia Code', 'Consolas', monospace;
-    font-size: 14px;
-    z-index: 999999;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-    transition: opacity 0.3s ease;
-  `;
-
-  document.body.appendChild(notification);
-
-  setTimeout(() => {
-    notification.style.opacity = '0';
-    setTimeout(() => notification.remove(), 300);
-  }, 2000);
 }
 
 /**
  * Handles keyboard events for lock/unlock
  */
 function handleKeyDown(event: KeyboardEvent): void {
-  // Press 'L' to lock, 'U' to unlock
-  if (event.key.toLowerCase() === 'l' && !isLocked && currentHoveredImageUrl) {
+  const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+  const modifierKey = isMac ? event.metaKey : event.ctrlKey;
+
+  if (modifierKey && event.altKey && event.code === 'KeyT') {
     event.preventDefault();
-    lockCurrentImage();
-  } else if (event.key.toLowerCase() === 'u' && isLocked) {
+    if (imageLocker.isImageLocked) return imageLocker.showLockNotification(true, 'Already locked');
+    if (!imageLocker.hoveredImageUrl)
+      return imageLocker.showLockNotification(false, 'Hover over an image first');
+
+    imageLocker.lockCurrentImage();
+    return;
+  }
+
+  if (modifierKey && event.altKey && event.code === 'KeyU') {
     event.preventDefault();
-    unlockImage();
+    if (!imageLocker.isImageLocked) {
+      return imageLocker.showLockNotification(false, 'No locked image');
+    }
+    imageLocker.unlockImage(customFaviconUrl);
   }
 }
 
 /**
- * Checks for existing locked image on init
+ * Checks for custom favicon and applies it
  */
-async function checkLockedImage(): Promise<void> {
-  const result = await chrome.storage.local.get('lockedImage');
-  const lockedImage = result.lockedImage as LockedImage | undefined;
+async function checkCustomFavicon(): Promise<void> {
+  const hostname = window.location.hostname;
+  const customFavicon = await CustomFaviconManager.getCustomFavicon(hostname);
 
-  if (lockedImage && lockedImage.hostname === window.location.hostname) {
-    isLocked = true;
-    currentHoveredImageUrl = lockedImage.url;
-    changeFavicon(lockedImage.url);
-  }
+  if (!customFavicon) return;
+
+  customFaviconUrl = customFavicon.url;
+  setTimeout(() => {
+    if (customFaviconUrl && !imageLocker.isImageLocked) {
+      changeFavicon(customFaviconUrl);
+    }
+  }, 100);
+}
+
+/**
+ * Listens for custom favicon changes from popup
+ */
+function listenForCustomFaviconChanges(): void {
+  chrome.storage.onChanged.addListener((changes, areaName) => {
+    if (areaName === 'local' && changes.customFavicons) {
+      const hostname = window.location.hostname;
+      const newCustomFavicons = (changes.customFavicons.newValue || {}) as CustomFavicons;
+
+      if (newCustomFavicons[hostname]) {
+        customFaviconUrl = newCustomFavicons[hostname].url;
+        if (!imageLocker.isImageLocked) {
+          changeFavicon(customFaviconUrl);
+        }
+      } else {
+        customFaviconUrl = null;
+        if (!imageLocker.isImageLocked) {
+          restoreOriginalFavicon();
+        }
+      }
+    }
+  });
 }
 
 /**
@@ -167,10 +150,7 @@ function listenForUnlockMessage(): void {
   chrome.storage.onChanged.addListener((changes, areaName) => {
     if (areaName === 'local' && changes.lockedImage) {
       if (!changes.lockedImage.newValue) {
-        // Image was unlocked from popup
-        isLocked = false;
-        currentHoveredImageUrl = null;
-        restoreOriginalFavicon();
+        imageLocker.handleUnlockFromStorage(customFaviconUrl);
       }
     }
   });
@@ -185,22 +165,12 @@ function meetsMinimumSize(element: Element): boolean {
 }
 
 /**
- * Clears any pending hover timeout
+ * Refreshes the current favicon with the updated shape/size
  */
-function clearHoverTimeout(): void {
-  if (state.currentHoverTimeout !== null) {
-    clearTimeout(state.currentHoverTimeout);
-    state.currentHoverTimeout = null;
-  }
-}
-
-/**
- * Clears any pending restore timeout
- */
-function clearRestoreTimeout(): void {
-  if (state.currentRestoreTimeout !== null) {
-    clearTimeout(state.currentRestoreTimeout);
-    state.currentRestoreTimeout = null;
+function refreshCurrentFavicon(): void {
+  imageLocker.refreshFavicon();
+  if (customFaviconUrl && !imageLocker.isImageLocked) {
+    changeFavicon(customFaviconUrl);
   }
 }
 
@@ -214,9 +184,7 @@ async function init(): Promise<void> {
   }
 
   await loadSettings();
-  listenForSettingsChanges();
 
-  // Check if current site is disabled
   const hostname = window.location.hostname;
   isCurrentSiteDisabled = await isSiteDisabled(hostname);
 
@@ -231,8 +199,10 @@ async function init(): Promise<void> {
 
   saveOriginalFavicon();
 
-  // Check for existing locked image
-  await checkLockedImage();
+  await checkCustomFavicon();
+  await imageLocker.checkAndInitialize();
+
+  listenForSettingsChanges(refreshCurrentFavicon);
 
   document.addEventListener('mouseover', handleImageHover);
   document.addEventListener('mouseout', handleImageLeave);
@@ -240,6 +210,7 @@ async function init(): Promise<void> {
 
   listenForSiteEnableChange(hostname);
   listenForUnlockMessage();
+  listenForCustomFaviconChanges();
 
   state.isInitialized = true;
 }
@@ -258,16 +229,13 @@ function listenForSiteEnableChange(hostname: string): void {
     isCurrentSiteDisabled = newDisabledSites.includes(hostname);
 
     if (wasDisabled && !isCurrentSiteDisabled) {
-      // Site was re-enabled
-      console.log('Image Favicon Preview: Re-enabled for', hostname);
       saveOriginalFavicon();
       document.addEventListener('mouseover', handleImageHover);
       document.addEventListener('mouseout', handleImageLeave);
     } else if (!wasDisabled && isCurrentSiteDisabled) {
-      // Site was disabled
       console.log('Image Favicon Preview: Disabled for', hostname);
       cleanup();
-      state.isInitialized = true; // Keep initialized to prevent re-init
+      state.isInitialized = true;
     }
   });
 }
@@ -278,8 +246,8 @@ function listenForSiteEnableChange(hostname: string): void {
 function cleanup(): void {
   console.log('Image Favicon Preview: Cleaning up');
 
-  clearHoverTimeout();
-  clearRestoreTimeout();
+  clearHoverTimeout(state);
+  clearRestoreTimeout(state);
 
   document.removeEventListener('mouseover', handleImageHover);
   document.removeEventListener('mouseout', handleImageLeave);
@@ -292,7 +260,7 @@ function cleanup(): void {
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', init);
 } else {
-  init();
+  init().then(() => console.log('Image Favicon Preview: Init complete'));
 }
 
 window.addEventListener('beforeunload', cleanup);

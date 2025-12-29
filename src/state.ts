@@ -112,3 +112,23 @@ export async function isSiteDisabled(hostname: string): Promise<boolean> {
     });
   });
 }
+
+/**
+ * Clears any pending restore timeout
+ */
+export function clearRestoreTimeout(state: ExtensionState): void {
+  if (state.currentRestoreTimeout !== null) {
+    clearTimeout(state.currentRestoreTimeout);
+    state.currentRestoreTimeout = null;
+  }
+}
+
+/**
+ * Clears any pending hover timeout
+ */
+export function clearHoverTimeout(state: ExtensionState): void {
+  if (state.currentHoverTimeout !== null) {
+    clearTimeout(state.currentHoverTimeout);
+    state.currentHoverTimeout = null;
+  }
+}

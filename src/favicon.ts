@@ -1,7 +1,9 @@
 import { CONFIG, state } from './state';
-import type { FaviconShape, CustomFavicon, CustomFavicons } from './types';
+import type { CustomFavicons } from './types';
 import JSZip from 'jszip';
 import { resizeImage } from './image';
+import { byID, downloadZip, all } from './utils';
+import { maskWithShape } from './shape';
 
 const CUSTOM_FAVICONS_KEY = 'customFavicons';
 const CUSTOM_FAVICON_SECTION_ID = 'customFaviconSection';
@@ -19,7 +21,7 @@ export function changeFavicon(imageUrl: string, applyMask: boolean = true): void
 }
 
 /**
- * Determines the MIME type of an image based on its URL
+ * Determines the MIME type of image based on its URL
  */
 function getImageMimeType(imageUrl: string): string {
   if (imageUrl.startsWith('data:image/svg')) {
@@ -52,7 +54,7 @@ function getImageMimeType(imageUrl: string): string {
  * Sets the favicon directly without any processing
  */
 const setFaviconDirectly = (imageUrl: string) => {
-  const existingIcons = document.querySelectorAll<HTMLLinkElement>('link[rel*="icon"]');
+  const existingIcons = all<HTMLLinkElement>('link[rel*="icon"]');
   existingIcons.forEach((icon: HTMLLinkElement) => icon.remove());
 
   const fav = document.createElement('link');
@@ -71,26 +73,17 @@ const applyShapeMaskAndSetFavicon = (imageUrl: string) => {
 
   img.onload = () => {
     try {
-      const canvas = document.createElement('canvas');
-      const size = CONFIG.faviconSize;
-      canvas.width = size;
-      canvas.height = size;
-
-      const ctx = canvas.getContext('2d');
-      if (!ctx) {
-        setFaviconDirectly(imageUrl);
-        return;
-      }
-
-      ctx.beginPath();
-      applyShapePath(ctx, size, CONFIG.faviconShape);
-      ctx.closePath();
-      ctx.clip();
-
-      ctx.drawImage(img, 0, 0, size, size);
-
-      const maskedDataUrl = canvas.toDataURL('image/png');
-      setFaviconDirectly(maskedDataUrl);
+      maskWithShape(
+        CONFIG.faviconSize,
+        CONFIG.faviconShape,
+        img,
+        () => {
+          setFaviconDirectly(imageUrl);
+        },
+        (dataUrl: string) => {
+          setFaviconDirectly(dataUrl);
+        }
+      );
     } catch (error) {
       console.warn('Image Favicon Preview: Failed to apply shape mask, using original', error);
       setFaviconDirectly(imageUrl);
@@ -103,36 +96,6 @@ const applyShapeMaskAndSetFavicon = (imageUrl: string) => {
 
   img.src = imageUrl;
 };
-
-/**
- * Applies the appropriate shape path to the canvas context
- */
-function applyShapePath(ctx: CanvasRenderingContext2D, size: number, shape: FaviconShape): void {
-  const center = size / 2;
-  const radius = size / 2;
-
-  switch (shape) {
-    case 'circle':
-      ctx.arc(center, center, radius, 0, Math.PI * 2);
-      break;
-    case 'rounded':
-      const cornerRadius = size * 0.2;
-      ctx.moveTo(cornerRadius, 0);
-      ctx.lineTo(size - cornerRadius, 0);
-      ctx.quadraticCurveTo(size, 0, size, cornerRadius);
-      ctx.lineTo(size, size - cornerRadius);
-      ctx.quadraticCurveTo(size, size, size - cornerRadius, size);
-      ctx.lineTo(cornerRadius, size);
-      ctx.quadraticCurveTo(0, size, 0, size - cornerRadius);
-      ctx.lineTo(0, cornerRadius);
-      ctx.quadraticCurveTo(0, 0, cornerRadius, 0);
-      break;
-    case 'square':
-    default:
-      ctx.rect(0, 0, size, size);
-      break;
-  }
-}
 
 /**
  * Saves the original favicon URL for later restoration
@@ -159,19 +122,28 @@ export function restoreOriginalFavicon(): void {
   }
 }
 
+/**
+ * Gets the custom favicon for a specific hostname
+ * @param hostname - The hostname to retrieve the custom favicon for
+ * @returns The custom favicon object or null if not found
+ */
 async function getCustomFavicon(hostname: string) {
   const customFavicons = await getCustomFavicons();
   return customFavicons[hostname] || null;
 }
 
+/**
+ * Sets a custom favicon for a specific hostname
+ * @param hostname - The hostname to set the custom favicon for
+ * @param faviconURL - The URL of the custom favicon
+ * @param onSuccess - Callback function to execute on successful save
+ */
 export async function setCustomFavicon(
   hostname: string,
   faviconURL: string,
   onSuccess: () => void
 ) {
-  if (!hostname || !faviconURL) return;
-
-  const customFavicon: CustomFavicon = {
+  const customFavicon = {
     url: faviconURL,
     timestamp: Date.now(),
   };
@@ -185,15 +157,23 @@ export async function setCustomFavicon(
   await loadCustomFaviconSection(hostname);
 }
 
+/**
+ * Retrieves all custom favicons from chrome storage
+ * @returns Object containing all custom favicons keyed by hostname
+ */
 async function getCustomFavicons() {
   const result = await chrome.storage.local.get(CUSTOM_FAVICONS_KEY);
   return (result.customFavicons || {}) as CustomFavicons;
 }
 
+/**
+ * Loads and displays the custom favicon section in the UI
+ * @param hostname - The hostname to load the custom favicon section for
+ */
 export async function loadCustomFaviconSection(hostname: string): Promise<void> {
-  const customSection = document.getElementById(CUSTOM_FAVICON_SECTION_ID);
-  const customImage = document.getElementById('customFaviconImage') as HTMLImageElement;
-  const customHint = document.getElementById('customFaviconHint');
+  const customSection = byID(CUSTOM_FAVICON_SECTION_ID);
+  const customImage = byID<HTMLImageElement>('customFaviconImage');
+  const customHint = byID('customFaviconHint');
 
   if (!customSection || !customImage) return;
 
@@ -212,6 +192,11 @@ export async function loadCustomFaviconSection(hostname: string): Promise<void> 
   }
 }
 
+/**
+ * Removes a custom favicon for a specific hostname
+ * @param hostname - The hostname to remove the custom favicon for
+ * @param onRemove - Callback function to execute after removal
+ */
 export async function removeCustomFavicon(hostname: string, onRemove: () => void): Promise<void> {
   const customFavicons = await getCustomFavicons();
   delete customFavicons[hostname];
@@ -220,12 +205,18 @@ export async function removeCustomFavicon(hostname: string, onRemove: () => void
 
   onRemove();
 
-  const customSection = document.getElementById(CUSTOM_FAVICON_SECTION_ID);
+  const customSection = byID(CUSTOM_FAVICON_SECTION_ID);
   if (customSection) {
     customSection.classList.remove('visible');
   }
 }
 
+/**
+ * Generates and downloads a ZIP file containing the favicon in multiple sizes
+ * @param img - The HTML image element containing the favicon
+ * @param faviconURL - The URL of the original favicon
+ * @param hostname - The hostname to use for the ZIP filename
+ */
 export async function saveFaviconZIP(
   img: HTMLImageElement,
   faviconURL: string,
@@ -254,13 +245,5 @@ export async function saveFaviconZIP(
   folder.file(`favicon-original.${extension}`, originalBlob);
 
   const content = await zip.generateAsync({ type: 'blob' });
-
-  const url = URL.createObjectURL(content);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `favicons-${hostname}.zip`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  downloadZip(content, hostname);
 }

@@ -8,6 +8,15 @@ export function byID<T extends HTMLElement>(id: string): T | null {
 }
 
 /**
+ * Gets all HTML elements matching a CSS selector with type safety
+ * @param selector - The CSS selector to match elements
+ * @returns An array of elements cast to the specified type
+ */
+export function all<T extends HTMLElement>(selector: string): T[] {
+  return Array.from(document.querySelectorAll(selector)) as T[];
+}
+
+/**
  * Downloads an image from a URL and returns it as an HTMLImageElement
  * @param url - The URL of the image to download
  * @returns Promise that resolves to the loaded image element

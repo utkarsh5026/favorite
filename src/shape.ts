@@ -3,6 +3,9 @@ import { byID, downloadImage } from './utils';
 
 /**
  * Applies the appropriate shape path to the canvas context
+ * @param ctx - The canvas rendering context to draw the path on
+ * @param size - The size of the shape in pixels
+ * @param shape - The type of shape to apply (circle, rounded, or square)
  */
 export function applyShapePath(
   ctx: CanvasRenderingContext2D,
@@ -43,6 +46,8 @@ export function applyShapePath(
 
 /**
  * Applies a shape to the current favicon preview image
+ * @param shape - The shape to apply to the favicon (circle, rounded, or square)
+ * @param faviconURL - The URL of the favicon image to apply the shape to
  */
 export async function applyShapeToPreview(shape: FaviconShape, faviconURL: string): Promise<void> {
   if (!faviconURL) return;
@@ -70,6 +75,14 @@ export async function applyShapeToPreview(shape: FaviconShape, faviconURL: strin
   );
 }
 
+/**
+ * Masks an image with a specified shape by clipping it on a canvas
+ * @param canvasSize - The size of the canvas in pixels
+ * @param shape - The shape to use for masking (circle, rounded, or square)
+ * @param img - The image element to mask
+ * @param onFail - Callback function to execute if masking fails
+ * @param onSuccess - Callback function to execute with the masked image data URL on success
+ */
 export function maskWithShape(
   canvasSize: number,
   shape: FaviconShape,

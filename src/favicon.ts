@@ -25,41 +25,12 @@ export function changeFavicon(imageUrl: string, applyMask: boolean = true): void
     l.stopLoadingAnimation();
   }
 
-  if (applyMask && CONFIG.faviconShape !== 'square') {
-    applyShapeMaskAndSetFavicon(imageUrl, loadingId);
-    return;
-  }
-
   if (applyMask) {
-    preloadAndSetFavicon(imageUrl, loadingId);
+    applyShapeMaskAndSetFavicon(imageUrl, loadingId);
   } else {
     setFaviconDirectly(imageUrl);
   }
 }
-
-/**
- * Preloads an image and sets it as favicon once loaded
- */
-const preloadAndSetFavicon = (imageUrl: string, loadingId: number): void => {
-  const img = new Image();
-  img.crossOrigin = 'anonymous';
-
-  img.onload = () => {
-    if (state.currentLoadingId === loadingId) {
-      Loader.getInstance().stopLoadingAnimation();
-      setFaviconDirectly(imageUrl);
-    }
-  };
-
-  img.onerror = () => {
-    if (state.currentLoadingId === loadingId) {
-      Loader.getInstance().stopLoadingAnimation();
-      setFaviconDirectly(imageUrl);
-    }
-  };
-
-  img.src = imageUrl;
-};
 
 /**
  * Determines the MIME type of image based on its URL

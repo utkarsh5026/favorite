@@ -6,6 +6,7 @@ export const DEFAULT_SETTINGS: UserSettings = {
   restoreDelay: 200,
   faviconSize: 32,
   disabledSites: [],
+  extensionEnabled: true,
 };
 
 export const CONFIG: ExtensionConfig = {
@@ -109,6 +110,22 @@ export async function isSiteDisabled(hostname: string): Promise<boolean> {
     chrome.storage.sync.get({ disabledSites: [] }, (result) => {
       const disabledSites = result.disabledSites as string[];
       resolve(disabledSites.includes(hostname));
+    });
+  });
+}
+
+/**
+ * Checks if the extension is globally enabled
+ */
+export async function isExtensionEnabled(): Promise<boolean> {
+  return new Promise((resolve) => {
+    if (typeof chrome === 'undefined' || !chrome.storage) {
+      resolve(true);
+      return;
+    }
+
+    chrome.storage.sync.get({ extensionEnabled: true }, (result) => {
+      resolve(result.extensionEnabled as boolean);
     });
   });
 }

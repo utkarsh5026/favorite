@@ -36,6 +36,8 @@ export interface UserSettings {
   faviconSize: number;
   /** List of hostnames where the extension is disabled */
   disabledSites: string[];
+  /** Whether the extension is globally enabled */
+  extensionEnabled: boolean;
 }
 
 /**

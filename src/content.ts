@@ -4,6 +4,7 @@ import {
   loadSettings,
   listenForSettingsChanges,
   isSiteDisabled,
+  isExtensionEnabled,
   clearHoverTimeout,
   clearRestoreTimeout,
 } from './state';
@@ -18,6 +19,7 @@ import type { CustomFavicons } from './types';
 import { ImageLocker } from './lock';
 
 let isCurrentSiteDisabled = false;
+let isGloballyDisabled = false;
 let customFaviconUrl: string | null = null;
 
 const imageLocker = new ImageLocker(state);
@@ -26,7 +28,7 @@ const imageLocker = new ImageLocker(state);
  * Handles mouseover events to change favicon on hover
  */
 function handleImageHover(event: MouseEvent): void {
-  if (isCurrentSiteDisabled || imageLocker.isImageLocked) return;
+  if (isGloballyDisabled || isCurrentSiteDisabled || imageLocker.isImageLocked) return;
 
   clearHoverTimeout(state);
   clearRestoreTimeout(state);
@@ -186,12 +188,25 @@ async function init(): Promise<void> {
   await loadSettings();
 
   const hostname = window.location.hostname;
+
+  // Check if extension is globally disabled
+  const extensionEnabled = await isExtensionEnabled();
+  isGloballyDisabled = !extensionEnabled;
+
+  if (isGloballyDisabled) {
+    console.log('Image Favicon Preview: Extension is globally disabled');
+    state.isInitialized = true;
+    listenForGlobalEnableChange();
+    return;
+  }
+
   isCurrentSiteDisabled = await isSiteDisabled(hostname);
 
   if (isCurrentSiteDisabled) {
     console.log('Image Favicon Preview: Disabled for', hostname);
     state.isInitialized = true;
     listenForSiteEnableChange(hostname);
+    listenForGlobalEnableChange();
     return;
   }
 
@@ -209,6 +224,7 @@ async function init(): Promise<void> {
   document.addEventListener('keydown', handleKeyDown);
 
   listenForSiteEnableChange(hostname);
+  listenForGlobalEnableChange();
   listenForUnlockMessage();
   listenForCustomFaviconChanges();
 
@@ -228,12 +244,39 @@ function listenForSiteEnableChange(hostname: string): void {
     const wasDisabled = isCurrentSiteDisabled;
     isCurrentSiteDisabled = newDisabledSites.includes(hostname);
 
-    if (wasDisabled && !isCurrentSiteDisabled) {
+    if (wasDisabled && !isCurrentSiteDisabled && !isGloballyDisabled) {
       saveOriginalFavicon();
       document.addEventListener('mouseover', handleImageHover);
       document.addEventListener('mouseout', handleImageLeave);
     } else if (!wasDisabled && isCurrentSiteDisabled) {
       console.log('Image Favicon Preview: Disabled for', hostname);
+      cleanup();
+      state.isInitialized = true;
+    }
+  });
+}
+
+/**
+ * Listens for changes to the global extension enable state
+ */
+function listenForGlobalEnableChange(): void {
+  if (typeof chrome === 'undefined' || !chrome.storage) return;
+
+  chrome.storage.onChanged.addListener((changes, areaName) => {
+    if (areaName !== 'sync' || !('extensionEnabled' in changes)) return;
+
+    const wasGloballyDisabled = isGloballyDisabled;
+    isGloballyDisabled = !changes.extensionEnabled.newValue;
+
+    if (wasGloballyDisabled && !isGloballyDisabled) {
+      if (!isCurrentSiteDisabled) {
+        saveOriginalFavicon();
+        checkCustomFavicon();
+        document.addEventListener('mouseover', handleImageHover);
+        document.addEventListener('mouseout', handleImageLeave);
+        document.addEventListener('keydown', handleKeyDown);
+      }
+    } else if (!wasGloballyDisabled && isGloballyDisabled) {
       cleanup();
       state.isInitialized = true;
     }

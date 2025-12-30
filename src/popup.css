@@ -24,6 +24,90 @@ h1 {
   letter-spacing: -0.3px;
 }
 
+/* Global Extension Toggle */
+.global-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+}
+
+.global-toggle.disabled {
+  background: rgba(255, 60, 60, 0.05);
+  border-color: rgba(255, 100, 100, 0.15);
+}
+
+.global-toggle-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.global-toggle-label {
+  font-size: 10px;
+  color: #73737a;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  font-weight: 500;
+}
+
+.global-toggle-status {
+  font-size: 13px;
+  color: #78dc96;
+  font-weight: 500;
+  transition: color 0.3s ease;
+}
+
+.global-toggle.disabled .global-toggle-status {
+  color: #ff8888;
+}
+
+.power-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  background: rgba(120, 220, 150, 0.15);
+  border: 1px solid rgba(120, 220, 150, 0.3);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.power-btn:hover {
+  background: rgba(120, 220, 150, 0.25);
+  transform: scale(1.05);
+  box-shadow: 0 0 15px rgba(120, 220, 150, 0.3);
+}
+
+.power-btn.off {
+  background: rgba(255, 100, 100, 0.15);
+  border-color: rgba(255, 100, 100, 0.3);
+}
+
+.power-btn.off:hover {
+  background: rgba(255, 100, 100, 0.25);
+  box-shadow: 0 0 15px rgba(255, 100, 100, 0.3);
+}
+
+.power-icon {
+  width: 22px;
+  height: 22px;
+  stroke: #78dc96;
+  transition: stroke 0.3s ease;
+}
+
+.power-btn.off .power-icon {
+  stroke: #ff8888;
+}
+
 .shortcut-hint {
   background: rgba(255, 255, 255, 0.02);
   border: 1px solid rgba(255, 255, 255, 0.06);

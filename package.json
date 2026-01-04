@@ -17,7 +17,7 @@
     "test:coverage": "vitest run --coverage"
   },
   "devDependencies": {
-    "@types/chrome": "^0.0.254",
+    "@types/chrome": "^0.1.32",
     "@vitest/coverage-v8": "^4.0.16",
     "esbuild": "^0.27.2",
     "happy-dom": "^20.0.11",

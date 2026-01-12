@@ -1,0 +1,387 @@
+@import 'tailwindcss';
+
+/* Load bundled Cascadia Code font */
+@font-face {
+  font-family: 'Cascadia Code';
+  src: url('./fonts/CascadiaCode.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Tailwind 4 CSS-based theme configuration */
+@theme {
+  /* Set default font to mono instead of sans */
+  --default-font-family: var(--font-mono);
+
+  /* Colors */
+  --color-dark: #0d0d0f;
+  --color-dark-100: #1a1a1d;
+  --color-dark-200: #2a2a2d;
+
+  --color-text-primary: #e8e8ea;
+  --color-text-secondary: #c5c5c7;
+  --color-text-muted: #8a8a8d;
+  --color-text-subtle: #73737a;
+  --color-text-dark: #1a1a1d;
+
+  --color-accent-green: #78dc96;
+  --color-accent-red: #ff8888;
+  --color-accent-red-light: #ff6b6b;
+
+  --color-surface-light: #f0f0f2;
+  --color-surface-light-hover: #e0e0e5;
+  --color-surface-dark: rgba(0, 0, 0, 0.3);
+
+  --color-border-subtle: rgba(255, 255, 255, 0.06);
+  --color-border-light: rgba(255, 255, 255, 0.08);
+  --color-border-medium: rgba(255, 255, 255, 0.12);
+  --color-border-strong: rgba(255, 255, 255, 0.15);
+
+  /* Fonts */
+  --font-mono: CascadiaCode, 'Cascadia Code', CascadiaMono, 'Cascadia Mono', 'Fira Code', 'JetBrains Mono', Consolas, Monaco, 'Courier New', monospace;
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+  /* Font sizes */
+  --text-2xs: 8px;
+  --text-2xs--line-height: 1;
+  --text-xs: 10px;
+  --text-xs--line-height: 1.4;
+  --text-sm: 11px;
+  --text-sm--line-height: 1.4;
+  --text-base: 12px;
+  --text-base--line-height: 1.4;
+  --text-md: 13px;
+  --text-md--line-height: 1.4;
+  --text-lg: 15px;
+  --text-lg--line-height: 1.4;
+
+  /* Spacing */
+  --spacing-4_5: 18px;
+  --spacing-13: 52px;
+  --spacing-15: 60px;
+
+  /* Shadows */
+  --shadow-kbd: 0 1px 3px rgba(0, 0, 0, 0.15);
+  --shadow-btn: 0 2px 6px rgba(0, 0, 0, 0.2);
+  --shadow-btn-hover: 0 4px 8px rgba(0, 0, 0, 0.3);
+  --shadow-inset: inset 0 1px 3px rgba(0, 0, 0, 0.3);
+
+  /* Backdrop blur */
+  --backdrop-blur-xs: 10px;
+
+  /* Timing functions */
+  --ease-bounce: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Border radius */
+  --radius-sm: 5px;
+  --radius-md: 7px;
+  --radius-lg: 10px;
+  --radius-xl: 12px;
+}
+
+/* Custom animations and webkit-specific styles */
+
+/* Range input custom styling */
+input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 17px;
+  height: 17px;
+  background: linear-gradient(135deg, #f0f0f2 0%, #e0e0e5 100%);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+
+input[type='range']::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.35);
+}
+
+input[type='range']::-moz-range-thumb {
+  width: 17px;
+  height: 17px;
+  background: linear-gradient(135deg, #f0f0f2 0%, #e0e0e5 100%);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+
+/* Keyframe animations */
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(0.95);
+  }
+}
+
+@keyframes successPulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.03);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes buttonGlow {
+  0%,
+  100% {
+    box-shadow:
+      0 4px 12px rgba(0, 0, 0, 0.3),
+      0 0 0 0 rgba(240, 240, 242, 0.3);
+  }
+  50% {
+    box-shadow:
+      0 4px 12px rgba(0, 0, 0, 0.3),
+      0 0 12px 2px rgba(240, 240, 242, 0.15);
+  }
+}
+
+@keyframes livePulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+/* Animation utility classes */
+.animate-rotate {
+  animation: rotate 0.8s linear infinite;
+}
+
+.animate-pulse-custom {
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+.animate-success {
+  animation: successPulse 0.4s ease-out;
+}
+
+.animate-glow {
+  animation: buttonGlow 1.5s ease-in-out infinite;
+}
+
+.animate-live {
+  animation: livePulse 1.5s ease-in-out infinite;
+}
+
+/* State-based button animations */
+.download-btn.loading .download-icon {
+  animation: rotate 0.8s linear infinite;
+}
+
+.download-btn.success {
+  animation: successPulse 0.4s ease-out;
+}
+
+.set-default-btn.loading svg {
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+.set-default-btn.success {
+  animation: successPulse 0.4s ease-out;
+}
+
+/* State-based utility classes for JavaScript */
+
+/* Visibility states */
+.visible {
+  display: flex !important;
+}
+
+#livePreviewInfo.visible {
+  opacity: 1 !important;
+}
+
+#livePreviewImage.visible {
+  display: block !important;
+}
+
+#livePreviewEmpty.hidden {
+  display: none !important;
+}
+
+#faviconImage.loaded {
+  display: block !important;
+}
+
+#faviconPreview.loaded #faviconLoading,
+#faviconPreview.loaded #faviconError {
+  display: none !important;
+}
+
+#faviconPreview.error #faviconLoading {
+  display: none !important;
+}
+
+#faviconPreview.error #faviconError {
+  display: block !important;
+}
+
+#lockBadge.visible {
+  display: flex !important;
+}
+
+#unlockBtn.visible {
+  display: flex !important;
+}
+
+#customFaviconSection.visible {
+  display: block !important;
+}
+
+#historySection.visible {
+  display: block !important;
+}
+
+#historyEmpty.visible {
+  display: block !important;
+}
+
+#uploadPreview.visible {
+  display: flex !important;
+}
+
+#uploadPreview.visible ~ #uploadContent {
+  display: none !important;
+}
+
+/* Status show state */
+#status.show {
+  opacity: 1 !important;
+}
+
+/* Shape button active state */
+.shape-btn.active {
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.05);
+}
+
+/* Global toggle disabled state */
+#globalToggle.disabled {
+  background: rgba(255, 60, 60, 0.05);
+  border-color: rgba(255, 100, 100, 0.15);
+}
+
+#globalToggle.disabled #globalToggleStatus {
+  color: #ff8888;
+}
+
+/* Power button off state */
+#powerBtn.off {
+  background: rgba(255, 100, 100, 0.15);
+  border-color: rgba(255, 100, 100, 0.3);
+}
+
+#powerBtn.off:hover {
+  background: rgba(255, 100, 100, 0.25);
+  box-shadow: 0 0 15px rgba(255, 100, 100, 0.3);
+}
+
+#powerBtn.off svg {
+  stroke: #ff8888;
+}
+
+/* Toggle button disabled state */
+#toggleBtn.disabled {
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: none;
+}
+
+#toggleBtn.disabled #toggleText {
+  color: #8a8a8d;
+}
+
+/* Upload zone drag-over state */
+.upload-zone.drag-over {
+  border-color: #78dc96;
+  background: rgba(120, 220, 150, 0.05);
+}
+
+/* Button loading/success states */
+.download-btn.loading {
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.download-btn.success {
+  background: linear-gradient(135deg, #c8f4d4 0%, #b0e5c0 100%);
+}
+
+.set-default-btn.loading {
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.set-default-btn.success {
+  background: rgba(120, 220, 150, 0.15);
+  border-color: rgba(120, 220, 150, 0.4);
+}
+
+.set-default-btn.success svg {
+  stroke: #78dc96;
+}
+
+/* History item styles (dynamically created) */
+.history-item {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s ease;
+  padding: 0;
+}
+
+.history-item:hover {
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.history-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.history-badge {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  font-size: 10px;
+  line-height: 1;
+}

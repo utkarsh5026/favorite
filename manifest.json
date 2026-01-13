@@ -3,8 +3,12 @@
   "name": "Image Favicon Preview",
   "version": "2.0.0",
   "description": "Preview any image as your browser favicon when you hover over it",
-  "permissions": ["storage", "tabs"],
+  "permissions": ["storage", "tabs", "contextMenus"],
   "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
   "action": {
     "default_popup": "popup.html",
     "default_icon": {

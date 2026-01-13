@@ -1,8 +1,6 @@
 import type { ContextMenuAction, ContextMenuMessage } from './types';
 
 const MENU_ITEMS: Array<{ id: string; title: string; action: ContextMenuAction }> = [
-  { id: 'preview-favicon', title: 'Preview as Favicon', action: 'preview' },
-  { id: 'lock-favicon', title: 'Lock as Favicon', action: 'lock' },
   { id: 'set-default-favicon', title: 'Set as Site Default', action: 'setDefault' },
   { id: 'download-favicon', title: 'Download as Favicon', action: 'download' },
 ];

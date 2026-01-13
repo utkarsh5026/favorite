@@ -50,7 +50,7 @@ export type CustomFavicons = Record<string, CustomFavicon>;
 /**
  * Context menu action types
  */
-export type ContextMenuAction = 'preview' | 'lock' | 'setDefault' | 'download';
+export type ContextMenuAction = 'setDefault' | 'download';
 
 /**
  * History entry for a previewed/locked favicon
@@ -63,7 +63,7 @@ export interface HistoryEntry {
   /** Timestamp when previewed/locked */
   timestamp: number;
   /** Type of action that created this entry */
-  source: 'preview' | 'lock' | 'upload';
+  source: 'lock' | 'upload';
 }
 
 /**

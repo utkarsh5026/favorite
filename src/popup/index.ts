@@ -9,7 +9,7 @@ import { unlockImage, listenForLockedImageChanges } from './managers/lock';
 import { loadFaviconPreview } from './managers/preview';
 import { setupDownloadButton } from './managers/download';
 import { setupDefaultImageButton } from './managers/default-image';
-import { setupLivePreview } from './managers/live-preview';
+import { setupLivePreview, refreshLockedState } from './managers/live-preview';
 
 import { setupGlobalToggle } from './ui/global-toggle';
 import { setupSiteToggle } from './ui/site-toggle';
@@ -36,6 +36,7 @@ async function initializeHostnameFeatures(hostname: string): Promise<void> {
     loadFaviconPreview(hostname, (url) => {
       currentFaviconUrl = url;
     });
+    refreshLockedState();
   });
 }
 

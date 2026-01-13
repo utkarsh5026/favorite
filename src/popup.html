@@ -25,6 +25,21 @@
                   </svg>
                   <span class="text-2xs text-text-subtle text-center leading-tight">Hover<br/>image</span>
                 </div>
+                <div class="hidden flex-col items-center justify-center gap-2 w-full h-full" id="livePreviewLocked">
+                  <div class="relative">
+                    <img id="livePreviewLockedImage" alt="Locked image" class="w-10 h-10 rounded-full object-cover border-2 border-accent-green/50 shadow-[0_2px_8px_rgba(120,220,150,0.25)]" />
+                    <div class="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-gradient-to-br from-dark to-dark-100 border-2 border-accent-green/60 flex items-center justify-center shadow-lg">
+                      <svg class="w-2.5 h-2.5 stroke-accent-green" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                      </svg>
+                    </div>
+                  </div>
+                  <div class="flex flex-col items-center gap-0.5 px-1">
+                    <span class="text-xs text-accent-green text-center leading-tight font-semibold tracking-tight">Locked</span>
+                    <span class="text-2xs text-text-muted text-center leading-tight">Preview disabled</span>
+                  </div>
+                </div>
               </div>
               <span class="text-[9px] text-text-subtle uppercase tracking-wide">Preview</span>
             </div>

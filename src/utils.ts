@@ -38,22 +38,6 @@ export async function downloadImage(url: string): Promise<HTMLImageElement> {
 }
 
 /**
- * Downloads a ZIP file by creating a temporary download link
- * @param content - The blob content of the ZIP file
- * @param hostname - The hostname to use in the filename
- */
-export function downloadZip(content: Blob, hostname: string) {
-  const url = URL.createObjectURL(content);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `favicons-${hostname}.zip`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
-
-/**
  * Creates and configures a canvas element with specified dimensions
  * @param width - The width of the canvas in pixels
  * @param height - The height of the canvas in pixels

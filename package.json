@@ -1,7 +1,7 @@
 {
   "name": "favorite",
   "version": "1.0.0",
-  "description": "Preview any image as favicon on hover - works on any website",
+  "description": "Preview any image as favicon on hover - works on any website 🥳🥳",
   "scripts": {
     "build": "node build.js",
     "build:tsc": "tsc",
@@ -17,11 +17,15 @@
     "test:coverage": "vitest run --coverage"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.18",
     "@types/chrome": "^0.0.254",
     "@vitest/coverage-v8": "^4.0.16",
+    "autoprefixer": "^10.4.23",
     "esbuild": "^0.27.2",
     "happy-dom": "^20.0.11",
+    "postcss": "^8.5.6",
     "prettier": "^3.7.4",
+    "tailwindcss": "^4.1.18",
     "typescript": "^5.3.3",
     "vitest": "^4.0.16"
   },

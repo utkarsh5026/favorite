@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { ImageFinder } from '../src/image';
+import { findImage } from '../src/images';
 
 // Mock getBoundingClientRect to return visible dimensions by default
 const mockVisibleRect = () => ({
@@ -38,40 +38,35 @@ describe('ImageFinder', () => {
       img.src = 'test.png';
       document.body.appendChild(img);
 
-      const finder = new ImageFinder(img);
-      expect(finder.find()).toBe(img);
+      expect(findImage(img)).toBe(img);
     });
 
     it('returns the target when it is an svg element', () => {
       const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
       document.body.appendChild(svg);
 
-      const finder = new ImageFinder(svg);
-      expect(finder.find()).toBe(svg);
+      expect(findImage(svg)).toBe(svg);
     });
 
     it('returns the target when it is a canvas element', () => {
       const canvas = document.createElement('canvas');
       document.body.appendChild(canvas);
 
-      const finder = new ImageFinder(canvas);
-      expect(finder.find()).toBe(canvas);
+      expect(findImage(canvas)).toBe(canvas);
     });
 
     it('returns the target when it is a picture element', () => {
       const picture = document.createElement('picture');
       document.body.appendChild(picture);
 
-      const finder = new ImageFinder(picture);
-      expect(finder.find()).toBe(picture);
+      expect(findImage(picture)).toBe(picture);
     });
 
     it('returns the target when it is a video element', () => {
       const video = document.createElement('video');
       document.body.appendChild(video);
 
-      const finder = new ImageFinder(video);
-      expect(finder.find()).toBe(video);
+      expect(findImage(video)).toBe(video);
     });
 
     it('returns the target when it has role="img"', () => {
@@ -79,8 +74,7 @@ describe('ImageFinder', () => {
       div.setAttribute('role', 'img');
       document.body.appendChild(div);
 
-      const finder = new ImageFinder(div);
-      expect(finder.find()).toBe(div);
+      expect(findImage(div)).toBe(div);
     });
 
     it('finds img descendant of target', () => {
@@ -90,8 +84,7 @@ describe('ImageFinder', () => {
       div.appendChild(img);
       document.body.appendChild(div);
 
-      const finder = new ImageFinder(div);
-      expect(finder.find()).toBe(img);
+      expect(findImage(div)).toBe(img);
     });
 
     it('returns null when no image found', () => {
@@ -99,8 +92,7 @@ describe('ImageFinder', () => {
       div.textContent = 'no image here';
       document.body.appendChild(div);
 
-      const finder = new ImageFinder(div);
-      expect(finder.find()).toBeNull();
+      expect(findImage(div)).toBeNull();
     });
   });
 
@@ -112,8 +104,7 @@ describe('ImageFinder', () => {
 
       vi.spyOn(document, 'elementsFromPoint').mockReturnValue([img]);
 
-      const finder = new ImageFinder(document.body, 100, 100);
-      expect(finder.find()).toBe(img);
+      expect(findImage(document.body, 100, 100)).toBe(img);
       expect(document.elementsFromPoint).toHaveBeenCalledWith(100, 100);
     });
 
@@ -143,8 +134,7 @@ describe('ImageFinder', () => {
 
       vi.spyOn(document, 'elementsFromPoint').mockReturnValue([divWithBg, img]);
 
-      const finder = new ImageFinder(document.body, 100, 100);
-      expect(finder.find()).toBe(img);
+      expect(findImage(document.body, 100, 100)).toBe(img);
     });
 
     it('falls back to DOM traversal when visual stack finds nothing', () => {
@@ -156,8 +146,7 @@ describe('ImageFinder', () => {
 
       vi.spyOn(document, 'elementsFromPoint').mockReturnValue([]);
 
-      const finder = new ImageFinder(div, 100, 100);
-      expect(finder.find()).toBe(img);
+      expect(findImage(div, 100, 100)).toBe(img);
     });
   });
 
@@ -170,8 +159,7 @@ describe('ImageFinder', () => {
       parentImg.appendChild(child);
       document.body.appendChild(parentImg);
 
-      const finder = new ImageFinder(child);
-      expect(finder.find()).toBe(parentImg);
+      expect(findImage(child)).toBe(parentImg);
     });
 
     it('finds image in sibling of ancestor', () => {
@@ -184,8 +172,7 @@ describe('ImageFinder', () => {
       container.appendChild(targetDiv);
       document.body.appendChild(container);
 
-      const finder = new ImageFinder(targetDiv);
-      expect(finder.find()).toBe(siblingImg);
+      expect(findImage(targetDiv)).toBe(siblingImg);
     });
 
     it('respects max depth of 5 levels', () => {
@@ -204,9 +191,8 @@ describe('ImageFinder', () => {
       img.src = 'test.png';
       document.body.insertBefore(img, document.body.firstChild);
 
-      const finder = new ImageFinder(current);
       // Should not find the img because it's more than 5 levels up
-      expect(finder.find()).toBeNull();
+      expect(findImage(current)).toBeNull();
     });
   });
 
@@ -220,8 +206,7 @@ describe('ImageFinder', () => {
             : document.createElement(tag);
         document.body.appendChild(el);
 
-        const finder = new ImageFinder(el);
-        expect(finder.find()).toBe(el);
+        expect(findImage(el)).toBe(el);
       }
     );
 
@@ -229,16 +214,14 @@ describe('ImageFinder', () => {
       const customEl = document.createElement('custom-image');
       document.body.appendChild(customEl);
 
-      const finder = new ImageFinder(customEl);
-      expect(finder.find()).toBe(customEl);
+      expect(findImage(customEl)).toBe(customEl);
     });
 
     it('recognizes custom elements with "img" in tag name', () => {
       const customEl = document.createElement('my-img-element');
       document.body.appendChild(customEl);
 
-      const finder = new ImageFinder(customEl);
-      expect(finder.find()).toBe(customEl);
+      expect(findImage(customEl)).toBe(customEl);
     });
   });
 
@@ -265,8 +248,7 @@ describe('ImageFinder', () => {
         return style;
       });
 
-      const finder = new ImageFinder(child);
-      expect(finder.find()).toBe(div);
+      expect(findImage(child)).toBe(div);
     });
 
     it('ignores elements with backgroundImage: none', () => {
@@ -274,8 +256,7 @@ describe('ImageFinder', () => {
       div.textContent = 'no bg';
       document.body.appendChild(div);
 
-      const finder = new ImageFinder(div);
-      expect(finder.find()).toBeNull();
+      expect(findImage(div)).toBeNull();
     });
   });
 
@@ -307,8 +288,7 @@ describe('ImageFinder', () => {
       container.appendChild(img);
       document.body.appendChild(container);
 
-      const finder = new ImageFinder(container);
-      expect(finder.find()).toBeNull();
+      expect(findImage(container)).toBeNull();
     });
 
     it('returns false for visibility: hidden elements', () => {
@@ -332,8 +312,7 @@ describe('ImageFinder', () => {
         return style;
       });
 
-      const finder = new ImageFinder(container);
-      expect(finder.find()).toBeNull();
+      expect(findImage(container)).toBeNull();
     });
 
     it('returns false for opacity: 0 elements', () => {
@@ -357,8 +336,7 @@ describe('ImageFinder', () => {
         return style;
       });
 
-      const finder = new ImageFinder(container);
-      expect(finder.find()).toBeNull();
+      expect(findImage(container)).toBeNull();
     });
 
     it('returns false for zero-dimension elements', () => {
@@ -380,8 +358,7 @@ describe('ImageFinder', () => {
         toJSON: () => {},
       });
 
-      const finder = new ImageFinder(container);
-      expect(finder.find()).toBeNull();
+      expect(findImage(container)).toBeNull();
     });
   });
 
@@ -404,8 +381,7 @@ describe('ImageFinder', () => {
 
       vi.spyOn(document, 'elementsFromPoint').mockReturnValue([div]);
 
-      const finder = new ImageFinder(document.body, 100, 100);
-      expect(finder.find()).toBe(div);
+      expect(findImage(document.body, 100, 100)).toBe(div);
     });
 
     it('ignores pseudo-element with zero dimensions', () => {
@@ -427,8 +403,7 @@ describe('ImageFinder', () => {
 
       vi.spyOn(document, 'elementsFromPoint').mockReturnValue([div]);
 
-      const finder = new ImageFinder(document.body, 100, 100);
-      expect(finder.find()).toBeNull();
+      expect(findImage(document.body, 100, 100)).toBeNull();
     });
   });
 });

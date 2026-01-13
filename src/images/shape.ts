@@ -1,5 +1,8 @@
-import type { FaviconShape } from './types';
-import { byID, downloadImage } from './utils';
+import type { FaviconShape } from '../types';
+import { byID, setupCanvas } from '../utils';
+import { convertToDataUrl } from './canvas';
+
+const IMAGE_MIME_TYPE = 'image/png';
 
 /**
  * Applies the appropriate shape path to the canvas context
@@ -7,7 +10,7 @@ import { byID, downloadImage } from './utils';
  * @param size - The size of the shape in pixels
  * @param shape - The type of shape to apply (circle, rounded, or square)
  */
-export function applyShapePath(
+export function createShapeClipPath(
   ctx: CanvasRenderingContext2D,
   size: number,
   shape: FaviconShape
@@ -60,19 +63,18 @@ export async function applyShapeToPreview(shape: FaviconShape, faviconURL: strin
     return;
   }
 
-  const img = await downloadImage(faviconURL);
-  const size = Math.max(img.naturalWidth, img.naturalHeight, 256);
-  maskWithShape(
-    size,
-    shape,
-    img,
-    () => {
-      faviconImage.src = faviconURL;
+  const result = await convertToDataUrl(
+    faviconURL,
+    (ctx, size) => {
+      ctx.beginPath();
+      createShapeClipPath(ctx, size, shape);
+      ctx.closePath();
+      ctx.clip();
     },
-    (dataUrl: string) => {
-      faviconImage.src = dataUrl;
-    }
+    256
   );
+
+  faviconImage.src = result.url || faviconURL;
 }
 
 /**
@@ -83,16 +85,14 @@ export async function applyShapeToPreview(shape: FaviconShape, faviconURL: strin
  * @param onFail - Callback function to execute if masking fails
  * @param onSuccess - Callback function to execute with the masked image data URL on success
  */
-export function maskWithShape(
+export function clipImageToShape(
   canvasSize: number,
   shape: FaviconShape,
   img: HTMLImageElement,
   onFail: () => void,
   onSuccess: (dataUrl: string) => void
 ): void {
-  const canvas = document.createElement('canvas');
-  canvas.width = canvasSize;
-  canvas.height = canvasSize;
+  const canvas = setupCanvas(canvasSize, canvasSize);
 
   const ctx = canvas.getContext('2d');
   if (!ctx) {
@@ -101,10 +101,10 @@ export function maskWithShape(
   }
 
   ctx.beginPath();
-  applyShapePath(ctx, canvasSize, shape);
+  createShapeClipPath(ctx, canvasSize, shape);
   ctx.closePath();
   ctx.clip();
 
   ctx.drawImage(img, 0, 0, canvasSize, canvasSize);
-  onSuccess(canvas.toDataURL('image/png'));
+  onSuccess(canvas.toDataURL(IMAGE_MIME_TYPE));
 }

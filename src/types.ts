@@ -9,56 +9,6 @@ export type FaviconShape = 'circle' | 'square' | 'rounded';
 export type ImageType = 'img' | 'svg' | 'picture' | 'background' | 'canvas';
 
 /**
- * Configuration for the extension behavior
- */
-export interface ExtensionConfig {
-  /** Delay in milliseconds before changing favicon on hover */
-  hoverDelay: number;
-  /** Delay in milliseconds before restoring original favicon */
-  restoreDelay: number;
-  /** CSS selectors for image elements */
-  imageSelectors: string[];
-  /** Minimum image dimensions to consider (pixels) */
-  minImageSize: number;
-  /** Shape mask to apply to favicon */
-  faviconShape: FaviconShape;
-  /** Size of the favicon in pixels */
-  faviconSize: number;
-}
-
-/**
- * User-configurable settings stored in chrome.storage
- */
-export interface UserSettings {
-  faviconShape: FaviconShape;
-  hoverDelay: number;
-  restoreDelay: number;
-  faviconSize: number;
-  /** List of hostnames where the extension is disabled */
-  disabledSites: string[];
-  /** Whether the extension is globally enabled */
-  extensionEnabled: boolean;
-}
-
-/**
- * State management for the extension
- */
-export interface ExtensionState {
-  /** Original favicon URL to restore later */
-  originalFavicon: string | null;
-  /** Timeout ID for hover delay */
-  currentHoverTimeout: number | null;
-  /** Timeout ID for restore delay */
-  currentRestoreTimeout: number | null;
-  /** Whether the extension has been initialized */
-  isInitialized: boolean;
-  /** Currently hovered element (for leave detection) */
-  currentHoveredElement: Element | null;
-  /** ID for the current favicon loading request to prevent race conditions */
-  currentLoadingId: number;
-}
-
-/**
  * Result of image URL extraction
  */
 export interface ImageExtractionResult {
@@ -96,3 +46,68 @@ export interface CustomFavicon {
  * Map of hostnames to custom favicons
  */
 export type CustomFavicons = Record<string, CustomFavicon>;
+
+/**
+ * Context menu action types
+ */
+export type ContextMenuAction = 'preview' | 'lock' | 'setDefault' | 'download';
+
+/**
+ * History entry for a previewed/locked favicon
+ */
+export interface HistoryEntry {
+  /** Thumbnail data URL (64x64, JPEG quality 0.7) */
+  thumbnail: string;
+  /** Original image URL (for re-application) */
+  originalUrl: string;
+  /** Timestamp when previewed/locked */
+  timestamp: number;
+  /** Type of action that created this entry */
+  source: 'preview' | 'lock' | 'upload';
+}
+
+/**
+ * History for a specific site
+ */
+export interface SiteHistory {
+  /** Hostname this history belongs to */
+  hostname: string;
+  /** History entries, newest first */
+  entries: HistoryEntry[];
+}
+
+/**
+ * Map of hostnames to site histories
+ */
+export type FaviconHistory = Record<string, SiteHistory>;
+
+/**
+ * Message sent from background to content script for context menu actions
+ */
+export interface ContextMenuMessage {
+  type: 'contextMenuAction';
+  action: ContextMenuAction;
+  imageUrl: string;
+  hostname: string;
+}
+
+/**
+ * Response from content script to background
+ */
+export interface ContentScriptResponse {
+  success: boolean;
+  error?: string;
+}
+
+/**
+ * Live preview message sent from content script to popup via background
+ */
+export interface LivePreviewMessage {
+  type: 'hover-update';
+  imageUrl: string | null;
+  imageInfo?: {
+    width: number;
+    height: number;
+    imageType: string;
+  };
+}

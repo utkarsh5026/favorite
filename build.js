@@ -2,6 +2,9 @@ const fs = require('fs');
 const path = require('path');
 const esbuild = require('esbuild');
 const { execSync } = require('child_process');
+const postcss = require('postcss');
+const tailwindcss = require('@tailwindcss/postcss');
+const autoprefixer = require('autoprefixer');
 
 const DIST_DIR = path.join(__dirname, 'dist');
 const SRC_DIR = path.join(__dirname, 'src');
@@ -13,6 +16,9 @@ const ESBUILD_COMMON_OPTIONS = {
   target: 'es2020', // Target modern browsers with ES2020 features
   sourcemap: true, // Generate source maps for debugging
   minify: false, // Keep code readable for development (set to true for production)
+  alias: {
+    '@': path.join(__dirname, 'src'),
+  },
 };
 
 /**
@@ -65,13 +71,30 @@ function getBuildInfo() {
   };
 }
 
+/**
+ * Processes CSS through PostCSS with Tailwind CSS.
+ * Reads the base CSS file, processes it, and writes to dist.
+ */
+async function buildCSS() {
+  const cssPath = path.join(SRC_DIR, 'popup.base.css');
+  const css = fs.readFileSync(cssPath, 'utf8');
+  const result = await postcss([tailwindcss, autoprefixer]).process(css, {
+    from: cssPath,
+    to: path.join(DIST_DIR, 'popup.css'),
+  });
+  fs.writeFileSync(path.join(DIST_DIR, 'popup.css'), result.css);
+  if (result.map) {
+    fs.writeFileSync(path.join(DIST_DIR, 'popup.css.map'), result.map.toString());
+  }
+}
+
 async function build() {
   const startTime = Date.now();
   console.log('========================================');
   console.log('  Favorite Extension Build Process');
   console.log('========================================\n');
 
-  console.log('🔍 [1/6] Gathering build metadata...');
+  console.log('🔍 [1/8] Gathering build metadata...');
   const buildInfo = getBuildInfo();
 
   if (buildInfo.git.commitHash) {
@@ -91,7 +114,7 @@ async function build() {
   console.log(`   Node:        ${buildInfo.build.nodeVersion}`);
   console.log(`   Platform:    ${buildInfo.build.platform}`);
 
-  console.log('\n📁 [2/6] Preparing output directory...');
+  console.log('\n📁 [2/8] Preparing output directory...');
   if (!fs.existsSync(DIST_DIR)) {
     fs.mkdirSync(DIST_DIR, { recursive: true });
     console.log(`   Created: ${DIST_DIR}`);
@@ -99,29 +122,43 @@ async function build() {
     console.log(`   Using existing: ${DIST_DIR}`);
   }
 
-  console.log('\n🔨 [3/6] Bundling content script (content.ts)...');
-  console.log('   Entry: src/content.ts -> dist/content.js');
+  console.log('\n🔨 [3/8] Bundling content script (content/index.ts)...');
+  console.log('   Entry: src/content/index.ts -> dist/content.js');
   await esbuild.build({
-    entryPoints: [path.join(SRC_DIR, 'content.ts')],
+    entryPoints: [path.join(SRC_DIR, 'content', 'index.ts')],
     outfile: path.join(DIST_DIR, 'content.js'),
     ...ESBUILD_COMMON_OPTIONS,
   });
   console.log('   ✓ Content script bundled successfully');
 
-  console.log('\n🔨 [4/6] Bundling popup script (popup.ts)...');
-  console.log('   Entry: src/popup.ts -> dist/popup.js');
+  console.log('\n🔨 [4/8] Bundling popup script (popup/index.ts)...');
+  console.log('   Entry: src/popup/index.ts -> dist/popup.js');
   await esbuild.build({
-    entryPoints: [path.join(SRC_DIR, 'popup.ts')],
+    entryPoints: [path.join(SRC_DIR, 'popup', 'index.ts')],
     outfile: path.join(DIST_DIR, 'popup.js'),
     ...ESBUILD_COMMON_OPTIONS,
   });
   console.log('   ✓ Popup script bundled successfully');
 
-  console.log('\n📄 [5/6] Copying static assets...');
+  console.log('\n🔨 [5/8] Bundling background script (background.ts)...');
+  console.log('   Entry: src/background.ts -> dist/background.js');
+  await esbuild.build({
+    entryPoints: [path.join(SRC_DIR, 'background.ts')],
+    outfile: path.join(DIST_DIR, 'background.js'),
+    ...ESBUILD_COMMON_OPTIONS,
+    format: 'esm', 
+  });
+  console.log('   ✓ Background script bundled successfully');
+
+  console.log('\n🎨 [6/8] Processing CSS with Tailwind...');
+  console.log('   Entry: src/popup.base.css -> dist/popup.css');
+  await buildCSS();
+  console.log('   ✓ CSS processed successfully');
+
+  console.log('\n📄 [7/8] Copying static assets...');
 
   const staticAssets = [
     { src: path.join(SRC_DIR, 'popup.html'), dest: path.join(DIST_DIR, 'popup.html') },
-    { src: path.join(SRC_DIR, 'popup.css'), dest: path.join(DIST_DIR, 'popup.css') },
     { src: path.join(__dirname, 'manifest.json'), dest: path.join(DIST_DIR, 'manifest.json') },
   ];
 
@@ -130,7 +167,7 @@ async function build() {
     console.log(`   ✓ ${path.basename(dest)} copied`);
   });
 
-  console.log('\n🖼️  [6/6] Copying extension icons & writing build info...');
+  console.log('\n🖼️  [8/8] Copying extension icons, fonts & writing build info...');
   const distIconsDir = path.join(DIST_DIR, 'icons');
 
   if (!fs.existsSync(distIconsDir)) {
@@ -142,6 +179,20 @@ async function build() {
     fs.copyFileSync(path.join(ICONS_DIR, file), path.join(distIconsDir, file));
   });
   console.log(`   ✓ ${iconFiles.length} icon(s) copied: ${iconFiles.join(', ')}`);
+
+  // Copy fonts directory
+  const FONTS_DIR = path.join(__dirname, 'fonts');
+  const distFontsDir = path.join(DIST_DIR, 'fonts');
+  if (fs.existsSync(FONTS_DIR)) {
+    if (!fs.existsSync(distFontsDir)) {
+      fs.mkdirSync(distFontsDir, { recursive: true });
+    }
+    const fontFiles = fs.readdirSync(FONTS_DIR);
+    fontFiles.forEach((file) => {
+      fs.copyFileSync(path.join(FONTS_DIR, file), path.join(distFontsDir, file));
+    });
+    console.log(`   ✓ ${fontFiles.length} font(s) copied: ${fontFiles.join(', ')}`);
+  }
 
   const buildInfoPath = path.join(DIST_DIR, 'build-info.json');
   fs.writeFileSync(buildInfoPath, JSON.stringify(buildInfo, null, 2));

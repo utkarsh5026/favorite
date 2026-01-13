@@ -1,11 +1,10 @@
 import { LockedImage } from './types';
-import { setupCanvas } from './utils';
-import { changeFavicon, CustomFaviconManager } from './favicon';
-import { clearRestoreTimeout } from './state';
-import type { ExtensionState } from './types';
+import { changeFavicon, restoreToDefaultFavicon } from '@/favicons';
+import { clearRestoreTimeout, type ExtensionState } from '@/extension';
+import { convertToDataUrl } from '@/images/canvas';
 
 export class ImageLocker {
-  private static FAVICON_NOTIFICATION = 'favicon-lock-notification';
+  private static readonly FAVICON_NOTIFICATION = 'favicon-lock-notification';
 
   private currentHoveredImageUrl: string | null = null;
   private isLocked: boolean = false;
@@ -38,7 +37,8 @@ export class ImageLocker {
     this.isLocked = true;
     clearRestoreTimeout(this.state);
 
-    const dataUrl = await this.convertToDataUrl(this.currentHoveredImageUrl);
+    const { url } = await convertToDataUrl(this.currentHoveredImageUrl);
+    const dataUrl = url || this.currentHoveredImageUrl;
 
     const lockedImage: LockedImage = {
       url: dataUrl,
@@ -60,7 +60,7 @@ export class ImageLocker {
     this.currentHoveredImageUrl = null;
 
     await chrome.storage.local.remove('lockedImage');
-    CustomFaviconManager.restoreToDefaultFavicon(customFaviconUrl);
+    restoreToDefaultFavicon(customFaviconUrl);
     this.showLockNotification(false);
   }
 
@@ -70,44 +70,7 @@ export class ImageLocker {
   handleUnlockFromStorage(customFaviconUrl: string | null): void {
     this.isLocked = false;
     this.currentHoveredImageUrl = null;
-    CustomFaviconManager.restoreToDefaultFavicon(customFaviconUrl);
-  }
-
-  /**
-   * Converts an image URL to a data URL using canvas
-   */
-  async convertToDataUrl(imageUrl: string): Promise<string> {
-    return new Promise((resolve) => {
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-
-      img.onload = () => {
-        try {
-          const canvas = setupCanvas(
-            img.naturalWidth || img.width,
-            img.naturalHeight || img.height
-          );
-
-          const ctx = canvas.getContext('2d');
-          if (!ctx) {
-            resolve(imageUrl);
-            return;
-          }
-
-          ctx.drawImage(img, 0, 0);
-          const dataUrl = canvas.toDataURL('image/png');
-          resolve(dataUrl);
-        } catch (error) {
-          resolve(imageUrl);
-        }
-      };
-
-      img.onerror = () => {
-        resolve(imageUrl);
-      };
-
-      img.src = imageUrl;
-    });
+    restoreToDefaultFavicon(customFaviconUrl);
   }
 
   /**
@@ -129,45 +92,29 @@ export class ImageLocker {
       message = locked ? '🔐 Image locked - Open popup to download' : '🔓 Image unlocked';
     }
 
-    notification.style.cssText = `
-    position: fixed;
-    top: 24px;
-    right: 24px;
-    background: ${locked ? 'rgba(255, 255, 255, 0.95)' : 'rgba(30, 30, 30, 0.95)'};
-    color: ${locked ? '#1a1a1a' : '#f5f5f5'};
-    padding: 14px 18px;
-    border-radius: 12px;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-    font-size: 13px;
-    font-weight: 500;
-    letter-spacing: -0.01em;
-    z-index: 999999;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, ${locked ? '0.1' : '0.4'}),
-                0 2px 8px rgba(0, 0, 0, ${locked ? '0.06' : '0.2'});
-    border: 1px solid ${locked ? 'rgba(0, 0, 0, 0.06)' : 'rgba(255, 255, 255, 0.1)'};
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-                transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    transform: translateY(0);
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    opacity: 1;
-  `;
+    notification.className = `
+      fixed top-6 right-6 z-[999999]
+      w-auto max-w-sm
+      inline-flex items-center gap-2.5
+      px-4 py-3 rounded-lg
+      ${
+        locked
+          ? 'bg-white/95 text-gray-900 shadow-lg shadow-black/10 border border-black/[0.06]'
+          : 'bg-gray-900/95 text-gray-50 shadow-2xl shadow-black/40 border border-white/10'
+      }
+      backdrop-blur-xl
+      font-medium text-sm tracking-tight
+      transition-all duration-300 ease-out
+      animate-in slide-in-from-top-2 fade-in
+    `
+      .trim()
+      .replace(/\s+/g, ' ');
 
     if (locked && this.currentHoveredImageUrl) {
       const img = document.createElement('img');
       img.src = this.currentHoveredImageUrl;
-      img.style.cssText = `
-      width: 28px;
-      height: 28px;
-      border-radius: 6px;
-      object-fit: cover;
-      flex-shrink: 0;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      border: 1px solid rgba(0, 0, 0, 0.08);
-    `;
+      img.className =
+        'w-7 h-7 rounded-md object-cover shrink-0 shadow-sm border border-black/[0.08]';
       notification.appendChild(img);
     }
 
@@ -178,8 +125,7 @@ export class ImageLocker {
     document.body.appendChild(notification);
 
     setTimeout(() => {
-      notification.style.opacity = '0';
-      notification.style.transform = 'translateY(-8px)';
+      notification.classList.add('opacity-0', '-translate-y-2');
       setTimeout(() => notification.remove(), 300);
     }, 2500);
   }

@@ -1,10 +1,7 @@
 import { CONFIG, state } from '@/extension';
-import { byID, all, setupCanvas } from '@/utils';
+import { all, setupCanvas } from '@/utils';
 import { clipImageToShape } from '@/images';
 
-const CUSTOM_FAVICONS_KEY = 'customFavicons';
-const CUSTOM_FAVICON_SECTION_ID = 'customFaviconSection';
-const FAVICON_SIZES = [16, 32, 48, 64, 128, 256] as const;
 const DEFAULT_FAVICON_SIZE = 32;
 
 /**

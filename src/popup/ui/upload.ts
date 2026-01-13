@@ -3,10 +3,9 @@
  * Handles image upload with drag-drop and file input
  */
 
-import { byID } from '@/utils';
+import { byID, getActiveTab } from '@/utils';
 import { loadSettings } from '@/extension';
 import { showStatus } from '@/extension';
-import { HistoryManager } from '@/history';
 import { setCustomFavicon } from '@/favicons';
 import { processFile, applyShapeAndPreview } from '@/images/upload';
 
@@ -22,7 +21,6 @@ export function setupUploadZone(hostname: string | null): void {
 
   if (!uploadZone || !uploadInput) return;
 
-  // Click to upload (only on content area, not on preview actions)
   uploadZone.addEventListener('click', (e) => {
     const target = e.target as Element;
     if (target.closest('.upload-preview-actions') || target.closest('.upload-preview img')) {
@@ -31,7 +29,6 @@ export function setupUploadZone(hostname: string | null): void {
     uploadInput.click();
   });
 
-  // Drag and drop handlers
   uploadZone.addEventListener('dragover', (e) => {
     e.preventDefault();
     uploadZone.classList.add('drag-over');
@@ -49,17 +46,26 @@ export function setupUploadZone(hostname: string | null): void {
     if (file) await handleFileUpload(file);
   });
 
-  // File input change handler
   uploadInput.addEventListener('change', async () => {
     const file = uploadInput.files?.[0];
     if (file) await handleFileUpload(file);
-    uploadInput.value = ''; // Reset for same file re-upload
+    uploadInput.value = '';
   });
 
-  // Action buttons
-  byID('uploadApplyBtn')?.addEventListener('click', () => applyUploadedImage(hostname));
-  byID('uploadDefaultBtn')?.addEventListener('click', () => setUploadedAsDefault(hostname));
-  byID('uploadCancelBtn')?.addEventListener('click', cancelUpload);
+  byID('uploadApplyBtn')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    applyUploadedImage(hostname);
+  });
+
+  byID('uploadDefaultBtn')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    setUploadedAsDefault(hostname);
+  });
+
+  byID('uploadCancelBtn')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    cancelUpload();
+  });
 }
 
 /**
@@ -95,8 +101,7 @@ async function handleFileUpload(file: File): Promise<void> {
 async function applyUploadedImage(hostname: string | null): Promise<void> {
   if (!currentUploadedUrl) return;
 
-  const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-  const tab = tabs[0];
+  const tab = await getActiveTab();
   if (!tab?.id) return;
 
   chrome.tabs.sendMessage(tab.id, {
@@ -106,13 +111,7 @@ async function applyUploadedImage(hostname: string | null): Promise<void> {
     hostname: hostname || '',
   });
 
-  // Record in history
-  if (hostname) {
-    await HistoryManager.addEntry(hostname, currentUploadedUrl, 'upload');
-  }
-
   showStatus('Applied!');
-  cancelUpload();
 }
 
 /**
@@ -123,10 +122,7 @@ async function setUploadedAsDefault(hostname: string | null): Promise<void> {
 
   await setCustomFavicon(hostname, currentUploadedUrl, () => {
     showStatus('Set as default!');
-    cancelUpload();
   });
-
-  await HistoryManager.addEntry(hostname, currentUploadedUrl, 'upload');
 }
 
 /**

@@ -16,6 +16,7 @@ import { setupSiteToggle } from './ui/site-toggle';
 import { setupShapeButtons } from './ui/shapes';
 import { setupSliders } from './ui/sliders';
 import { setupUploadZone } from './ui/upload';
+import { setupResetButtons } from './ui/reset';
 
 import { showStatus, loadSettings, getCurrentTabHostname } from '@/extension';
 import { loadCustomFaviconSection, removeCustomFavicon } from '@/favicons';
@@ -79,6 +80,10 @@ async function init(): Promise<void> {
     removeCustomFavicon(currentHostname, () => {
       showStatus('Default removed');
     });
+  });
+
+  setupResetButtons(currentHostname, () => {
+    location.reload();
   });
 }
 

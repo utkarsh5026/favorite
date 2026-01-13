@@ -78,45 +78,11 @@
       <!-- Shape Settings -->
       <div class="mb-4.5">
         <label class="block text-sm font-medium text-text-subtle mb-2.5 uppercase tracking-wider">Shape</label>
-        <div class="flex gap-2.5">
-          <button class="shape-btn flex-1 bg-white/[0.03] border-[1.5px] border-border-light rounded-lg p-3.5 cursor-pointer transition-all duration-250 ease-bounce flex items-center justify-center hover:bg-white/[0.05] hover:border-border-strong hover:-translate-y-px" data-shape="circle" title="Circle">
-            <div class="w-[26px] h-[26px] bg-gradient-to-br from-text-primary to-[#b0b0b5] shadow-[0_2px_4px_rgba(0,0,0,0.15)] rounded-full"></div>
-          </button>
-          <button class="shape-btn flex-1 bg-white/[0.03] border-[1.5px] border-border-light rounded-lg p-3.5 cursor-pointer transition-all duration-250 ease-bounce flex items-center justify-center hover:bg-white/[0.05] hover:border-border-strong hover:-translate-y-px" data-shape="rounded" title="Rounded">
-            <div class="w-[26px] h-[26px] bg-gradient-to-br from-text-primary to-[#b0b0b5] shadow-[0_2px_4px_rgba(0,0,0,0.15)] rounded-md"></div>
-          </button>
-          <button class="shape-btn flex-1 bg-white/[0.03] border-[1.5px] border-border-light rounded-lg p-3.5 cursor-pointer transition-all duration-250 ease-bounce flex items-center justify-center hover:bg-white/[0.05] hover:border-border-strong hover:-translate-y-px" data-shape="square" title="Square">
-            <div class="w-[26px] h-[26px] bg-gradient-to-br from-text-primary to-[#b0b0b5] shadow-[0_2px_4px_rgba(0,0,0,0.15)] rounded-[2px]"></div>
-          </button>
-        </div>
+        <div class="flex gap-2.5" id="shapeButtonsContainer"></div>
       </div>
 
-      <!-- Hover Delay Slider -->
-      <div class="mb-4.5">
-        <label class="block text-sm font-medium text-text-subtle mb-2.5 uppercase tracking-wider" for="hoverDelay">Hover Delay</label>
-        <div class="flex items-center gap-3.5">
-          <input type="range" id="hoverDelay" min="0" max="500" step="50" value="100" class="flex-1 h-[5px] bg-white/[0.08] rounded-lg outline-none" />
-          <span class="text-base font-medium text-text-secondary min-w-[50px] text-right" id="hoverDelayValue">100ms</span>
-        </div>
-      </div>
-
-      <!-- Restore Delay Slider -->
-      <div class="mb-4.5">
-        <label class="block text-sm font-medium text-text-subtle mb-2.5 uppercase tracking-wider" for="restoreDelay">Restore Delay</label>
-        <div class="flex items-center gap-3.5">
-          <input type="range" id="restoreDelay" min="0" max="1000" step="100" value="200" class="flex-1 h-[5px] bg-white/[0.08] rounded-lg outline-none" />
-          <span class="text-base font-medium text-text-secondary min-w-[50px] text-right" id="restoreDelayValue">200ms</span>
-        </div>
-      </div>
-
-      <!-- Favicon Size Slider -->
-      <div class="mb-4.5">
-        <label class="block text-sm font-medium text-text-subtle mb-2.5 uppercase tracking-wider" for="faviconSize">Favicon Size</label>
-        <div class="flex items-center gap-3.5">
-          <input type="range" id="faviconSize" min="16" max="64" step="8" value="32" class="flex-1 h-[5px] bg-white/[0.08] rounded-lg outline-none" />
-          <span class="text-base font-medium text-text-secondary min-w-[50px] text-right" id="faviconSizeValue">32px</span>
-        </div>
-      </div>
+      <!-- Sliders -->
+      <div id="slidersContainer"></div>
 
       <div class="h-px bg-gradient-to-r from-transparent via-white/[0.08] to-transparent my-5"></div>
 

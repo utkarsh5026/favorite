@@ -1,5 +1,5 @@
-import { all } from '../utils';
-import { CONFIG } from '../state';
+import { all } from '@/utils';
+import { CONFIG } from '@/extension';
 
 const DOM_TRAVERSAL_DEPTH = 5;
 

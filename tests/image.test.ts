@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { findImage } from '../src/image';
+import { findImage } from '../src/images';
 
 // Mock getBoundingClientRect to return visible dimensions by default
 const mockVisibleRect = () => ({

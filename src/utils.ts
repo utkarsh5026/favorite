@@ -49,3 +49,12 @@ export function setupCanvas(width: number, height: number): HTMLCanvasElement {
   canvas.height = height;
   return canvas;
 }
+
+/**
+ * Retrieves the currently active tab in the browser
+ * @returns Promise that resolves to the active tab object
+ */
+export async function getActiveTab(): Promise<chrome.tabs.Tab> {
+  const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+  return tabs[0];
+}

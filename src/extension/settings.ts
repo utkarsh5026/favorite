@@ -39,3 +39,31 @@ export function showStatus(message: string): void {
     }, 1500);
   }
 }
+
+/**
+ * Resets all settings to defaults and clears all site-specific data
+ */
+export async function resetAllSettings(): Promise<void> {
+  await chrome.storage.sync.set(DEFAULT_SETTINGS);
+  await chrome.storage.local.set({ customFavicons: {} });
+  await chrome.storage.local.remove('lockedImage');
+}
+
+/**
+ * Resets settings for a specific site only
+ * @param hostname - The hostname of the site to reset
+ */
+export async function resetSiteSettings(hostname: string): Promise<void> {
+  const settings = await loadSettings();
+  const disabledSites = settings.disabledSites.filter((site) => site !== hostname);
+  await chrome.storage.sync.set({ disabledSites });
+
+  const { customFavicons = {} } = await chrome.storage.local.get('customFavicons');
+  delete customFavicons[hostname];
+  await chrome.storage.local.set({ customFavicons });
+
+  const { lockedImage } = await chrome.storage.local.get('lockedImage');
+  if (lockedImage?.hostname === hostname) {
+    await chrome.storage.local.remove('lockedImage');
+  }
+}

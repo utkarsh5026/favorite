@@ -194,6 +194,24 @@
         </div>
       </div>
 
+      <!-- Reset Section -->
+      <div class="mt-4.5 pt-4.5 border-t border-border-light">
+        <label class="block text-sm font-medium text-text-subtle mb-2.5 uppercase tracking-wider">Reset</label>
+        <div class="flex gap-2.5">
+          <button class="flex-1 flex items-center justify-center gap-2 bg-white/[0.05] border border-border-medium rounded-lg px-3 py-2.5 cursor-pointer transition-all duration-250 ease-bounce text-text-secondary text-sm font-medium font-mono tracking-tight hover:bg-white/[0.08] hover:border-white/25 hover:-translate-y-px" id="resetSiteBtn" title="Reset settings for this site only">
+            <img id="resetSiteFavicon" class="w-4 h-4 rounded-sm object-contain" alt="" />
+            <span>This Site</span>
+          </button>
+          <button class="flex-1 flex items-center justify-center gap-2 bg-white/[0.05] border border-accent-red/30 rounded-lg px-3 py-2.5 cursor-pointer transition-all duration-250 ease-bounce text-accent-red text-sm font-medium font-mono tracking-tight hover:bg-accent-red/15 hover:border-accent-red/50 hover:-translate-y-px" id="resetAllBtn" title="Reset all settings to default">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+              <path d="M3 3v5h5" />
+            </svg>
+            <span>Reset All</span>
+          </button>
+        </div>
+      </div>
+
       <div class="text-sm text-center text-text-secondary min-h-[18px] opacity-0 transition-opacity duration-300 ease-bounce" id="status"></div>
     </div>
     <script src="popup.js"></script>

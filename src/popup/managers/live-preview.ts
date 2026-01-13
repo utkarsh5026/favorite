@@ -26,50 +26,47 @@ export function setupLivePreview(): void {
     backgroundPort = null;
   });
 
-  // Load original favicon from current tab
   loadOriginalFavicon();
 }
 
 /**
  * Loads the original (vendor-provided) favicon from the current tab's content script
  */
-export async function loadOriginalFavicon(): Promise<void> {
+export async function loadOriginalFavicon() {
   const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
   const tab = tabs[0];
 
   const originalImg = byID<HTMLImageElement>('originalFaviconImage');
   if (!originalImg) return;
 
-  if (!tab?.id) {
+  const setPlaceholder = () => {
     originalImg.style.opacity = '0.3';
+  };
+
+  const setFaviconFallback = (url: string) => {
+    try {
+      const parsedUrl = new URL(url);
+      originalImg.src = `${parsedUrl.origin}/favicon.ico`;
+    } catch {
+      setPlaceholder();
+    }
+  };
+
+  if (!tab?.id || !tab.url) {
+    setPlaceholder();
     return;
   }
 
   try {
-    // Request the original favicon from the content script
     const response = await chrome.tabs.sendMessage(tab.id, { type: 'getOriginalFavicon' });
     if (response?.originalFavicon) {
       originalImg.src = response.originalFavicon;
-    } else if (tab.url) {
-      // Fallback: use the default favicon.ico path
-      const url = new URL(tab.url);
-      originalImg.src = `${url.origin}/favicon.ico`;
-    } else {
-      originalImg.style.opacity = '0.3';
+      return;
     }
   } catch {
-    // Content script not available, fallback to tab favicon or default
-    if (tab.url) {
-      try {
-        const url = new URL(tab.url);
-        originalImg.src = `${url.origin}/favicon.ico`;
-      } catch {
-        originalImg.style.opacity = '0.3';
-      }
-    } else {
-      originalImg.style.opacity = '0.3';
-    }
+    // Content script not available, fall through to fallback
   }
+  setFaviconFallback(tab.url);
 }
 
 /**
@@ -94,7 +91,6 @@ export async function updateLivePreview(
     return;
   }
 
-  // Apply current shape to preview
   const settings = await loadSettings();
 
   const img = new Image();
@@ -102,11 +98,10 @@ export async function updateLivePreview(
 
   img.onload = () => {
     clipImageToShape(
-      48, // Preview size
+      64, // Preview size (matches w-16 h-16 container)
       settings.faviconShape,
       img,
       () => {
-        // Fallback: use original image
         previewImage.src = imageUrl;
         showLivePreview();
       },
@@ -118,7 +113,6 @@ export async function updateLivePreview(
   };
 
   img.onerror = () => {
-    // Still show the image even if masking fails
     previewImage.src = imageUrl;
     showLivePreview();
   };

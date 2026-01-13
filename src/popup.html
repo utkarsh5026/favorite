@@ -11,37 +11,46 @@
       <h1 class="text-lg font-medium mb-5 text-text-primary text-center tracking-tight">Favicon Preview</h1>
 
       <!-- Live Preview Section -->
-      <div class="bg-white/[0.02] rounded-xl p-3.5 mb-4 border border-border-subtle" id="livePreviewSection">
-        <div class="flex items-center gap-2.5 mb-3">
+      <div class="bg-white/[0.02] rounded-xl p-5 mb-4 border border-border-subtle" id="livePreviewSection">
+        <div class="flex items-center gap-2.5 mb-4">
           <span class="flex items-center gap-1.5 bg-accent-red/15 text-accent-red-light px-2.5 py-1 rounded-xl text-[9px] font-bold tracking-wide">
             <span class="w-1.5 h-1.5 bg-accent-red-light rounded-full animate-live"></span>
             LIVE
           </span>
           <span class="text-sm text-text-subtle">Current Hover</span>
         </div>
-        <div class="flex flex-col gap-2.5">
-          <div class="flex items-center justify-center gap-4">
-            <div class="flex flex-col items-center gap-1.5">
-              <img id="livePreviewImage" alt="Live preview" class="w-12 h-12 rounded-lg border border-border-light bg-surface-dark object-contain hidden" />
-              <div class="w-12 h-12 rounded-lg border border-border-light bg-surface-dark flex flex-col items-center justify-center gap-1" id="livePreviewEmpty">
-                <svg class="w-4.5 h-4.5 stroke-text-subtle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                  <rect x="3" y="3" width="18" height="18" rx="2" />
-                  <circle cx="8.5" cy="8.5" r="1.5" />
-                  <path d="M21 15l-5-5L5 21" />
-                </svg>
-                <span class="text-2xs text-text-subtle whitespace-nowrap">Hover an image</span>
+        <div class="flex flex-col gap-4">
+          <div class="flex items-center justify-center gap-6">
+            <div class="flex flex-col items-center gap-2">
+              <div class="w-16 h-16 rounded-xl border border-border-light bg-surface-dark flex items-center justify-center p-1.5 shadow-inset">
+                <img id="livePreviewImage" alt="Live preview" class="w-full h-full rounded-lg object-contain hidden" />
+                <div class="flex flex-col items-center justify-center gap-1.5" id="livePreviewEmpty">
+                  <svg class="w-5 h-5 stroke-text-subtle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <rect x="3" y="3" width="18" height="18" rx="2" />
+                    <circle cx="8.5" cy="8.5" r="1.5" />
+                    <path d="M21 15l-5-5L5 21" />
+                  </svg>
+                  <span class="text-2xs text-text-subtle text-center leading-tight">Hover<br/>image</span>
+                </div>
+              </div>
+              <span class="text-[9px] text-text-subtle uppercase tracking-wide">Preview</span>
+            </div>
+            <div class="flex flex-col items-center gap-1">
+              <div class="w-6 h-6 rounded-full bg-white/[0.03] border border-border-light flex items-center justify-center">
+                <span class="text-[10px] text-text-subtle font-bold">VS</span>
               </div>
             </div>
-            <span class="text-xs text-text-subtle font-semibold">VS</span>
-            <div class="flex flex-col items-center gap-1.5">
-              <img id="originalFaviconImage" alt="Original favicon" class="w-12 h-12 rounded-lg border border-border-light bg-surface-dark object-contain" />
-              <span class="text-[9px] text-text-subtle uppercase">Original</span>
+            <div class="flex flex-col items-center gap-2">
+              <div class="w-16 h-16 rounded-xl border border-border-light bg-surface-dark flex items-center justify-center p-1.5 shadow-inset">
+                <img id="originalFaviconImage" alt="Original favicon" class="w-full h-full rounded-lg object-contain" />
+              </div>
+              <span class="text-[9px] text-text-subtle uppercase tracking-wide">Original</span>
             </div>
           </div>
-          <div class="flex justify-center gap-2 text-xs text-text-muted opacity-0 transition-opacity duration-200" id="livePreviewInfo">
-            <span id="liveImageType">-</span>
-            <span class="text-[#5a5a5d]">•</span>
-            <span id="liveImageSize">-</span>
+          <div class="flex items-center justify-center gap-2 px-3 py-1.5 bg-white/[0.03] rounded-lg border border-border-subtle opacity-0 transition-opacity duration-200" id="livePreviewInfo">
+            <span class="text-xs text-text-secondary font-medium" id="liveImageType">-</span>
+            <span class="text-text-subtle">•</span>
+            <span class="text-xs text-text-secondary font-medium" id="liveImageSize">-</span>
           </div>
         </div>
       </div>

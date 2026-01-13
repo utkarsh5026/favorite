@@ -15,7 +15,6 @@ import { setupGlobalToggle } from './ui/global-toggle';
 import { setupSiteToggle } from './ui/site-toggle';
 import { setupShapeButtons } from './ui/shapes';
 import { setupSliders } from './ui/sliders';
-import { loadHistorySection, setupClearHistoryButton, listenForHistoryChanges } from './ui/history';
 import { setupUploadZone } from './ui/upload';
 
 import { showStatus, loadSettings, getCurrentTabHostname } from '@/extension';
@@ -24,22 +23,19 @@ import { loadCustomFaviconSection, removeCustomFavicon } from '@/favicons';
 let currentFaviconUrl: string | null = null;
 
 /**
- * Initializes hostname-specific features (preview, history, listeners)
+ * Initializes hostname-specific features (preview, listeners)
  */
 async function initializeHostnameFeatures(hostname: string): Promise<void> {
   await loadFaviconPreview(hostname, (url) => {
     currentFaviconUrl = url;
   });
   await loadCustomFaviconSection(hostname);
-  await loadHistorySection(hostname);
 
   listenForLockedImageChanges(hostname, () => {
     loadFaviconPreview(hostname, (url) => {
       currentFaviconUrl = url;
     });
   });
-  listenForHistoryChanges(hostname);
-  setupClearHistoryButton(hostname);
 }
 
 /**

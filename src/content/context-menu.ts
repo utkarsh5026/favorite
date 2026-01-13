@@ -1,7 +1,7 @@
 /**
  * Context menu action handlers
  */
-import { changeFavicon, setCustomFavicon, saveFaviconZIP } from '@/favicons';
+import { setCustomFavicon, saveFaviconZIP } from '@/favicons';
 import { imageLocker } from './state';
 import type { ContextMenuMessage } from './types';
 
@@ -51,10 +51,6 @@ export async function handleContextMenuAction(message: ContextMenuMessage): Prom
   const { action, imageUrl, hostname } = message;
 
   switch (action) {
-    case 'preview':
-      changeFavicon(imageUrl);
-      break;
-
     case 'lock':
       if (imageLocker.isImageLocked) {
         imageLocker.showLockNotification(true, 'Already locked');

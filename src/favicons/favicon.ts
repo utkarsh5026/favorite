@@ -1,9 +1,6 @@
-import { CONFIG, state } from './state';
-import type { CustomFavicons } from './types';
-import JSZip from 'jszip';
-import { resizeImage } from './image';
-import { byID, downloadZip, all, setupCanvas } from './utils';
-import { maskWithShape } from './shape';
+import { CONFIG, state } from '@/extension';
+import { byID, all, setupCanvas } from '@/utils';
+import { clipImageToShape } from '@/images';
 
 const CUSTOM_FAVICONS_KEY = 'customFavicons';
 const CUSTOM_FAVICON_SECTION_ID = 'customFaviconSection';
@@ -21,15 +18,12 @@ export function changeFavicon(imageUrl: string, applyMask: boolean = true): void
 
   if (applyMask) {
     l.startLoadingAnimation();
-  } else {
-    l.stopLoadingAnimation();
+    applyShapeMaskAndSetFavicon(imageUrl, loadingId);
+    return;
   }
 
-  if (applyMask) {
-    applyShapeMaskAndSetFavicon(imageUrl, loadingId);
-  } else {
-    setFaviconDirectly(imageUrl);
-  }
+  l.stopLoadingAnimation();
+  setFaviconDirectly(imageUrl);
 }
 
 /**
@@ -88,7 +82,7 @@ const applyShapeMaskAndSetFavicon = (imageUrl: string, loadingId: number) => {
     if (state.currentLoadingId !== loadingId) return;
 
     try {
-      maskWithShape(
+      clipImageToShape(
         CONFIG.faviconSize,
         CONFIG.faviconShape,
         img,
@@ -117,7 +111,6 @@ const applyShapeMaskAndSetFavicon = (imageUrl: string, loadingId: number) => {
   };
 
   img.onerror = () => {
-    // Only set if this is still the latest request
     if (state.currentLoadingId === loadingId) {
       Loader.getInstance().stopLoadingAnimation();
       setFaviconDirectly(imageUrl);
@@ -150,43 +143,6 @@ export function restoreOriginalFavicon(): void {
   if (state.originalFavicon) {
     changeFavicon(state.originalFavicon, false);
   }
-}
-
-/**
- * Generates and downloads a ZIP file containing the favicon in multiple sizes
- * @param img - The HTML image element containing the favicon
- * @param faviconURL - The URL of the original favicon
- * @param hostname - The hostname to use for the ZIP filename
- */
-export async function saveFaviconZIP(
-  img: HTMLImageElement,
-  faviconURL: string,
-  hostname: string
-): Promise<void> {
-  const zip = new JSZip();
-  const folder = zip.folder('favicons');
-
-  if (!folder) {
-    throw new Error('Failed to create folder in ZIP');
-  }
-
-  for (const size of FAVICON_SIZES) {
-    try {
-      const blob = await resizeImage(img, size);
-      const name = `favicon-${size}x${size}.png`;
-      folder.file(name, blob);
-    } catch (error) {
-      console.warn(`Failed to generate ${size}x${size}:`, error);
-    }
-  }
-
-  const original = await fetch(faviconURL);
-  const originalBlob = await original.blob();
-  const extension = faviconURL.endsWith('.ico') ? 'ico' : 'png';
-  folder.file(`favicon-original.${extension}`, originalBlob);
-
-  const content = await zip.generateAsync({ type: 'blob' });
-  downloadZip(content, hostname);
 }
 
 class Loader {
@@ -275,99 +231,10 @@ class Loader {
   }
 }
 
-export class CustomFaviconManager {
-  /**
-   * Gets the custom favicon for a specific hostname
-   * @param hostname - The hostname to retrieve the custom favicon for
-   * @returns The custom favicon object or null if not found
-   */
-  static async getCustomFavicon(hostname: string) {
-    const customFavicons = await CustomFaviconManager.getCustomFavicons();
-    return customFavicons[hostname] || null;
-  }
-
-  /**
-   * Sets a custom favicon for a specific hostname
-   * @param hostname - The hostname to set the custom favicon for
-   * @param faviconURL - The URL of the custom favicon
-   * @param onSuccess - Callback function to execute on successful save
-   */
-  static async setCustomFavicon(hostname: string, faviconURL: string, onSuccess: () => void) {
-    const customFavicon = {
-      url: faviconURL,
-      timestamp: Date.now(),
-    };
-
-    const customFavicons = await CustomFaviconManager.getCustomFavicons();
-    customFavicons[hostname] = customFavicon;
-
-    await chrome.storage.local.set({ customFavicons });
-
-    onSuccess();
-    await CustomFaviconManager.loadCustomFaviconSection(hostname);
-  }
-
-  /**
-   * Retrieves all custom favicons from chrome storage
-   * @returns Object containing all custom favicons keyed by hostname
-   */
-  static async getCustomFavicons() {
-    const result = await chrome.storage.local.get(CUSTOM_FAVICONS_KEY);
-    return (result.customFavicons || {}) as CustomFavicons;
-  }
-
-  /**
-   * Loads and displays the custom favicon section in the UI
-   * @param hostname - The hostname to load the custom favicon section for
-   */
-  static async loadCustomFaviconSection(hostname: string): Promise<void> {
-    const customSection = byID(CUSTOM_FAVICON_SECTION_ID);
-    const customImage = byID<HTMLImageElement>('customFaviconImage');
-    const customHint = byID('customFaviconHint');
-
-    if (!customSection || !customImage) return;
-
-    const customFavicon = await CustomFaviconManager.getCustomFavicon(hostname);
-    if (!customFavicon) {
-      customSection.classList.remove('visible');
-      return;
-    }
-
-    customImage.src = customFavicon.url;
-    customSection.classList.add('visible');
-
-    if (customHint) {
-      const date = new Date(customFavicon.timestamp);
-      customHint.textContent = `Set ${date.toLocaleDateString()}`;
-    }
-  }
-
-  /**
-   * Removes a custom favicon for a specific hostname
-   * @param hostname - The hostname to remove the custom favicon for
-   * @param onRemove - Callback function to execute after removal
-   */
-  static async removeCustomFavicon(hostname: string, onRemove: () => void): Promise<void> {
-    const customFavicons = await CustomFaviconManager.getCustomFavicons();
-    delete customFavicons[hostname];
-
-    await chrome.storage.local.set({ customFavicons });
-    onRemove();
-
-    const customSection = byID(CUSTOM_FAVICON_SECTION_ID);
-    if (customSection) {
-      customSection.classList.remove('visible');
-    }
-  }
-
-  /**
-   * Restores favicon to custom or original
-   */
-  static restoreToDefaultFavicon(customFaviconUrl: string | null): void {
-    if (customFaviconUrl) {
-      changeFavicon(customFaviconUrl);
-    } else {
-      restoreOriginalFavicon();
-    }
+export function restoreToDefaultFavicon(customFaviconUrl: string | null): void {
+  if (customFaviconUrl) {
+    changeFavicon(customFaviconUrl);
+  } else {
+    restoreOriginalFavicon();
   }
 }

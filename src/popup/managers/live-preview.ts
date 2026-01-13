@@ -5,7 +5,7 @@
 
 import type { LivePreviewMessage } from '../../types';
 import { byID } from '@/utils';
-import { loadSettings } from '@/extension';
+import { loadSettings, getOriginalFaviconUrl } from '@/extension';
 import { clipImageToShape } from '../../images/shape';
 
 let backgroundPort: chrome.runtime.Port | null = null;
@@ -33,40 +33,16 @@ export function setupLivePreview(): void {
  * Loads the original (vendor-provided) favicon from the current tab's content script
  */
 export async function loadOriginalFavicon() {
-  const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-  const tab = tabs[0];
-
   const originalImg = byID<HTMLImageElement>('originalFaviconImage');
   if (!originalImg) return;
 
-  const setPlaceholder = () => {
+  const faviconUrl = await getOriginalFaviconUrl();
+
+  if (faviconUrl) {
+    originalImg.src = faviconUrl;
+  } else {
     originalImg.style.opacity = '0.3';
-  };
-
-  const setFaviconFallback = (url: string) => {
-    try {
-      const parsedUrl = new URL(url);
-      originalImg.src = `${parsedUrl.origin}/favicon.ico`;
-    } catch {
-      setPlaceholder();
-    }
-  };
-
-  if (!tab?.id || !tab.url) {
-    setPlaceholder();
-    return;
   }
-
-  try {
-    const response = await chrome.tabs.sendMessage(tab.id, { type: 'getOriginalFavicon' });
-    if (response?.originalFavicon) {
-      originalImg.src = response.originalFavicon;
-      return;
-    }
-  } catch {
-    // Content script not available, fall through to fallback
-  }
-  setFaviconFallback(tab.url);
 }
 
 /**

@@ -62,3 +62,30 @@ export async function toggleSite(hostname: string) {
   await chrome.storage.sync.set({ disabledSites });
   return index === -1;
 }
+
+/**
+ * Gets the original favicon URL from the current tab
+ * Uses the same approach as live-preview to get the actual favicon from the page
+ */
+export async function getOriginalFaviconUrl(): Promise<string | null> {
+  const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+  const tab = tabs[0];
+
+  if (!tab?.id || !tab.url) {
+    return null;
+  }
+
+  try {
+    const response = await chrome.tabs.sendMessage(tab.id, { type: 'getOriginalFavicon' });
+    if (response?.originalFavicon) {
+      return response.originalFavicon;
+    }
+  } catch {}
+
+  try {
+    const parsedUrl = new URL(tab.url);
+    return `${parsedUrl.origin}/favicon.ico`;
+  } catch {
+    return null;
+  }
+}

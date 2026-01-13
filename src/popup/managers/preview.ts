@@ -4,7 +4,7 @@
  */
 
 import { byID } from '@/utils';
-import { loadSettings } from '@/extension';
+import { loadSettings, getOriginalFaviconUrl } from '@/extension';
 import { getLockedImage, updateLockUI } from './lock';
 import { applyShapeToPreview } from '@/images';
 
@@ -26,24 +26,28 @@ export async function loadFaviconPreview(
 
   const lockedImage = await getLockedImage(hostname);
 
+  const onImageLoaded = async (faviconURL: string) => {
+    onFaviconLoaded(faviconURL);
+    faviconImage.classList.add('loaded');
+    faviconPreview.classList.add('loaded');
+
+    if (faviconSizeLabel) {
+      faviconSizeLabel.textContent = `${faviconImage.naturalWidth}x${faviconImage.naturalHeight}`;
+    }
+
+    if (downloadBtn) {
+      downloadBtn.disabled = false;
+    }
+
+    const settings = await loadSettings();
+    await applyShapeToPreview(settings.faviconShape, faviconURL);
+  };
+
   if (lockedImage) {
     updateLockUI(true);
 
     faviconImage.onload = async () => {
-      onFaviconLoaded(lockedImage.url);
-      faviconImage.classList.add('loaded');
-      faviconPreview.classList.add('loaded');
-
-      if (faviconSizeLabel) {
-        faviconSizeLabel.textContent = `${faviconImage.naturalWidth}x${faviconImage.naturalHeight}`;
-      }
-
-      if (downloadBtn) {
-        downloadBtn.disabled = false;
-      }
-
-      const settings = await loadSettings();
-      await applyShapeToPreview(settings.faviconShape, lockedImage.url);
+      await onImageLoaded(lockedImage.url);
     };
 
     faviconImage.onerror = () => {
@@ -55,6 +59,23 @@ export async function loadFaviconPreview(
     return;
   }
 
+  const originalFavicon = await getOriginalFaviconUrl();
+  if (originalFavicon) {
+    updateLockUI(false);
+
+    faviconImage.onload = async () => {
+      await onImageLoaded(originalFavicon);
+    };
+
+    faviconImage.onerror = () => {
+      faviconPreview.classList.add('error');
+    };
+
+    faviconImage.src = originalFavicon;
+    return;
+  }
+
+  // No locked image and no site favicon - show error state
   faviconPreview.classList.add('error');
   updateLockUI(false);
 }

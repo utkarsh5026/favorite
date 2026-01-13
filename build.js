@@ -122,10 +122,10 @@ async function build() {
     console.log(`   Using existing: ${DIST_DIR}`);
   }
 
-  console.log('\n🔨 [3/8] Bundling content script (content.ts)...');
-  console.log('   Entry: src/content.ts -> dist/content.js');
+  console.log('\n🔨 [3/8] Bundling content script (content/index.ts)...');
+  console.log('   Entry: src/content/index.ts -> dist/content.js');
   await esbuild.build({
-    entryPoints: [path.join(SRC_DIR, 'content.ts')],
+    entryPoints: [path.join(SRC_DIR, 'content', 'index.ts')],
     outfile: path.join(DIST_DIR, 'content.js'),
     ...ESBUILD_COMMON_OPTIONS,
   });

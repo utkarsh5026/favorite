@@ -50,7 +50,7 @@ export type CustomFavicons = Record<string, CustomFavicon>;
 /**
  * Context menu action types
  */
-export type ContextMenuAction = 'lock' | 'setDefault' | 'download';
+export type ContextMenuAction = 'setDefault' | 'download';
 
 /**
  * History entry for a previewed/locked favicon

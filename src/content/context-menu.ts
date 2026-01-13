@@ -2,7 +2,7 @@
  * Context menu action handlers
  */
 import { setCustomFavicon, saveFaviconZIP } from '@/favicons';
-import { imageLocker } from './state';
+import { imageLocker, scriptState } from './state';
 import type { ContextMenuMessage } from './types';
 
 /**
@@ -10,7 +10,8 @@ import type { ContextMenuMessage } from './types';
  */
 export function showContextMenuNotification(message: string): void {
   const notification = document.createElement('div');
-  notification.className = 'fixed top-6 right-6 bg-white/95 text-gray-900 px-[18px] py-[14px] rounded-xl font-sans text-[13px] font-medium z-[999999] shadow-[0_8px_32px_rgba(0,0,0,0.1),0_2px_8px_rgba(0,0,0,0.06)] border border-black/[0.06] backdrop-blur-xl transition-all duration-300 ease-out';
+  notification.className =
+    'fixed top-6 right-6 bg-white/95 text-gray-900 px-[18px] py-[14px] rounded-xl font-sans text-[13px] font-medium z-[999999] shadow-[0_8px_32px_rgba(0,0,0,0.1),0_2px_8px_rgba(0,0,0,0.06)] border border-black/[0.06] backdrop-blur-xl transition-all duration-300 ease-out';
   notification.textContent = message;
   document.body.appendChild(notification);
 
@@ -51,16 +52,12 @@ export async function handleContextMenuAction(message: ContextMenuMessage): Prom
   const { action, imageUrl, hostname } = message;
 
   switch (action) {
-    case 'lock':
-      if (imageLocker.isImageLocked) {
-        imageLocker.showLockNotification(true, 'Already locked');
-        return;
-      }
+    case 'setDefault':
+      scriptState.setCustomFaviconUrl(imageUrl);
+
       imageLocker.setCurrentHoveredImageUrl(imageUrl);
       await imageLocker.lockCurrentImage();
-      break;
 
-    case 'setDefault':
       await setCustomFavicon(hostname, imageUrl, () => {
         showContextMenuNotification('Set as site default');
       });

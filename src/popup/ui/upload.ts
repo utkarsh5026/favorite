@@ -3,7 +3,7 @@
  * Handles image upload with drag-drop and file input
  */
 
-import { byID, getActiveTab } from '@/utils';
+import { byID, getActiveTab, setActive, setVisible } from '@/utils';
 import { loadSettings } from '@/extension';
 import { showStatus } from '@/extension';
 import { setCustomFavicon } from '@/favicons';
@@ -31,6 +31,7 @@ export function setupUploadZone(hostname: string | null): void {
 
   uploadZone.addEventListener('dragover', (e) => {
     e.preventDefault();
+    setActive(uploadZone, true);
     uploadZone.classList.add('drag-over');
   });
 
@@ -90,8 +91,9 @@ async function handleFileUpload(file: File): Promise<void> {
 
   if (uploadPreviewImage && uploadPreview) {
     uploadPreviewImage.src = previewUrl;
-    uploadPreview.classList.add('visible');
-    uploadContent?.classList.add('hidden');
+    setActive(uploadPreview, true);
+    uploadPreview.classList.add('visible'); // Keep for animation
+    setVisible(uploadContent, false);
   }
 }
 
@@ -133,6 +135,7 @@ function cancelUpload(): void {
   const uploadPreview = byID('uploadPreview');
   const uploadContent = byID('uploadContent');
 
-  uploadPreview?.classList.remove('visible');
-  uploadContent?.classList.remove('hidden');
+  setActive(uploadPreview, false);
+  uploadPreview?.classList.remove('visible'); // Keep for animation
+  setVisible(uploadContent, true);
 }

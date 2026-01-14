@@ -6,6 +6,7 @@
 import type { FaviconShape } from '@/types';
 import { saveSettings } from '@/extension';
 import { applyShapeToPreview } from '@/images/shape';
+import { setActive } from '@/utils';
 
 const SHAPE_CONFIGS = [
   { shape: 'circle', title: 'Circle', borderRadiusClass: 'rounded-full' },
@@ -45,12 +46,10 @@ export function setupShapeButtons(
     return;
   }
 
-  // Clear any existing buttons
   container.innerHTML = '';
-
   const updateShapeButtons = (shape: FaviconShape): void => {
     document.querySelectorAll('.shape-btn').forEach((btn) => {
-      btn.classList.toggle('active', btn.getAttribute('data-shape') === shape);
+      setActive(btn as HTMLElement, btn.getAttribute('data-shape') === shape);
     });
   };
 

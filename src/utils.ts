@@ -58,3 +58,73 @@ export async function getActiveTab(): Promise<chrome.tabs.Tab> {
   const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
   return tabs[0];
 }
+
+/**
+ * Toggle multiple classes on an element based on a state object
+ * @param element - The element to toggle classes on
+ * @param classes - Object mapping class names to boolean values (true = add, false = remove)
+ * @example
+ * toggleClasses(element, { hidden: false, active: true, disabled: false });
+ */
+export function toggleClasses(
+  element: HTMLElement | null,
+  classes: Record<string, boolean>
+): void {
+  if (!element) return;
+
+  Object.entries(classes).forEach(([className, shouldAdd]) => {
+    element.classList.toggle(className, shouldAdd);
+  });
+}
+
+/**
+ * Set element visibility using the 'hidden' class
+ * @param element - The element to show/hide
+ * @param visible - Whether the element should be visible
+ */
+export function setVisible(element: HTMLElement | null, visible: boolean): void {
+  if (!element) return;
+  element.classList.toggle('hidden', !visible);
+}
+
+/**
+ * Set element as active/inactive using the 'active' class
+ * @param element - The element to set active state on
+ * @param active - Whether the element should be active
+ */
+export function setActive(element: HTMLElement | null, active: boolean): void {
+  if (!element) return;
+  element.classList.toggle('active', active);
+}
+
+/**
+ * Set text content on an element with null safety
+ * @param element - The element to set text on
+ * @param text - The text content to set
+ */
+export function setText(element: HTMLElement | null, text: string): void {
+  if (!element) return;
+  element.textContent = text;
+}
+
+/**
+ * Set disabled state on an interactive element
+ * @param element - The element to disable/enable
+ * @param disabled - Whether the element should be disabled
+ */
+export function setDisabled(
+  element: HTMLButtonElement | HTMLInputElement | null,
+  disabled: boolean
+): void {
+  if (!element) return;
+
+  if (disabled) {
+    element.setAttribute('disabled', 'true');
+    element.style.opacity = '0.5';
+    element.style.cursor = 'not-allowed';
+  } else {
+    element.removeAttribute('disabled');
+    element.style.opacity = '';
+    element.style.cursor = '';
+  }
+}

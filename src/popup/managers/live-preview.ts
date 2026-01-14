@@ -3,10 +3,10 @@
  * Handles real-time preview of images as the user hovers over them
  */
 
-import type { LivePreviewMessage } from '../../types';
-import { byID } from '@/utils';
+import type { LivePreviewMessage } from '@/types';
+import { byID, setVisible, toggleClasses, setText } from '@/utils';
 import { loadSettings, getOriginalFaviconUrl, getCurrentTabHostname } from '@/extension';
-import { clipImageToShape } from '../../images/shape';
+import { clipImageToShape } from '@/images';
 import { getLockedImage } from './lock';
 
 let backgroundPort: chrome.runtime.Port | null = null;
@@ -62,18 +62,17 @@ async function checkAndShowLockedState(): Promise<void> {
   const lockedImageEl = byID<HTMLImageElement>('livePreviewLockedImage');
 
   if (lockedImage && previewLocked && lockedImageEl) {
-    // Show locked state
     lockedImageEl.src = lockedImage.url;
-    previewLocked.classList.remove('hidden');
-    previewLocked.classList.add('flex');
-    previewEmpty?.classList.add('hidden');
-    previewImage?.classList.add('hidden');
-  } else if (previewLocked) {
-    // Hide locked state and show empty state
-    previewLocked.classList.add('hidden');
-    previewLocked.classList.remove('flex');
-    previewEmpty?.classList.remove('hidden');
-    previewImage?.classList.add('hidden');
+    toggleClasses(previewLocked, { hidden: false, flex: true });
+    setVisible(previewEmpty, false);
+    setVisible(previewImage, false);
+    return;
+  }
+
+  if (previewLocked) {
+    toggleClasses(previewLocked, { hidden: true, flex: false });
+    setVisible(previewEmpty, true);
+    setVisible(previewImage, false);
   }
 }
 
@@ -101,29 +100,24 @@ export async function updateLivePreview(
 
   if (!previewImage || !previewEmpty) return;
 
-  // Check if image is locked - if so, keep showing locked state
   const hostname = await getCurrentTabHostname();
   if (hostname) {
     const lockedImage = await getLockedImage(hostname);
 
     if (lockedImage) {
-      // Keep locked state visible, don't update preview
-      previewImage.classList.add('hidden');
-      previewEmpty.classList.add('hidden');
-      previewLocked?.classList.remove('hidden');
-      previewLocked?.classList.add('flex');
+      setVisible(previewImage, false);
+      setVisible(previewEmpty, false);
+      toggleClasses(previewLocked, { hidden: false, flex: true });
       previewInfo?.classList.remove('opacity-100');
       return;
     }
   }
 
-  // Hide locked state if not locked
-  previewLocked?.classList.add('hidden');
-  previewLocked?.classList.remove('flex');
+  toggleClasses(previewLocked, { hidden: true, flex: false });
 
   if (!imageUrl) {
-    previewImage.classList.add('hidden');
-    previewEmpty.classList.remove('hidden');
+    setVisible(previewImage, false);
+    setVisible(previewEmpty, true);
     previewInfo?.classList.remove('opacity-100');
     return;
   }
@@ -157,15 +151,14 @@ export async function updateLivePreview(
   img.src = imageUrl;
 
   function showLivePreview(): void {
-    previewImage?.classList.remove('hidden');
-    previewEmpty?.classList.add('hidden');
-    previewLocked?.classList.add('hidden');
-    previewLocked?.classList.remove('flex');
+    setVisible(previewImage, true);
+    setVisible(previewEmpty, false);
+    toggleClasses(previewLocked, { hidden: true, flex: false });
 
     if (previewInfo && imageInfo) {
       previewInfo.classList.add('opacity-100');
-      if (imageTypeEl) imageTypeEl.textContent = imageInfo.imageType;
-      if (imageSizeEl) imageSizeEl.textContent = `${imageInfo.width}x${imageInfo.height}`;
+      setText(imageTypeEl, imageInfo.imageType);
+      setText(imageSizeEl, `${imageInfo.width}x${imageInfo.height}`);
     }
   }
 }

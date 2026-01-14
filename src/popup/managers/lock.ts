@@ -4,7 +4,7 @@
  */
 
 import type { LockedImage } from '@/types';
-import { byID } from '@/utils';
+import { byID, toggleClasses, setText, setDisabled } from '@/utils';
 import { showStatus } from '@/extension';
 
 /**
@@ -34,17 +34,12 @@ export async function unlockImage(): Promise<void> {
   const downloadBtn = byID('downloadBtn') as HTMLButtonElement;
   const downloadInfo = byID('downloadInfo');
 
-  if (faviconPreview) {
-    faviconPreview.classList.remove('loaded');
-    faviconPreview.classList.add('error');
-  }
+  toggleClasses(faviconPreview, { loaded: false, error: true });
+  toggleClasses(faviconImage, { loaded: false });
   if (faviconImage) {
-    faviconImage.classList.remove('loaded');
     faviconImage.src = '';
   }
-  if (downloadBtn) {
-    downloadBtn.disabled = true;
-  }
+  setDisabled(downloadBtn, true);
   if (downloadInfo) {
     downloadInfo.innerHTML = 'Hover image + <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>L</kbd> to lock';
   }
@@ -61,21 +56,13 @@ export function updateLockUI(locked: boolean): void {
   const downloadInfo = byID('downloadInfo');
   const setDefaultBtn = byID<HTMLButtonElement>('setDefaultBtn');
 
-  if (lockBadge) {
-    lockBadge.classList.toggle('visible', locked);
-  }
-  if (unlockBtn) {
-    unlockBtn.classList.toggle('visible', locked);
-  }
-  if (faviconLabel) {
-    faviconLabel.textContent = locked ? 'Locked Image' : 'Image';
-  }
+  toggleClasses(lockBadge, { visible: locked });
+  toggleClasses(unlockBtn, { visible: locked });
+  setText(faviconLabel, locked ? 'Locked Image' : 'Image');
   if (downloadInfo && locked) {
     downloadInfo.textContent = 'Includes: 16x16, 32x32, 48x48, 64x64, 128x128, 256x256';
   }
-  if (setDefaultBtn) {
-    setDefaultBtn.disabled = !locked;
-  }
+  setDisabled(setDefaultBtn, !locked);
 }
 
 /**

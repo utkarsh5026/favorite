@@ -3,7 +3,7 @@
  * Handles the global enable/disable toggle for the entire extension
  */
 
-import { byID } from '@/utils';
+import { byID, toggleClasses, setText } from '@/utils';
 import { loadSettings } from '@/extension';
 import { showStatus } from '@/extension';
 
@@ -25,15 +25,9 @@ export function updateGlobalToggleUI(enabled: boolean): void {
   const powerBtn = byID('powerBtn');
   const statusText = byID('globalToggleStatus');
 
-  if (globalToggle) {
-    globalToggle.classList.toggle('disabled', !enabled);
-  }
-  if (powerBtn) {
-    powerBtn.classList.toggle('off', !enabled);
-  }
-  if (statusText) {
-    statusText.textContent = enabled ? 'Active' : 'Paused';
-  }
+  toggleClasses(globalToggle, { disabled: !enabled });
+  toggleClasses(powerBtn, { off: !enabled });
+  setText(statusText, enabled ? 'Active' : 'Paused');
 }
 
 /**

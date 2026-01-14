@@ -3,7 +3,7 @@
  * Handles enabling/disabling the extension for specific sites
  */
 
-import { byID } from '@/utils';
+import { byID, toggleClasses, setText, setDisabled } from '@/utils';
 import { isSiteDisabled, toggleSite } from '@/extension';
 import { showStatus } from '@/extension';
 
@@ -17,10 +17,8 @@ export async function setupSiteToggle(hostname: string | null): Promise<void> {
 
   const updateToggleButton = (isDisabled: boolean, btn: HTMLButtonElement | null): void => {
     const toggleText = byID('toggleText');
-    if (btn && toggleText) {
-      btn.classList.toggle('disabled', isDisabled);
-      toggleText.textContent = isDisabled ? 'Disabled' : 'Enabled';
-    }
+    toggleClasses(btn, { disabled: isDisabled });
+    setText(toggleText, isDisabled ? 'Disabled' : 'Enabled');
   };
 
   toggleBtn?.addEventListener('click', async () => {
@@ -40,9 +38,6 @@ export async function setupSiteToggle(hostname: string | null): Promise<void> {
 
   if (siteNameEl) {
     siteNameEl.textContent = 'N/A';
-    if (!toggleBtn) return;
-    toggleBtn.setAttribute('disabled', 'true');
-    toggleBtn.style.opacity = '0.5';
-    toggleBtn.style.cursor = 'not-allowed';
+    setDisabled(toggleBtn, true);
   }
 }

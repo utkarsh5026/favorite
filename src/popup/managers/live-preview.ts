@@ -8,24 +8,50 @@ import { byID, setVisible, toggleClasses, setText } from '@/utils';
 import { loadSettings, getOriginalFaviconUrl } from '@/extension';
 import { clipImageToShape } from '@/images';
 
+const RECONNECT_DELAY_MS = 500;
+const RECONNECT_RETRY_DELAY_MS = 1000;
+
 let backgroundPort: chrome.runtime.Port | null = null;
+
+/**
+ * Connects to the background script with automatic reconnection
+ */
+function connectToBackground(): void {
+  if (backgroundPort) {
+    try {
+      backgroundPort.disconnect();
+    } catch {}
+    backgroundPort = null;
+  }
+
+  try {
+    backgroundPort = chrome.runtime.connect({ name: 'popup' });
+
+    backgroundPort.onMessage.addListener((message: LivePreviewMessage) => {
+      if (message.type === 'hover-update') {
+        updateLivePreview(message.imageUrl, message.imageInfo);
+      }
+    });
+
+    backgroundPort.onDisconnect.addListener(() => {
+      backgroundPort = null;
+      setTimeout(() => {
+        if (!backgroundPort) {
+          connectToBackground();
+        }
+      }, RECONNECT_DELAY_MS);
+    });
+  } catch (error) {
+    console.error('[Popup] Failed to connect to background:', error);
+    setTimeout(connectToBackground, RECONNECT_RETRY_DELAY_MS);
+  }
+}
 
 /**
  * Sets up the live preview connection to background script
  */
 export async function setupLivePreview(): Promise<void> {
-  backgroundPort = chrome.runtime.connect({ name: 'popup' });
-
-  backgroundPort.onMessage.addListener((message: LivePreviewMessage) => {
-    if (message.type === 'hover-update') {
-      updateLivePreview(message.imageUrl, message.imageInfo);
-    }
-  });
-
-  backgroundPort.onDisconnect.addListener(() => {
-    backgroundPort = null;
-  });
-
+  connectToBackground();
   loadOriginalFavicon();
 }
 

@@ -24,7 +24,7 @@ export function broadcastHoverState(
     imageInfo,
   };
 
-  chrome.runtime.sendMessage(message).catch(() => {
-    // Popup not open or background not ready, ignore
+  chrome.runtime.sendMessage(message).catch((error) => {
+    console.log('[Content] Failed to broadcast:', error);
   });
 }

@@ -19,7 +19,10 @@ function meetsMinimumSize(element: Element): boolean {
  * Handles mouseover events to change favicon on hover
  */
 export function handleImageHover(event: MouseEvent): void {
-  if (scriptState.isGloballyDisabled || scriptState.isCurrentSiteDisabled) return;
+  if (scriptState.isGloballyDisabled || scriptState.isCurrentSiteDisabled) {
+    console.log('[Content] Hover ignored - disabled (global:', scriptState.isGloballyDisabled, 'site:', scriptState.isCurrentSiteDisabled, ')');
+    return;
+  }
 
   clearHoverTimeout(state);
   clearRestoreTimeout(state);
@@ -32,6 +35,7 @@ export function handleImageHover(event: MouseEvent): void {
     const imageElement = findImage(target, mouseX, mouseY);
 
     if (!imageElement || !meetsMinimumSize(imageElement)) {
+      console.log('[Content] No valid image found or too small');
       state.currentHoverTimeout = null;
       return;
     }
@@ -39,7 +43,10 @@ export function handleImageHover(event: MouseEvent): void {
     const imageResult = extractImageData(imageElement);
 
     if (imageResult && imageResult.url) {
+      console.log('[Content] Image found, broadcasting to popup:', imageResult);
       broadcastToPopup(imageElement, imageResult);
+    } else {
+      console.log('[Content] No image data extracted');
     }
 
     state.currentHoverTimeout = null;

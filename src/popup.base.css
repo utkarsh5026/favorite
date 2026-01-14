@@ -194,6 +194,53 @@ input[type='range']::-moz-range-thumb {
   animation: livePulse 1.5s ease-in-out infinite;
 }
 
+/* ============================================
+   Loading Spinner Component
+   ============================================ */
+
+/* Simple rotating circle spinner */
+.spinner-circle {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-top-color: var(--color-accent-green); /* #78dc96 */
+  border-radius: 50%;
+}
+
+/* For larger contexts (editor) */
+.spinner-circle.large {
+  width: 24px;
+  height: 24px;
+  border-width: 3px;
+}
+
+/* Editor loading overlay */
+.editor-loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(13, 13, 15, 0.85); /* Semi-transparent dark background */
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  border-radius: 12px;
+}
+
+.editor-loading-overlay.hidden {
+  display: none !important;
+}
+
+/* Ensure loading states are properly visible */
+#livePreviewLoading,
+#faviconLoading {
+  pointer-events: none; /* Prevent interaction during loading */
+}
+
 /* State-based button animations */
 .download-btn.loading .download-icon {
   animation: rotate 0.8s linear infinite;

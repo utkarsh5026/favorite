@@ -97,6 +97,7 @@ export async function updateLivePreview(
   const previewInfo = byID('livePreviewInfo');
   const imageTypeEl = byID('liveImageType');
   const imageSizeEl = byID('liveImageSize');
+  const previewLoading = byID('livePreviewLoading');
 
   if (!previewImage || !previewEmpty) return;
 
@@ -108,6 +109,7 @@ export async function updateLivePreview(
       setVisible(previewImage, false);
       setVisible(previewEmpty, false);
       toggleClasses(previewLocked, { hidden: false, flex: true });
+      toggleClasses(previewLoading, { hidden: true, flex: false });
       previewInfo?.classList.remove('opacity-100');
       return;
     }
@@ -118,11 +120,18 @@ export async function updateLivePreview(
   if (!imageUrl) {
     setVisible(previewImage, false);
     setVisible(previewEmpty, true);
+    toggleClasses(previewLoading, { hidden: true, flex: false });
     previewInfo?.classList.remove('opacity-100');
     return;
   }
 
   const settings = await loadSettings();
+
+  // Show loading state while image loads
+  setVisible(previewImage, false);
+  setVisible(previewEmpty, false);
+  toggleClasses(previewLocked, { hidden: true, flex: false });
+  toggleClasses(previewLoading, { hidden: false, flex: true });
 
   const img = new Image();
   img.crossOrigin = 'anonymous';
@@ -144,6 +153,7 @@ export async function updateLivePreview(
   };
 
   img.onerror = () => {
+    toggleClasses(previewLoading, { hidden: true, flex: false });
     previewImage.src = imageUrl;
     showLivePreview();
   };
@@ -154,6 +164,7 @@ export async function updateLivePreview(
     setVisible(previewImage, true);
     setVisible(previewEmpty, false);
     toggleClasses(previewLocked, { hidden: true, flex: false });
+    toggleClasses(previewLoading, { hidden: true, flex: false });
 
     if (previewInfo && imageInfo) {
       previewInfo.classList.add('opacity-100');

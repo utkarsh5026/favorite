@@ -3,7 +3,7 @@
  * Handles the editor tab UI, toolbar buttons, and canvas display
  */
 
-import { byID, downloadImage, setActive, toggleClasses, setDisabled } from '@/utils';
+import { byID, downloadImage, setActive, toggleClasses, setDisabled, setVisible } from '@/utils';
 import { showStatus, getCurrentTabHostname, getCurrentTab } from '@/extension';
 import { setCustomFavicon, saveFaviconZIP } from '@/favicons';
 import { editorState } from './state';
@@ -43,6 +43,7 @@ export class EditorUI {
   private async renderCanvas(imageUrl: string | null): Promise<void> {
     const canvas = byID<HTMLCanvasElement>('editorCanvas');
     const container = byID('editorCanvasContainer');
+    const loadingOverlay = byID('editorLoading');
 
     if (!canvas || !container) return;
 
@@ -50,6 +51,7 @@ export class EditorUI {
     if (!ctx) return;
 
     if (!imageUrl) {
+      setVisible(loadingOverlay, false);
       canvas.width = 200;
       canvas.height = 200;
       ctx.fillStyle = this.backgroundColor;
@@ -57,29 +59,38 @@ export class EditorUI {
       return;
     }
 
-    const currentShape = editorState.getShape();
-    const shapedImageUrl = await applyShapeToImage(imageUrl, currentShape);
+    setVisible(loadingOverlay, true);
 
-    const img = await downloadImage(shapedImageUrl);
-    const containerWidth = container.clientWidth - 2; // Account for border
-    const maxHeight = 250;
+    try {
+      const currentShape = editorState.getShape();
+      const shapedImageUrl = await applyShapeToImage(imageUrl, currentShape);
 
-    let scale = 1;
-    if (img.naturalWidth > containerWidth) {
-      scale = containerWidth / img.naturalWidth;
+      const img = await downloadImage(shapedImageUrl);
+      const containerWidth = container.clientWidth - 2;
+      const maxHeight = 250;
+
+      let scale = 1;
+      if (img.naturalWidth > containerWidth) {
+        scale = containerWidth / img.naturalWidth;
+      }
+      if (img.naturalHeight * scale > maxHeight) {
+        scale = maxHeight / img.naturalHeight;
+      }
+
+      canvas.width = Math.round(img.naturalWidth * scale);
+      canvas.height = Math.round(img.naturalHeight * scale);
+
+      // Fill background color
+      ctx.fillStyle = this.backgroundColor;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+      setVisible(loadingOverlay, false);
+    } catch (error) {
+      console.error('Failed to render canvas:', error);
+      setVisible(loadingOverlay, false);
     }
-    if (img.naturalHeight * scale > maxHeight) {
-      scale = maxHeight / img.naturalHeight;
-    }
-
-    canvas.width = Math.round(img.naturalWidth * scale);
-    canvas.height = Math.round(img.naturalHeight * scale);
-
-    // Fill background color
-    ctx.fillStyle = this.backgroundColor;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
   }
 
   /**
@@ -369,3 +380,4 @@ export class EditorUI {
 // Export singleton instance and convenience function
 export const editorUI = new EditorUI();
 export const setupEditorUI = () => editorUI.setup();
+export const loadImageIntoEditor = (imageUrl: string) => editorUI.loadImageIntoEditor(imageUrl);

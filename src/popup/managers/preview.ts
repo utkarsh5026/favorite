@@ -20,7 +20,6 @@ export async function loadFaviconPreview(
   const faviconPreview = byID('faviconPreview');
   const faviconImage = byID<HTMLImageElement>('faviconImage');
   const faviconSizeLabel = byID('faviconSizeLabel');
-  const downloadBtn = byID<HTMLButtonElement>('downloadBtn');
 
   if (!faviconPreview || !faviconImage) return;
 
@@ -35,9 +34,14 @@ export async function loadFaviconPreview(
       faviconSizeLabel.textContent = `${faviconImage.naturalWidth}x${faviconImage.naturalHeight}`;
     }
 
-    if (downloadBtn) {
-      downloadBtn.disabled = false;
-    }
+    // Enable all action buttons when image is loaded
+    const downloadBtn = byID<HTMLButtonElement>('downloadBtn');
+    const bringToEditorBtn = byID<HTMLButtonElement>('bringToEditorBtn');
+    const setDefaultBtn = byID<HTMLButtonElement>('setDefaultBtn');
+
+    if (downloadBtn) downloadBtn.disabled = false;
+    if (bringToEditorBtn) bringToEditorBtn.disabled = false;
+    if (setDefaultBtn) setDefaultBtn.disabled = false;
 
     const settings = await loadSettings();
     await applyShapeToPreview(settings.faviconShape, faviconURL);

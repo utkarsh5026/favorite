@@ -1,6 +1,7 @@
 import { CONFIG, state } from '@/extension';
 import { all, setupCanvas } from '@/utils';
 import { clipImageToShape } from '@/images';
+import { initializeFaviconState } from './favicon-state';
 
 const DEFAULT_FAVICON_SIZE = 32;
 
@@ -149,9 +150,12 @@ const applyShapeMaskAndSetFavicon = (imageUrl: string, loadingId: number) => {
  * stores the href of the first one found. If no favicon link element exists, it
  * defaults to '/favicon.ico' as a fallback.
  *
+ * The original favicon is persisted to chrome.storage.local via initializeFaviconState,
+ * making it available across page reloads and accessible from the popup/extension context.
+ *
  * @remarks
  * - This function is idempotent - calling it multiple times will only save the favicon once
- * - The saved URL is stored in `state.originalFavicon`
+ * - The saved URL is stored in both `state.originalFavicon` (in-memory) and chrome.storage.local (persisted)
  * - If no favicon is found, it assumes the default '/favicon.ico' path
  * - This function should be called during initialization or before the first favicon change
  */
@@ -159,10 +163,14 @@ export function saveOriginalFavicon(): void {
   if (state.originalFavicon !== null) return;
 
   const existingFavicon = document.querySelector<HTMLLinkElement>('link[rel*="icon"]');
-  if (existingFavicon?.href) {
-    state.originalFavicon = existingFavicon.href;
-  } else {
-    state.originalFavicon = '/favicon.ico';
+  const faviconUrl = existingFavicon?.href || `${window.location.origin}/favicon.ico`;
+
+  state.originalFavicon = faviconUrl;
+
+  // Persist to storage for access from popup/extension context
+  const hostname = window.location.hostname;
+  if (hostname) {
+    initializeFaviconState(hostname, faviconUrl);
   }
 }
 
@@ -279,24 +287,28 @@ class Loader {
 }
 
 /**
- * Restores the favicon to either a custom default or the original page favicon.
+ * Restores the favicon to the user's default (custom if set, otherwise original).
  *
- * This function provides a smart restore mechanism that chooses between:
- * 1. A custom favicon URL if provided (with shape masking applied)
- * 2. The original page favicon if no custom URL is provided
+ * This function checks storage for a custom favicon set by the user. If one exists,
+ * it restores to that. Otherwise, it falls back to the original website favicon.
  *
- * This is useful when the extension has a default custom favicon that should be used
- * instead of the page's original favicon, while still supporting complete restoration
- * to the page's original.
- *
- * @param customFaviconUrl - Optional URL of a custom default favicon. If provided,
- *                           this will be used with shape masking. If null or undefined,
- *                           the original page favicon is restored instead.
+ * @param _customFaviconUrl - Deprecated parameter, no longer used
  */
-export function restoreToDefaultFavicon(customFaviconUrl: string | null): void {
-  if (customFaviconUrl) {
-    changeFavicon(customFaviconUrl);
+export async function restoreToDefaultFavicon(_customFaviconUrl: string | null): Promise<void> {
+  const hostname = window.location.hostname;
+  if (!hostname) {
+    restoreOriginalFavicon();
+    return;
+  }
+
+  const { getFaviconState } = await import('./favicon-state');
+  const faviconState = await getFaviconState(hostname);
+
+  if (faviconState && faviconState.current !== faviconState.original) {
+    // User has a custom favicon set - restore to that
+    changeFavicon(faviconState.current, false);
   } else {
+    // No custom favicon - restore to original
     restoreOriginalFavicon();
   }
 }

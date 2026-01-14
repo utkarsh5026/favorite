@@ -5,9 +5,8 @@
 
 import type { LivePreviewMessage } from '@/types';
 import { byID, setVisible, toggleClasses, setText } from '@/utils';
-import { loadSettings, getOriginalFaviconUrl, getCurrentTabHostname } from '@/extension';
+import { loadSettings, getOriginalFaviconUrl } from '@/extension';
 import { clipImageToShape } from '@/images';
-import { getLockedImage } from './lock';
 
 let backgroundPort: chrome.runtime.Port | null = null;
 
@@ -28,7 +27,6 @@ export async function setupLivePreview(): Promise<void> {
   });
 
   loadOriginalFavicon();
-  await checkAndShowLockedState();
 }
 
 /**
@@ -48,43 +46,6 @@ export async function loadOriginalFavicon() {
 }
 
 /**
- * Checks if the image is locked and shows the locked state
- */
-async function checkAndShowLockedState(): Promise<void> {
-  const hostname = await getCurrentTabHostname();
-  if (!hostname) return;
-
-  const lockedImage = await getLockedImage(hostname);
-
-  const previewLocked = byID('livePreviewLocked');
-  const previewEmpty = byID('livePreviewEmpty');
-  const previewImage = byID<HTMLImageElement>('livePreviewImage');
-  const lockedImageEl = byID<HTMLImageElement>('livePreviewLockedImage');
-
-  if (lockedImage && previewLocked && lockedImageEl) {
-    lockedImageEl.src = lockedImage.url;
-    toggleClasses(previewLocked, { hidden: false, flex: true });
-    setVisible(previewEmpty, false);
-    setVisible(previewImage, false);
-    return;
-  }
-
-  if (previewLocked) {
-    toggleClasses(previewLocked, { hidden: true, flex: false });
-    setVisible(previewEmpty, true);
-    setVisible(previewImage, false);
-  }
-}
-
-/**
- * Refreshes the locked state display
- * Call this when the lock state changes (e.g., after locking/unlocking)
- */
-export async function refreshLockedState(): Promise<void> {
-  await checkAndShowLockedState();
-}
-
-/**
  * Updates the live preview with the current hover image
  */
 export async function updateLivePreview(
@@ -93,29 +54,12 @@ export async function updateLivePreview(
 ): Promise<void> {
   const previewImage = byID<HTMLImageElement>('livePreviewImage');
   const previewEmpty = byID('livePreviewEmpty');
-  const previewLocked = byID('livePreviewLocked');
   const previewInfo = byID('livePreviewInfo');
   const imageTypeEl = byID('liveImageType');
   const imageSizeEl = byID('liveImageSize');
   const previewLoading = byID('livePreviewLoading');
 
   if (!previewImage || !previewEmpty) return;
-
-  const hostname = await getCurrentTabHostname();
-  if (hostname) {
-    const lockedImage = await getLockedImage(hostname);
-
-    if (lockedImage) {
-      setVisible(previewImage, false);
-      setVisible(previewEmpty, false);
-      toggleClasses(previewLocked, { hidden: false, flex: true });
-      toggleClasses(previewLoading, { hidden: true, flex: false });
-      previewInfo?.classList.remove('opacity-100');
-      return;
-    }
-  }
-
-  toggleClasses(previewLocked, { hidden: true, flex: false });
 
   if (!imageUrl) {
     setVisible(previewImage, false);
@@ -130,7 +74,6 @@ export async function updateLivePreview(
   // Show loading state while image loads
   setVisible(previewImage, false);
   setVisible(previewEmpty, false);
-  toggleClasses(previewLocked, { hidden: true, flex: false });
   toggleClasses(previewLoading, { hidden: false, flex: true });
 
   const img = new Image();
@@ -163,7 +106,6 @@ export async function updateLivePreview(
   function showLivePreview(): void {
     setVisible(previewImage, true);
     setVisible(previewEmpty, false);
-    toggleClasses(previewLocked, { hidden: true, flex: false });
     toggleClasses(previewLoading, { hidden: true, flex: false });
 
     if (previewInfo && imageInfo) {

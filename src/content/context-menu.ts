@@ -1,9 +1,9 @@
 /**
  * Context menu action handlers
  */
-import { setCustomFavicon, saveFaviconZIP } from '@/favicons';
-import { imageLocker, scriptState } from './state';
+import { saveFaviconZIP, changeFavicon, setCurrentFavicon } from '@/favicons';
 import type { ContextMenuMessage } from './types';
+import { CONTEXT_MENU } from '@/extension';
 
 /**
  * Shows a notification for context menu actions
@@ -52,19 +52,19 @@ export async function handleContextMenuAction(message: ContextMenuMessage): Prom
   const { action, imageUrl, hostname } = message;
 
   switch (action) {
-    case 'setDefault':
-      scriptState.setCustomFaviconUrl(imageUrl);
-
-      imageLocker.setCurrentHoveredImageUrl(imageUrl);
-      await imageLocker.lockCurrentImage();
-
-      await setCustomFavicon(hostname, imageUrl, () => {
-        showContextMenuNotification('Set as site default');
-      });
+    case CONTEXT_MENU.SET_DEFAULT:
+      await setCurrentFavicon(hostname, imageUrl);
+      changeFavicon(imageUrl);
+      showContextMenuNotification('Set as default favicon');
       break;
 
-    case 'download':
+    case CONTEXT_MENU.DOWNLOAD:
       await downloadFaviconFromContextMenu(imageUrl, hostname);
+      break;
+
+    case CONTEXT_MENU.PREVIEW:
+      changeFavicon(imageUrl, false); // false = don't apply shape (already applied by editor)
+      showContextMenuNotification('Preview applied (temporary)');
       break;
   }
 }

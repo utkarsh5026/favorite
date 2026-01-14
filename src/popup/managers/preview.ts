@@ -4,8 +4,8 @@
  */
 
 import { byID } from '@/utils';
-import { loadSettings, getOriginalFaviconUrl } from '@/extension';
-import { getLockedImage, updateLockUI } from './lock';
+import { loadSettings } from '@/extension';
+import { getCurrentFaviconUrl } from '@/favicons';
 import { applyShapeToPreview } from '@/images';
 
 /**
@@ -23,8 +23,6 @@ export async function loadFaviconPreview(
 
   if (!faviconPreview || !faviconImage) return;
 
-  const lockedImage = await getLockedImage(hostname);
-
   const onImageLoaded = async (faviconURL: string) => {
     onFaviconLoaded(faviconURL);
     faviconImage.classList.add('loaded');
@@ -37,49 +35,40 @@ export async function loadFaviconPreview(
     // Enable all action buttons when image is loaded
     const downloadBtn = byID<HTMLButtonElement>('downloadBtn');
     const bringToEditorBtn = byID<HTMLButtonElement>('bringToEditorBtn');
-    const setDefaultBtn = byID<HTMLButtonElement>('setDefaultBtn');
 
     if (downloadBtn) downloadBtn.disabled = false;
     if (bringToEditorBtn) bringToEditorBtn.disabled = false;
-    if (setDefaultBtn) setDefaultBtn.disabled = false;
 
     const settings = await loadSettings();
     await applyShapeToPreview(settings.faviconShape, faviconURL);
   };
 
-  if (lockedImage) {
-    updateLockUI(true);
-
+  const currentFavicon = await getCurrentFaviconUrl(hostname);
+  if (currentFavicon) {
     faviconImage.onload = async () => {
-      await onImageLoaded(lockedImage.url);
-    };
-
-    faviconImage.onerror = () => {
-      faviconPreview.classList.add('error');
-      updateLockUI(false);
-    };
-
-    faviconImage.src = lockedImage.url;
-    return;
-  }
-
-  const originalFavicon = await getOriginalFaviconUrl();
-  if (originalFavicon) {
-    updateLockUI(false);
-
-    faviconImage.onload = async () => {
-      await onImageLoaded(originalFavicon);
+      await onImageLoaded(currentFavicon);
     };
 
     faviconImage.onerror = () => {
       faviconPreview.classList.add('error');
     };
 
-    faviconImage.src = originalFavicon;
+    faviconImage.src = currentFavicon;
     return;
   }
 
-  // No locked image and no site favicon - show error state
+  // No favicon available - show error state
   faviconPreview.classList.add('error');
-  updateLockUI(false);
+}
+
+/**
+ * Listens for changes to faviconStates and triggers callback
+ * Used to auto-refresh preview when "Set Default" is clicked in editor
+ */
+export function listenForFaviconStatesChanges(onChangeCallback: () => void): void {
+  chrome.storage.onChanged.addListener((changes, areaName) => {
+    if (areaName === 'local' && changes.faviconStates) {
+      onChangeCallback();
+    }
+  });
 }

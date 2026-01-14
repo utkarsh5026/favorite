@@ -4,6 +4,7 @@
  */
 
 import { loadSettings } from './settings';
+import { getOriginalFaviconUrl as getOriginalFaviconFromStorage } from '@/favicons/favicon-state';
 
 /**
  * Gets the hostname of the current active tab
@@ -64,28 +65,32 @@ export async function toggleSite(hostname: string) {
 }
 
 /**
- * Gets the original favicon URL from the current tab
- * Uses the same approach as live-preview to get the actual favicon from the page
+ * Gets the original favicon URL from the current tab.
+ * Uses chrome.storage.local as the single source of truth for favicon state.
+ * Falls back to {origin}/favicon.ico if no state exists.
  */
 export async function getOriginalFaviconUrl(): Promise<string | null> {
-  const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-  const tab = tabs[0];
-
-  if (!tab?.id || !tab.url) {
+  const hostname = await getCurrentTabHostname();
+  if (!hostname) {
     return null;
   }
 
-  try {
-    const response = await chrome.tabs.sendMessage(tab.id, { type: 'getOriginalFavicon' });
-    if (response?.originalFavicon) {
-      return response.originalFavicon;
+  // Try to get from persisted storage first
+  const storedUrl = await getOriginalFaviconFromStorage(hostname);
+  if (storedUrl) {
+    return storedUrl;
+  }
+
+  // Fallback to default favicon.ico
+  const tab = await getCurrentTab();
+  if (tab?.url) {
+    try {
+      const parsedUrl = new URL(tab.url);
+      return `${parsedUrl.origin}/favicon.ico`;
+    } catch {
+      return null;
     }
-  } catch {}
-
-  try {
-    const parsedUrl = new URL(tab.url);
-    return `${parsedUrl.origin}/favicon.ico`;
-  } catch {
-    return null;
   }
+
+  return null;
 }

@@ -4,10 +4,11 @@
  */
 
 import { byID, downloadImage, setActive, toggleClasses, setDisabled, setVisible } from '@/utils';
-import { showStatus, getCurrentTabHostname, getCurrentTab } from '@/extension';
-import { setCustomFavicon, saveFaviconZIP } from '@/favicons';
+import { showStatus, getCurrentTabHostname, getCurrentTab, CONTEXT_MENU } from '@/extension';
+import { saveFaviconZIP, setCurrentFavicon } from '@/favicons';
 import { editorState } from './state';
 import { applyShapeToImage } from './transforms';
+import { setupUpload } from './upload';
 import type { EditorState } from './types';
 import type { FaviconShape } from '@/types';
 
@@ -153,75 +154,94 @@ export class EditorUI {
   }
 
   /**
+   * Get the current edited image with shape applied
+   */
+  private async getCurrentImage(): Promise<string | null> {
+    const imageUrl = editorState.getCurrentImage();
+    if (!imageUrl) {
+      return null;
+    }
+    const currentShape = editorState.getShape();
+    return await applyShapeToImage(imageUrl, currentShape);
+  }
+
+  /**
+   * Generic handler for button actions with loading state and error handling
+   */
+  private async handleButtonAction(
+    buttonId: string | null,
+    action: () => Promise<void>,
+    successMessage: string,
+    errorMessage: string
+  ): Promise<void> {
+    const btn = buttonId ? byID<HTMLButtonElement>(buttonId) : null;
+
+    if (btn) setDisabled(btn, true);
+
+    try {
+      await action();
+      showStatus(successMessage);
+    } catch (error) {
+      console.error(`${errorMessage}:`, error);
+      showStatus(errorMessage);
+    } finally {
+      if (btn) setDisabled(btn, false);
+    }
+  }
+
+  /**
    * Setup action buttons (download, set default, apply)
    */
   private setupActionButtons(): void {
     byID('editorDownload')?.addEventListener('click', async () => {
-      const imageUrl = editorState.getCurrentImage();
-      if (!imageUrl) return;
+      const currImage = await this.getCurrentImage();
+      if (!currImage) return;
 
-      const btn = byID<HTMLButtonElement>('editorDownload');
-      if (!btn) return;
+      await this.handleButtonAction(
+        'editorDownload',
+        async () => {
+          const img = await downloadImage(currImage);
+          await saveFaviconZIP(img, currImage, this.currentHostname || 'edited');
+        },
+        'Downloaded!',
+        'Download failed'
+      );
+    });
 
-      setDisabled(btn, true);
+    byID('editorApplyFavicon')?.addEventListener('click', async () => {
+      const imageUrl = await this.getCurrentImage();
+      if (!imageUrl || !this.currentHostname) return;
 
-      try {
-        const currentShape = editorState.getShape();
-        const shapedImageUrl = await applyShapeToImage(imageUrl, currentShape);
-        const img = await downloadImage(shapedImageUrl);
-        await saveFaviconZIP(img, shapedImageUrl, this.currentHostname || 'edited');
-        showStatus('Downloaded!');
-      } catch (error) {
-        console.error('Download failed:', error);
-        showStatus('Download failed');
-      } finally {
-        setDisabled(btn, false);
-      }
+      await this.handleButtonAction(
+        'editorApplyFavicon',
+        async () => {
+          await setCurrentFavicon(this.currentHostname!, imageUrl);
+        },
+        'Applied!',
+        'Failed to set default'
+      );
     });
 
     byID('editorSetDefault')?.addEventListener('click', async () => {
-      const imageUrl = editorState.getCurrentImage();
-      if (!imageUrl || !this.currentHostname) {
-        showStatus('No image or hostname');
-        return;
-      }
-
-      try {
-        // Apply shape before setting as default
-        const currentShape = editorState.getShape();
-        const shapedImageUrl = await applyShapeToImage(imageUrl, currentShape);
-        await setCustomFavicon(this.currentHostname, shapedImageUrl, () => {
-          showStatus('Set as default!');
-        });
-      } catch (error) {
-        console.error('Set default failed:', error);
-        showStatus('Failed to set default');
-      }
-    });
-
-    // Apply as Favicon
-    byID('editorApplyFavicon')?.addEventListener('click', async () => {
-      const imageUrl = editorState.getCurrentImage();
+      const imageUrl = await this.getCurrentImage();
       if (!imageUrl) return;
 
-      try {
-        const currentShape = editorState.getShape();
-        const shapedImageUrl = await applyShapeToImage(imageUrl, currentShape);
-
-        const tab = await getCurrentTab();
-        if (tab?.id) {
-          await chrome.tabs.sendMessage(tab.id, {
-            type: 'contextMenuAction',
-            action: 'preview',
-            imageUrl: shapedImageUrl,
-            hostname: this.currentHostname || '',
-          });
-          showStatus('Applied as favicon!');
-        }
-      } catch (error) {
-        console.error('Apply favicon failed:', error);
-        showStatus('Failed to apply');
-      }
+      await this.handleButtonAction(
+        null,
+        async () => {
+          const tab = await getCurrentTab();
+          if (tab?.id) {
+            await chrome.tabs.sendMessage(tab.id, {
+              type: 'contextMenuAction',
+              action: CONTEXT_MENU.SET_DEFAULT,
+              imageUrl,
+              hostname: this.currentHostname || '',
+            });
+          }
+        },
+        'Applied as favicon!',
+        'Failed to apply'
+      );
     });
   }
 
@@ -253,64 +273,9 @@ export class EditorUI {
    * Setup upload zone in editor tab
    */
   private setupEditorUpload(): void {
-    const uploadZone = byID('editorUploadZone');
-    const uploadInput = byID<HTMLInputElement>('editorUploadInput');
-
-    if (!uploadZone || !uploadInput) return;
-
-    uploadZone.addEventListener('click', () => {
-      uploadInput.click();
+    setupUpload(async (dataUrl) => {
+      await this.loadImageIntoEditor(dataUrl);
     });
-
-    uploadZone.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      setActive(uploadZone, true);
-      uploadZone.classList.add('drag-over'); // Keep for specificity
-    });
-
-    uploadZone.addEventListener('dragleave', () => {
-      uploadZone.classList.remove('drag-over');
-    });
-
-    uploadZone.addEventListener('drop', (e) => {
-      e.preventDefault();
-      uploadZone.classList.remove('drag-over');
-
-      const files = e.dataTransfer?.files;
-      if (files && files.length > 0) {
-        this.handleUploadFile(files[0]);
-      }
-    });
-
-    uploadInput.addEventListener('change', () => {
-      if (uploadInput.files && uploadInput.files.length > 0) {
-        this.handleUploadFile(uploadInput.files[0]);
-      }
-    });
-  }
-
-  /**
-   * Handle uploaded file
-   */
-  private handleUploadFile(file: File): void {
-    if (!file.type.startsWith('image/')) {
-      showStatus('Please select an image file');
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      showStatus('File too large (max 5MB)');
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      const dataUrl = e.target?.result as string;
-      if (dataUrl) {
-        await this.loadImageIntoEditor(dataUrl);
-      }
-    };
-    reader.readAsDataURL(file);
   }
 
   /**

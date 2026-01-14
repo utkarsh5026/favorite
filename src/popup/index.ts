@@ -3,14 +3,10 @@
  * Coordinates all popup modules and manages initialization
  */
 
-import { byID } from '@/utils';
-
-import { unlockImage, listenForLockedImageChanges } from './managers/lock';
-import { loadFaviconPreview } from './managers/preview';
+import { loadFaviconPreview, listenForFaviconStatesChanges } from './managers/preview';
 import { setupDownloadButton } from './managers/download';
-import { setupDefaultImageButton } from './managers/default-image';
 import { setupBringToEditorButton } from './managers/bring-to-editor';
-import { setupLivePreview, refreshLockedState } from './managers/live-preview';
+import { setupLivePreview } from './managers/live-preview';
 
 import { setupToggles } from './ui/toggle';
 import { setupResetButtons } from './ui/reset';
@@ -19,8 +15,7 @@ import { initButtons } from './ui/button';
 import { setupTabs, switchToTab } from './tabs/manager';
 import { setupEditorUI } from './editor';
 
-import { showStatus, getCurrentTabHostname } from '@/extension';
-import { loadCustomFaviconSection, removeCustomFavicon } from '@/favicons';
+import { getCurrentTabHostname } from '@/extension';
 
 let currentFaviconUrl: string | null = null;
 
@@ -32,13 +27,11 @@ async function initializeHostnameFeatures(hostname: string | null): Promise<void
   await loadFaviconPreview(hostname, (url) => {
     currentFaviconUrl = url;
   });
-  await loadCustomFaviconSection(hostname);
 
-  listenForLockedImageChanges(hostname, () => {
+  listenForFaviconStatesChanges(() => {
     loadFaviconPreview(hostname, (url) => {
       currentFaviconUrl = url;
     });
-    refreshLockedState();
   });
 }
 
@@ -68,26 +61,7 @@ async function init(): Promise<void> {
     () => currentHostname
   );
 
-  const unlockBtn = byID('unlockBtn');
-  unlockBtn?.addEventListener('click', () => {
-    unlockImage();
-    currentFaviconUrl = null;
-  });
-
-  setupDefaultImageButton(
-    () => currentFaviconUrl,
-    () => currentHostname
-  );
-
   setupBringToEditorButton(() => currentFaviconUrl);
-
-  const removeDefaultBtn = byID('removeDefaultBtn');
-  removeDefaultBtn?.addEventListener('click', () => {
-    if (!currentHostname) return;
-    removeCustomFavicon(currentHostname, () => {
-      showStatus('Default removed');
-    });
-  });
 
   setupResetButtons(currentHostname, () => {
     location.reload();

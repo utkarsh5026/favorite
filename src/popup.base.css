@@ -302,10 +302,6 @@ input[type='range']::-moz-range-thumb {
   display: flex !important;
 }
 
-#customFaviconSection.visible {
-  display: block !important;
-}
-
 #historySection.visible {
   display: block !important;
 }

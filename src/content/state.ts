@@ -1,6 +1,3 @@
-import { state } from '@/extension';
-import { ImageLocker } from '@/lock';
-
 /**
  * Central state management for content script
  * Encapsulates all global state variables in a class
@@ -8,7 +5,6 @@ import { ImageLocker } from '@/lock';
 export class ContentScriptState {
   private _isCurrentSiteDisabled = false;
   private _isGloballyDisabled = false;
-  private _customFaviconUrl: string | null = null;
   private _lastBroadcast = 0;
   private _currentHostname: string | null = null;
 
@@ -26,14 +22,6 @@ export class ContentScriptState {
 
   setGloballyDisabled(value: boolean): void {
     this._isGloballyDisabled = value;
-  }
-
-  get customFaviconUrl(): string | null {
-    return this._customFaviconUrl;
-  }
-
-  setCustomFaviconUrl(url: string | null): void {
-    this._customFaviconUrl = url;
   }
 
   get lastBroadcast(): number {
@@ -58,7 +46,6 @@ export class ContentScriptState {
   reset(): void {
     this._isCurrentSiteDisabled = false;
     this._isGloballyDisabled = false;
-    this._customFaviconUrl = null;
     this._lastBroadcast = 0;
     this._currentHostname = null;
   }
@@ -66,6 +53,3 @@ export class ContentScriptState {
 
 // Singleton instance for use across all content script modules
 export const scriptState = new ContentScriptState();
-
-// ImageLocker instance for managing locked favicon state
-export const imageLocker = new ImageLocker(state);

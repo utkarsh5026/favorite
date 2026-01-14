@@ -38,21 +38,6 @@
                   <div class="spinner-circle animate-rotate"></div>
                   <span class="text-2xs text-text-subtle text-center leading-tight">Loading...</span>
                 </div>
-                <div class="hidden flex-col items-center justify-center gap-2 w-full h-full" id="livePreviewLocked">
-                  <div class="relative">
-                    <img id="livePreviewLockedImage" alt="Locked image" class="w-10 h-10 rounded-full object-cover border-2 border-accent-green/50 shadow-[0_2px_8px_rgba(120,220,150,0.25)]" />
-                    <div class="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-gradient-to-br from-dark to-dark-100 border-2 border-accent-green/60 flex items-center justify-center shadow-lg">
-                      <svg class="w-2.5 h-2.5 stroke-accent-green" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                      </svg>
-                    </div>
-                  </div>
-                  <div class="flex flex-col items-center gap-0.5 px-1">
-                    <span class="text-xs text-accent-green text-center leading-tight font-semibold tracking-tight">Locked</span>
-                    <span class="text-2xs text-text-muted text-center leading-tight">Preview disabled</span>
-                  </div>
-                </div>
               </div>
               <span class="text-[9px] text-text-subtle uppercase tracking-wide">Preview</span>
             </div>
@@ -109,13 +94,6 @@
       <div class="mt-2">
         <div class="flex items-center justify-between mb-2.5">
           <label class="text-sm font-medium text-text-subtle uppercase tracking-wider">Image to Download</label>
-          <span class="hidden items-center gap-[5px] bg-gradient-to-br from-surface-light to-surface-light-hover text-text-dark px-2.5 py-[5px] rounded-md text-xs font-semibold shadow-[0_2px_4px_rgba(0,0,0,0.15)]" id="lockBadge">
-            <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-            </svg>
-            Locked
-          </span>
         </div>
         <div class="flex items-center gap-3.5 bg-white/[0.02] rounded-lg p-3.5 mb-3 border border-border-subtle backdrop-blur-xs">
           <div class="w-13 h-13 bg-surface-dark rounded-lg flex items-center justify-center overflow-hidden relative border border-border-light shadow-inset" id="faviconPreview">
@@ -130,42 +108,8 @@
             <span class="text-md text-text-primary font-normal" id="faviconLabel">Image</span>
             <span class="text-sm text-text-muted" id="faviconSizeLabel">-</span>
           </div>
-          <button class="hidden items-center justify-center w-9 h-9 bg-white/[0.05] border border-border-light rounded-lg cursor-pointer transition-all duration-250 ease-bounce ml-auto hover:bg-white/[0.08] hover:border-white/25 hover:-translate-y-px" id="unlockBtn" title="Unlock image">
-            <svg class="w-4 h-4 stroke-text-secondary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-              <path d="M7 11V7a5 5 0 0 1 9.9-1" />
-            </svg>
-          </button>
         </div>
         <div id="actionButtons"></div>
-      </div>
-
-      <!-- Custom Favicon Section -->
-      <div class="hidden mt-4.5 pt-4.5 border-t border-border-light" id="customFaviconSection">
-        <div class="flex items-center justify-between mb-2.5">
-          <label class="text-sm font-medium text-text-subtle uppercase tracking-wider">Custom Favicon</label>
-          <span class="flex items-center gap-[5px] bg-white/[0.08] text-text-secondary px-2.5 py-[5px] rounded-md text-xs font-semibold border border-border-medium" id="customBadge">
-            <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
-            </svg>
-            Active
-          </span>
-        </div>
-        <div class="flex items-center gap-3.5 bg-white/[0.02] rounded-lg p-3.5 border border-border-subtle backdrop-blur-xs">
-          <div class="w-11 h-11 bg-surface-dark rounded-lg flex items-center justify-center overflow-hidden border border-border-light shadow-inset" id="customFaviconPreview">
-            <img id="customFaviconImage" alt="Custom favicon" class="max-w-full max-h-full object-contain" />
-          </div>
-          <div class="flex-1 flex flex-col gap-1">
-            <span class="text-base text-text-primary font-normal">Default for this site</span>
-            <span class="text-xs text-text-muted" id="customFaviconHint">-</span>
-          </div>
-          <button class="flex items-center justify-center w-9 h-9 bg-white/[0.05] border border-border-light rounded-lg cursor-pointer transition-all duration-250 ease-bounce hover:bg-accent-red/15 hover:border-accent-red/40 hover:-translate-y-px group" id="removeDefaultBtn" title="Remove custom favicon">
-            <svg class="w-4 h-4 stroke-text-secondary transition-colors duration-250 group-hover:stroke-accent-red" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
-        </div>
       </div>
 
       <!-- Reset Section -->
@@ -315,7 +259,7 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M20 6L9 17l-5-5" />
               </svg>
-              Apply
+              Preview
             </button>
           </div>
         </div>

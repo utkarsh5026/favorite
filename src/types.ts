@@ -21,36 +21,26 @@ export interface ImageExtractionResult {
 }
 
 /**
- * Locked image data stored in chrome.storage.local
+ * Favicon state for a site - tracks original and current favicon
  */
-export interface LockedImage {
-  /** The image URL */
-  url: string;
-  /** Hostname where the image was locked */
-  hostname: string;
-  /** Timestamp when the image was locked */
+export interface FaviconState {
+  /** The website's original favicon URL */
+  original: string;
+  /** The currently active favicon URL (can be same as original or custom) */
+  current: string;
+  /** Timestamp when current was last updated */
   timestamp: number;
 }
 
 /**
- * Custom favicon for a specific site
+ * Map of hostnames to their favicon states
  */
-export interface CustomFavicon {
-  /** The favicon image URL (data URL for persistence) */
-  url: string;
-  /** Timestamp when the favicon was set */
-  timestamp: number;
-}
-
-/**
- * Map of hostnames to custom favicons
- */
-export type CustomFavicons = Record<string, CustomFavicon>;
+export type FaviconStates = Record<string, FaviconState>;
 
 /**
  * Context menu action types
  */
-export type ContextMenuAction = 'setDefault' | 'download';
+export type ContextMenuAction = 'setDefault' | 'download' | 'edit' | 'preview';
 
 /**
  * History entry for a previewed/locked favicon
@@ -63,7 +53,7 @@ export interface HistoryEntry {
   /** Timestamp when previewed/locked */
   timestamp: number;
   /** Type of action that created this entry */
-  source: 'lock' | 'upload';
+  source: 'hover' | 'upload';
 }
 
 /**

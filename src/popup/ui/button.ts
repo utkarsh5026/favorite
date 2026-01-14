@@ -21,7 +21,7 @@ function initButtonGroup(containerId: string, buttons: BtnConfig[]) {
   if (!container) return;
 
   container.className = 'btn-group';
-  const borders = ['border-none', 'border-l border-r border-border-medium', 'border-none'];
+  const borders = ['border-none', 'border-none'];
   container.innerHTML = buttons
     .map((b, i) => btn(b, b.primary ? 'border-none' : borders[i]))
     .join('');
@@ -41,12 +41,6 @@ export function initButtons() {
       label: 'Editor',
       title: 'Open in editor',
       icon: `<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>`,
-    },
-    {
-      id: 'setDefaultBtn',
-      label: 'Default',
-      title: 'Set as default favicon for this site',
-      icon: `<path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>`,
     },
   ]);
 }

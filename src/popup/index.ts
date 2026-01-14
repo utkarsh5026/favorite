@@ -9,16 +9,17 @@ import { unlockImage, listenForLockedImageChanges } from './managers/lock';
 import { loadFaviconPreview } from './managers/preview';
 import { setupDownloadButton } from './managers/download';
 import { setupDefaultImageButton } from './managers/default-image';
+import { setupBringToEditorButton } from './managers/bring-to-editor';
 import { setupLivePreview, refreshLockedState } from './managers/live-preview';
 
-import { setupGlobalToggle } from './ui/global-toggle';
-import { setupSiteToggle } from './ui/site-toggle';
-import { setupShapeButtons } from './ui/shapes';
-import { setupSliders } from './ui/sliders';
-import { setupUploadZone } from './ui/upload';
+import { setupToggles } from './ui/toggle';
 import { setupResetButtons } from './ui/reset';
+import { initButtons } from './ui/button';
 
-import { showStatus, loadSettings, getCurrentTabHostname } from '@/extension';
+import { setupTabs, switchToTab } from './tabs/manager';
+import { setupEditorUI } from './editor';
+
+import { showStatus, getCurrentTabHostname } from '@/extension';
 import { loadCustomFaviconSection, removeCustomFavicon } from '@/favicons';
 
 let currentFaviconUrl: string | null = null;
@@ -26,7 +27,8 @@ let currentFaviconUrl: string | null = null;
 /**
  * Initializes hostname-specific features (preview, listeners)
  */
-async function initializeHostnameFeatures(hostname: string): Promise<void> {
+async function initializeHostnameFeatures(hostname: string | null): Promise<void> {
+  if (!hostname) return;
   await loadFaviconPreview(hostname, (url) => {
     currentFaviconUrl = url;
   });
@@ -44,20 +46,22 @@ async function initializeHostnameFeatures(hostname: string): Promise<void> {
  * Initializes the popup by loading settings, setting up UI components, and attaching event listeners
  */
 async function init(): Promise<void> {
-  const settings = await loadSettings();
   const currentHostname = await getCurrentTabHostname();
 
-  await setupGlobalToggle();
-  setupSiteToggle(currentHostname);
-
-  setupSliders(settings);
-  setupShapeButtons(settings.faviconShape, () => currentFaviconUrl);
-  setupUploadZone(currentHostname);
-  setupLivePreview();
-
-  if (currentHostname) {
-    await initializeHostnameFeatures(currentHostname);
+  setupTabs();
+  const pendingEdit = await chrome.storage.local.get('pendingEditImage');
+  if (pendingEdit.pendingEditImage?.imageUrl) {
+    switchToTab('editor');
   }
+
+  await Promise.all([
+    setupEditorUI(),
+    setupToggles(currentHostname),
+    setupLivePreview(),
+    initializeHostnameFeatures(currentHostname),
+  ]);
+
+  initButtons();
 
   setupDownloadButton(
     () => currentFaviconUrl,
@@ -74,6 +78,8 @@ async function init(): Promise<void> {
     () => currentFaviconUrl,
     () => currentHostname
   );
+
+  setupBringToEditorButton(() => currentFaviconUrl);
 
   const removeDefaultBtn = byID('removeDefaultBtn');
   removeDefaultBtn?.addEventListener('click', () => {

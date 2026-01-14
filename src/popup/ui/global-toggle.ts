@@ -26,7 +26,7 @@ export function updateGlobalToggleUI(enabled: boolean): void {
   const statusText = byID('globalToggleStatus');
 
   toggleClasses(globalToggle, { disabled: !enabled });
-  toggleClasses(powerBtn, { off: !enabled });
+  toggleClasses(powerBtn, { active: enabled });
   setText(statusText, enabled ? 'Active' : 'Paused');
 }
 

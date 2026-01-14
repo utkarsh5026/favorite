@@ -16,9 +16,7 @@ export async function setupSiteToggle(hostname: string | null): Promise<void> {
   const toggleBtn = byID<HTMLButtonElement>('toggleBtn');
 
   const updateToggleButton = (isDisabled: boolean, btn: HTMLButtonElement | null): void => {
-    const toggleText = byID('toggleText');
-    toggleClasses(btn, { disabled: isDisabled });
-    setText(toggleText, isDisabled ? 'Disabled' : 'Enabled');
+    toggleClasses(btn, { disabled: isDisabled, active: !isDisabled });
   };
 
   toggleBtn?.addEventListener('click', async () => {

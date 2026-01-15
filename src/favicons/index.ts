@@ -11,3 +11,11 @@ export {
   restoreToDefaultFavicon,
   saveOriginalFavicon,
 } from './favicon';
+export {
+  getFaviconState,
+  initializeFaviconState,
+  setCurrentFavicon,
+  resetToOriginal,
+  getCurrentFaviconUrl,
+  getOriginalFaviconUrl,
+} from './favicon-state';

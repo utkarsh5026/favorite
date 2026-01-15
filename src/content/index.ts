@@ -5,9 +5,8 @@
 
 import { init, cleanup } from './initialization';
 import { handleContextMenuAction } from './context-menu';
-import { scriptState, imageLocker } from './state';
 import { state } from '@/extension';
-import { restoreOriginalFavicon } from '@/favicons';
+import { restoreOriginalFavicon, resetToOriginal } from '@/favicons';
 import type { ContextMenuMessage } from './types';
 
 if (document.readyState === 'loading') {
@@ -28,11 +27,12 @@ chrome.runtime.onMessage.addListener(
     }
 
     if (message.type === 'RESTORE_ORIGINAL_FAVICON') {
-      imageLocker.unlockImage(null);
-      scriptState.setCustomFaviconUrl(null);
-      restoreOriginalFavicon();
-      sendResponse({ success: true });
-      return false;
+      const hostname = window.location.hostname;
+      resetToOriginal(hostname).then(() => {
+        restoreOriginalFavicon();
+        sendResponse({ success: true });
+      });
+      return true;
     }
 
     if (message.type !== 'contextMenuAction') return false;

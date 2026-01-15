@@ -194,6 +194,53 @@ input[type='range']::-moz-range-thumb {
   animation: livePulse 1.5s ease-in-out infinite;
 }
 
+/* ============================================
+   Loading Spinner Component
+   ============================================ */
+
+/* Simple rotating circle spinner */
+.spinner-circle {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-top-color: var(--color-accent-green); /* #78dc96 */
+  border-radius: 50%;
+}
+
+/* For larger contexts (editor) */
+.spinner-circle.large {
+  width: 24px;
+  height: 24px;
+  border-width: 3px;
+}
+
+/* Editor loading overlay */
+.editor-loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(13, 13, 15, 0.85); /* Semi-transparent dark background */
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  border-radius: 12px;
+}
+
+.editor-loading-overlay.hidden {
+  display: none !important;
+}
+
+/* Ensure loading states are properly visible */
+#livePreviewLoading,
+#faviconLoading {
+  pointer-events: none; /* Prevent interaction during loading */
+}
+
 /* State-based button animations */
 .download-btn.loading .download-icon {
   animation: rotate 0.8s linear infinite;
@@ -255,10 +302,6 @@ input[type='range']::-moz-range-thumb {
   display: flex !important;
 }
 
-#customFaviconSection.visible {
-  display: block !important;
-}
-
 #historySection.visible {
   display: block !important;
 }
@@ -280,46 +323,9 @@ input[type='range']::-moz-range-thumb {
   opacity: 1 !important;
 }
 
-/* Shape button active state */
-.shape-btn.active {
-  border-color: rgba(255, 255, 255, 0.3) !important;
-  background: rgba(255, 255, 255, 0.08) !important;
-  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.05);
-}
-
 /* Global toggle disabled state */
-#globalToggle.disabled {
-  background: rgba(255, 60, 60, 0.05);
-  border-color: rgba(255, 100, 100, 0.15);
-}
-
 #globalToggle.disabled #globalToggleStatus {
   color: #ff8888;
-}
-
-/* Power button off state */
-#powerBtn.off {
-  background: rgba(255, 100, 100, 0.15);
-  border-color: rgba(255, 100, 100, 0.3);
-}
-
-#powerBtn.off:hover {
-  background: rgba(255, 100, 100, 0.25);
-  box-shadow: 0 0 15px rgba(255, 100, 100, 0.3);
-}
-
-#powerBtn.off svg {
-  stroke: #ff8888;
-}
-
-/* Toggle button disabled state */
-#toggleBtn.disabled {
-  background: rgba(255, 255, 255, 0.08);
-  box-shadow: none;
-}
-
-#toggleBtn.disabled #toggleText {
-  color: #8a8a8d;
 }
 
 /* Upload zone drag-over state */
@@ -350,6 +356,63 @@ input[type='range']::-moz-range-thumb {
 
 .set-default-btn.success svg {
   stroke: #78dc96;
+}
+
+/* Toggle Switch Styles */
+.toggle-switch {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--color-border-medium);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.toggle-switch:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.toggle-switch .toggle-slider {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  background: linear-gradient(135deg, #f0f0f2 0%, #e0e0e5 100%);
+  border-radius: 50%;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.toggle-switch.active {
+  background: rgba(120, 220, 150, 0.2);
+  border-color: rgba(120, 220, 150, 0.4);
+}
+
+.toggle-switch.active .toggle-slider {
+  transform: translateX(16px);
+  background: linear-gradient(135deg, #78dc96 0%, #60c880 100%);
+}
+
+.toggle-switch.active:hover {
+  background: rgba(120, 220, 150, 0.25);
+}
+
+.toggle-switch.disabled {
+  background: rgba(255, 100, 100, 0.15);
+  border-color: rgba(255, 100, 100, 0.3);
+}
+
+.toggle-switch.disabled .toggle-slider {
+  background: linear-gradient(135deg, #ff8888 0%, #ff6b6b 100%);
+}
+
+.toggle-switch.disabled:hover {
+  background: rgba(255, 100, 100, 0.2);
 }
 
 /* History item styles (dynamically created) */
@@ -384,4 +447,316 @@ input[type='range']::-moz-range-thumb {
   right: 2px;
   font-size: 10px;
   line-height: 1;
+}
+
+/* Button Group Styles (shadcn-style) */
+.btn-group {
+  display: flex;
+  width: 100%;
+  position: relative;
+}
+
+.btn-group-item {
+  position: relative;
+}
+
+.btn-group-item:first-child {
+  border-top-left-radius: 8px;
+  border-bottom-left-radius: 8px;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.btn-group-item:last-child {
+  border-top-right-radius: 8px;
+  border-bottom-right-radius: 8px;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+.btn-group-item:not(:first-child):not(:last-child) {
+  border-radius: 0;
+}
+
+.btn-group-item:not(:last-child) {
+  margin-right: -1px;
+}
+
+.btn-group-item.bring-to-editor-btn.loading svg {
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+.btn-group-item.bring-to-editor-btn.success {
+  background: rgba(120, 220, 150, 0.15);
+  border-color: rgba(120, 220, 150, 0.4);
+}
+
+.btn-group-item.bring-to-editor-btn.success svg {
+  stroke: #78dc96;
+}
+
+/* Tab Navigation Styles */
+.tab-nav {
+  display: flex;
+  border-bottom: 1px solid var(--color-border-subtle);
+  margin-bottom: 1rem;
+}
+
+.tab-btn {
+  padding: 0.5rem 1rem;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.tab-btn:hover {
+  color: var(--color-text-secondary);
+}
+
+.tab-btn.active {
+  color: var(--color-text-primary);
+  border-bottom-color: var(--color-accent-green);
+}
+
+.tab-content {
+  display: none;
+}
+
+.tab-content.active {
+  display: block;
+}
+
+/* Editor Tab Styles */
+.editor-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.editor-toolbar-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--color-border-subtle);
+  margin: 0 0.25rem;
+}
+
+.editor-toolbar-break {
+  flex-basis: 100%;
+  height: 0;
+}
+
+.editor-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--color-border-light);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: var(--color-text-secondary);
+}
+
+.editor-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--color-border-medium);
+}
+
+.editor-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.editor-btn.active {
+  background: rgba(120, 220, 150, 0.15);
+  border-color: rgba(120, 220, 150, 0.4);
+  color: var(--color-accent-green);
+}
+
+/* Shape button specific active state */
+.editor-btn.shape-btn.active {
+  background: rgba(120, 220, 150, 0.15);
+  border-color: rgba(120, 220, 150, 0.4);
+  color: var(--color-accent-green);
+}
+
+.editor-btn svg {
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
+}
+
+/* Editor Canvas Container */
+.editor-canvas-container {
+  position: relative;
+  background: var(--color-surface-dark);
+  border-radius: 12px;
+  border: 1px solid var(--color-border-subtle);
+  overflow: hidden;
+  min-height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.editor-canvas-container canvas {
+  max-width: 100%;
+  max-height: 250px;
+  object-fit: contain;
+}
+
+/* Background Color Picker */
+#canvasBgColor {
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 2px;
+}
+
+#canvasBgColor::-webkit-color-swatch-wrapper {
+  padding: 0;
+  border-radius: 6px;
+}
+
+#canvasBgColor::-webkit-color-swatch {
+  border: none;
+  border-radius: 4px;
+}
+
+#canvasBgColor::-moz-color-swatch {
+  border: none;
+  border-radius: 4px;
+}
+
+#canvasBgColor:hover {
+  transform: scale(1.1);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Editor Actions */
+.editor-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.editor-action-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.editor-action-btn.primary {
+  background: white;
+  border: none;
+  color: var(--color-text-dark);
+}
+
+.editor-action-btn.primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.editor-action-btn.secondary {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--color-border-medium);
+  color: var(--color-text-secondary);
+}
+
+.editor-action-btn.secondary:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.editor-action-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.editor-action-btn svg {
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
+}
+
+/* Editor Empty State */
+.editor-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1rem;
+  text-align: center;
+}
+
+.editor-empty svg {
+  width: 48px;
+  height: 48px;
+  stroke: var(--color-text-subtle);
+  margin-bottom: 1rem;
+}
+
+.editor-empty p {
+  color: var(--color-text-subtle);
+  font-size: 12px;
+  margin: 0;
+}
+
+.editor-empty p.hint {
+  color: var(--color-text-muted);
+  font-size: 10px;
+  margin-top: 0.5rem;
+}
+
+/* Editor Content (shown when image loaded) */
+.editor-content {
+  display: none;
+}
+
+.editor-content.visible {
+  display: block;
+}
+
+#editorTab .editor-empty {
+  display: flex;
+}
+
+#editorTab.has-image .editor-empty {
+  display: none;
+}
+
+#editorTab.has-image .editor-content {
+  display: block;
+}
+
+/* Checkerboard transparency pattern for image previews */
+.checkerboard {
+  --checker-size: 8px;
+  --checker-light: #4a4a4f;
+  --checker-dark: #2a2a2d;
+  background-image: conic-gradient(
+    var(--checker-light) 0 25%,
+    var(--checker-dark) 0 50%,
+    var(--checker-light) 0 75%,
+    var(--checker-dark) 0
+  );
+  background-size: calc(var(--checker-size) * 2) calc(var(--checker-size) * 2);
 }

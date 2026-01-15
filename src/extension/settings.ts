@@ -6,6 +6,7 @@
 import type { UserSettings } from './types';
 import { DEFAULT_SETTINGS } from './state';
 import { byID } from '@/utils';
+import { resetToOriginal } from '@/favicons';
 
 /**
  * Loads user settings from Chrome storage
@@ -45,8 +46,7 @@ export function showStatus(message: string): void {
  */
 export async function resetAllSettings(): Promise<void> {
   await chrome.storage.sync.set(DEFAULT_SETTINGS);
-  await chrome.storage.local.set({ customFavicons: {} });
-  await chrome.storage.local.remove('lockedImage');
+  await chrome.storage.local.remove('faviconStates');
 }
 
 /**
@@ -58,12 +58,5 @@ export async function resetSiteSettings(hostname: string): Promise<void> {
   const disabledSites = settings.disabledSites.filter((site) => site !== hostname);
   await chrome.storage.sync.set({ disabledSites });
 
-  const { customFavicons = {} } = await chrome.storage.local.get('customFavicons');
-  delete customFavicons[hostname];
-  await chrome.storage.local.set({ customFavicons });
-
-  const { lockedImage } = await chrome.storage.local.get('lockedImage');
-  if (lockedImage?.hostname === hostname) {
-    await chrome.storage.local.remove('lockedImage');
-  }
+  await resetToOriginal(hostname);
 }

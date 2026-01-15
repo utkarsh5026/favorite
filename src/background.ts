@@ -1,6 +1,7 @@
 import type { ContextMenuAction, ContextMenuMessage } from './types';
 
 const MENU_ITEMS: Array<{ id: string; title: string; action: ContextMenuAction }> = [
+  { id: 'edit-image', title: 'Edit Image', action: 'edit' },
   { id: 'set-default-favicon', title: 'Set as Site Default', action: 'setDefault' },
   { id: 'download-favicon', title: 'Download as Favicon', action: 'download' },
 ];
@@ -40,6 +41,30 @@ function handleContextMenuClick(
     return;
   }
 
+  // Handle 'edit' action specially - store in storage for popup to pick up
+  if (menuItem.action === 'edit') {
+    chrome.storage.local
+      .set({
+        pendingEditImage: {
+          imageUrl: info.srcUrl,
+          hostname,
+          timestamp: Date.now(),
+        },
+      })
+      .then(() => {
+        chrome.notifications.create({
+          type: 'basic',
+          iconUrl: 'icons/icon128.png',
+          title: 'Image Ready to Edit',
+          message: 'Open the extension popup to edit this image.',
+        });
+      })
+      .catch((error) => {
+        console.error('Failed to store pending edit image:', error);
+      });
+    return;
+  }
+
   const message: ContextMenuMessage = {
     type: 'contextMenuAction',
     action: menuItem.action,
@@ -68,9 +93,20 @@ let popupPort: chrome.runtime.Port | null = null;
 
 chrome.runtime.onConnect.addListener((port) => {
   if (port.name === 'popup') {
+    if (popupPort) {
+      try {
+        popupPort.disconnect();
+      } catch {
+        // Ignore errors from already disconnected port
+      }
+    }
+
     popupPort = port;
+
     port.onDisconnect.addListener(() => {
-      popupPort = null;
+      if (popupPort === port) {
+        popupPort = null;
+      }
     });
   }
 });

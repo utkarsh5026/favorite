@@ -1,11 +1,10 @@
 /**
  * Storage change listeners for extension state
  */
-import { saveOriginalFavicon, changeFavicon, restoreOriginalFavicon } from '@/favicons';
-import { scriptState, imageLocker } from './state';
-import { checkCustomFavicon } from './custom-favicon';
-import { addListeners, handleImageHover, handleImageLeave, handleKeyDown } from './handlers';
-import type { CustomFavicons } from './types';
+import { saveOriginalFavicon, changeFavicon } from '@/favicons';
+import type { FaviconStates } from '@/types';
+import { scriptState } from './state';
+import { addListeners } from './handlers';
 
 const STORAGE_AREA = {
   LOCAL: 'local',
@@ -25,11 +24,8 @@ export function setCleanupCallback(callback: () => void): void {
 /**
  * Enables extension functionality by setting up event listeners
  */
-function enableExtension(withCustomFavicon = false): void {
+function enableExtension(): void {
   saveOriginalFavicon();
-  if (withCustomFavicon) {
-    checkCustomFavicon();
-  }
   addListeners();
 }
 
@@ -43,34 +39,15 @@ function disableExtension(): void {
 }
 
 /**
- * Handles unlock messages from popup
+ * Handles changes to favicon states storage
  */
-function handleLockedImageChange(newValue: unknown): void {
-  if (!newValue) {
-    imageLocker.handleUnlockFromStorage(scriptState.customFaviconUrl);
-  }
-}
-
-/**
- * Handles changes to custom favicons
- */
-function handleCustomFaviconsChange(icons: CustomFavicons): void {
+function handleFaviconStatesChange(newStates: FaviconStates | undefined): void {
   const hostname = scriptState.currentHostname;
-  if (!hostname) return;
+  if (!hostname || !newStates) return;
 
-  const icon = icons[hostname];
-
-  if (icon) {
-    scriptState.setCustomFaviconUrl(icon.url);
-    if (!imageLocker.isImageLocked) {
-      changeFavicon(scriptState.customFaviconUrl!);
-    }
-    return;
-  }
-
-  scriptState.setCustomFaviconUrl(null);
-  if (!imageLocker.isImageLocked) {
-    restoreOriginalFavicon();
+  const state = newStates[hostname];
+  if (state && state.current) {
+    changeFavicon(state.current, false);
   }
 }
 
@@ -106,7 +83,7 @@ function handleExtensionEnabledChange(isEnabled: boolean): void {
 
   if (wasGloballyDisabled && !isNowGloballyDisabled) {
     if (!scriptState.isCurrentSiteDisabled) {
-      enableExtension(true);
+      enableExtension();
     }
     return;
   }
@@ -124,12 +101,8 @@ function handleStorageChange(
   areaName: string
 ): void {
   if (areaName === STORAGE_AREA.LOCAL) {
-    if (changes.lockedImage) {
-      handleLockedImageChange(changes.lockedImage.newValue);
-    }
-
-    if (changes.customFavicons) {
-      handleCustomFaviconsChange((changes.customFavicons.newValue || {}) as CustomFavicons);
+    if (changes.faviconStates) {
+      handleFaviconStatesChange(changes.faviconStates.newValue as FaviconStates | undefined);
     }
     return;
   }

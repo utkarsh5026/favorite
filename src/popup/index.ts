@@ -3,36 +3,32 @@
  * Coordinates all popup modules and manages initialization
  */
 
-import { byID } from '@/utils';
-
-import { unlockImage, listenForLockedImageChanges } from './managers/lock';
-import { loadFaviconPreview } from './managers/preview';
+import { loadFaviconPreview, listenForFaviconStatesChanges } from './managers/preview';
 import { setupDownloadButton } from './managers/download';
-import { setupDefaultImageButton } from './managers/default-image';
+import { setupBringToEditorButton } from './managers/bring-to-editor';
 import { setupLivePreview } from './managers/live-preview';
 
-import { setupGlobalToggle } from './ui/global-toggle';
-import { setupSiteToggle } from './ui/site-toggle';
-import { setupShapeButtons } from './ui/shapes';
-import { setupSliders } from './ui/sliders';
-import { setupUploadZone } from './ui/upload';
+import { setupToggles } from './ui/toggle';
 import { setupResetButtons } from './ui/reset';
+import { initButtons } from './ui/button';
 
-import { showStatus, loadSettings, getCurrentTabHostname } from '@/extension';
-import { loadCustomFaviconSection, removeCustomFavicon } from '@/favicons';
+import { setupTabs, switchToTab } from './tabs/manager';
+import { setupEditorUI } from './editor';
+
+import { getCurrentTabHostname } from '@/extension';
 
 let currentFaviconUrl: string | null = null;
 
 /**
  * Initializes hostname-specific features (preview, listeners)
  */
-async function initializeHostnameFeatures(hostname: string): Promise<void> {
+async function initializeHostnameFeatures(hostname: string | null): Promise<void> {
+  if (!hostname) return;
   await loadFaviconPreview(hostname, (url) => {
     currentFaviconUrl = url;
   });
-  await loadCustomFaviconSection(hostname);
 
-  listenForLockedImageChanges(hostname, () => {
+  listenForFaviconStatesChanges(() => {
     loadFaviconPreview(hostname, (url) => {
       currentFaviconUrl = url;
     });
@@ -43,44 +39,29 @@ async function initializeHostnameFeatures(hostname: string): Promise<void> {
  * Initializes the popup by loading settings, setting up UI components, and attaching event listeners
  */
 async function init(): Promise<void> {
-  const settings = await loadSettings();
   const currentHostname = await getCurrentTabHostname();
 
-  await setupGlobalToggle();
-  setupSiteToggle(currentHostname);
-
-  setupSliders(settings);
-  setupShapeButtons(settings.faviconShape, () => currentFaviconUrl);
-  setupUploadZone(currentHostname);
-  setupLivePreview();
-
-  if (currentHostname) {
-    await initializeHostnameFeatures(currentHostname);
+  setupTabs();
+  const pendingEdit = await chrome.storage.local.get('pendingEditImage');
+  if (pendingEdit.pendingEditImage?.imageUrl) {
+    switchToTab('editor');
   }
+
+  await Promise.all([
+    setupEditorUI(),
+    setupToggles(currentHostname),
+    setupLivePreview(),
+    initializeHostnameFeatures(currentHostname),
+  ]);
+
+  initButtons();
 
   setupDownloadButton(
     () => currentFaviconUrl,
     () => currentHostname
   );
 
-  const unlockBtn = byID('unlockBtn');
-  unlockBtn?.addEventListener('click', () => {
-    unlockImage();
-    currentFaviconUrl = null;
-  });
-
-  setupDefaultImageButton(
-    () => currentFaviconUrl,
-    () => currentHostname
-  );
-
-  const removeDefaultBtn = byID('removeDefaultBtn');
-  removeDefaultBtn?.addEventListener('click', () => {
-    if (!currentHostname) return;
-    removeCustomFavicon(currentHostname, () => {
-      showStatus('Default removed');
-    });
-  });
+  setupBringToEditorButton(() => currentFaviconUrl);
 
   setupResetButtons(currentHostname, () => {
     location.reload();

@@ -4,30 +4,25 @@
 import {
   state,
   loadSettings,
-  listenForSettingsChanges,
   isSiteDisabled,
   isExtensionEnabled,
   clearHoverTimeout,
   clearRestoreTimeout,
 } from '@/extension';
-import { saveOriginalFavicon, restoreOriginalFavicon } from '@/favicons';
-import { scriptState, imageLocker } from './state';
+import {
+  saveOriginalFavicon,
+  restoreOriginalFavicon,
+  initializeFaviconState,
+  changeFavicon,
+} from '@/favicons';
+import { scriptState } from './state';
 import { addListeners, removeListeners } from './handlers';
-import {
-  checkCustomFavicon,
-  refreshCurrentFavicon,
-} from './custom-favicon';
-import {
-  initializeStorageListeners,
-  setCleanupCallback,
-} from './storage-listeners';
+import { initializeStorageListeners, setCleanupCallback } from './storage-listeners';
 
 /**
  * Cleanup function for extension unload
  */
 export function cleanup(): void {
-  console.log('Image Favicon Preview: Cleaning up');
-
   clearHoverTimeout(state);
   clearRestoreTimeout(state);
 
@@ -83,8 +78,6 @@ export async function init(): Promise<void> {
   await loadSettings();
 
   const hostname = window.location.hostname;
-
-  // Initialize storage listeners early so they can detect re-enabling
   initializeStorageListeners(hostname);
 
   if ((await isGloballyDiabled()) || (await isDisabled(hostname))) {
@@ -92,13 +85,15 @@ export async function init(): Promise<void> {
   }
 
   console.log('Image Favicon Preview: Extension loaded on', hostname);
-
   saveOriginalFavicon();
 
-  await checkCustomFavicon();
-  await imageLocker.checkAndInitialize();
+  const originalUrl = state.originalFavicon || '/favicon.ico';
+  const faviconState = await initializeFaviconState(hostname, originalUrl);
 
-  listenForSettingsChanges(refreshCurrentFavicon);
+  if (faviconState.current !== faviconState.original) {
+    changeFavicon(faviconState.current, false);
+  }
+
   addListeners();
 
   setCleanupCallback(cleanup);

@@ -15,6 +15,7 @@ type StateChangeCallback = (state: EditorState) => void;
 export class EditorStateManager {
   private state: EditorState;
   private listeners: StateChangeCallback[] = [];
+  private currentTabId: number | null = null;
 
   constructor() {
     this.state = this.createInitialState();
@@ -41,8 +42,78 @@ export class EditorStateManager {
     };
   }
 
-  private notifyListeners(): void {
+  private notifyListeners(shouldPersist: boolean = true): void {
     this.listeners.forEach((cb) => cb(this.state));
+    if (shouldPersist) {
+      this.persistState();
+    }
+  }
+
+  /**
+   * Initialize the editor with a specific tab ID for persistence
+   */
+  async initializeForTab(tabId: number): Promise<void> {
+    this.currentTabId = tabId;
+    await this.loadPersistedState();
+  }
+
+  /**
+   * Get the storage key for the current tab
+   */
+  private getStorageKey(): string | null {
+    if (this.currentTabId === null) return null;
+    return `editorState_tab_${this.currentTabId}`;
+  }
+
+  /**
+   * Persist the current state to chrome storage
+   */
+  private async persistState(): Promise<void> {
+    const storageKey = this.getStorageKey();
+    if (!storageKey) return;
+
+    try {
+      await chrome.storage.local.set({
+        [storageKey]: this.state,
+      });
+    } catch (error) {
+      console.error('Failed to persist editor state:', error);
+    }
+  }
+
+  /**
+   * Load persisted state from chrome storage
+   */
+  private async loadPersistedState(): Promise<void> {
+    const storageKey = this.getStorageKey();
+    if (!storageKey) return;
+
+    try {
+      const result = await chrome.storage.local.get(storageKey);
+      const persistedState = result[storageKey] as EditorState | undefined;
+
+      if (persistedState) {
+        this.state = persistedState;
+        // Notify listeners without persisting to avoid circular write
+        this.notifyListeners(false);
+      }
+    } catch (error) {
+      console.error('Failed to load persisted editor state:', error);
+    }
+  }
+
+  /**
+   * Clear persisted state for the current tab
+   */
+  async clearPersistedState(): Promise<void> {
+    const storageKey = this.getStorageKey();
+    if (!storageKey) return;
+
+    try {
+      await chrome.storage.local.remove(storageKey);
+    } catch (error) {
+      console.error('Failed to clear persisted editor state:', error);
+    }
   }
 
   /**
@@ -212,9 +283,10 @@ export class EditorStateManager {
   /**
    * Reset the editor to initial state
    */
-  reset(): void {
+  async reset(): Promise<void> {
     this.state = this.createInitialState();
-    this.notifyListeners();
+    await this.clearPersistedState();
+    this.notifyListeners(false);
   }
 
   /**

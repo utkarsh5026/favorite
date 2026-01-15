@@ -85,8 +85,13 @@ export class EditorUI {
       const shapedImageUrl = await applyShapeToImage(imageUrl, currentShape);
 
       const img = await downloadImage(shapedImageUrl);
-      const containerWidth = container.clientWidth - 2;
+      let containerWidth = container.clientWidth - 2;
       const maxHeight = 250;
+
+      // If container hasn't been laid out yet, use a default width
+      if (containerWidth <= 0) {
+        containerWidth = 300; // Default fallback width
+      }
 
       let scale = 1;
       if (img.naturalWidth > containerWidth) {
@@ -370,8 +375,14 @@ export class EditorUI {
    * Initialize the editor UI
    */
   async setup(): Promise<void> {
-    // Get current hostname
+    // Get current tab and hostname
+    const tab = await getCurrentTab();
     this.currentHostname = await getCurrentTabHostname();
+
+    // Initialize state manager with tab ID for persistence
+    if (tab?.id) {
+      await editorState.initializeForTab(tab.id);
+    }
 
     // Subscribe to state changes
     editorState.subscribe(this.onStateChange.bind(this));
@@ -385,8 +396,10 @@ export class EditorUI {
     // Check for pending edit image
     await this.checkPendingEditImage();
 
-    // Initial state update
-    this.onStateChange(editorState.getState());
+    // Initial state update - use requestAnimationFrame to ensure container has proper dimensions
+    requestAnimationFrame(() => {
+      this.onStateChange(editorState.getState());
+    });
   }
 }
 

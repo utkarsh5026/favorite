@@ -18,7 +18,6 @@ import type { FaviconShape } from '@/types';
  */
 export class EditorUI {
   private currentHostname: string | null = null;
-  private backgroundColor: string = '#1a1a1d';
   private livePreviewEnabled: boolean = false;
   private previewDebounceTimeout: ReturnType<typeof setTimeout> | null = null;
 
@@ -41,6 +40,24 @@ export class EditorUI {
   }
 
   /**
+   * Draw a checkered pattern background on the canvas
+   */
+  private drawCheckeredBackground(ctx: CanvasRenderingContext2D, width: number, height: number): void {
+    const squareSize = 8;
+    const lightColor = '#ffffff';
+    const darkColor = '#cccccc';
+
+    for (let y = 0; y < height; y += squareSize) {
+      for (let x = 0; x < width; x += squareSize) {
+        const isEvenRow = Math.floor(y / squareSize) % 2 === 0;
+        const isEvenCol = Math.floor(x / squareSize) % 2 === 0;
+        ctx.fillStyle = (isEvenRow === isEvenCol) ? lightColor : darkColor;
+        ctx.fillRect(x, y, squareSize, squareSize);
+      }
+    }
+  }
+
+  /**
    * Render the current image on the canvas
    */
   private async renderCanvas(imageUrl: string | null): Promise<void> {
@@ -57,8 +74,7 @@ export class EditorUI {
       setVisible(loadingOverlay, false);
       canvas.width = 200;
       canvas.height = 200;
-      ctx.fillStyle = this.backgroundColor;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      this.drawCheckeredBackground(ctx, canvas.width, canvas.height);
       return;
     }
 
@@ -83,9 +99,8 @@ export class EditorUI {
       canvas.width = Math.round(img.naturalWidth * scale);
       canvas.height = Math.round(img.naturalHeight * scale);
 
-      // Fill background color
-      ctx.fillStyle = this.backgroundColor;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      // Draw checkered background pattern
+      this.drawCheckeredBackground(ctx, canvas.width, canvas.height);
 
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
@@ -302,29 +317,6 @@ export class EditorUI {
     });
   }
 
-  /**
-   * Setup background color picker
-   */
-  private setupBackgroundColorPicker(): void {
-    const colorPicker = byID<HTMLInputElement>('canvasBgColor');
-    if (!colorPicker) return;
-
-    chrome.storage.local.get('editorBackgroundColor', (result) => {
-      if (result.editorBackgroundColor) {
-        this.backgroundColor = result.editorBackgroundColor;
-        colorPicker.value = this.backgroundColor;
-        this.renderCanvas(editorState.getCurrentImage());
-      }
-    });
-
-    colorPicker.addEventListener('input', (e) => {
-      const target = e.target as HTMLInputElement;
-      this.backgroundColor = target.value;
-
-      chrome.storage.local.set({ editorBackgroundColor: this.backgroundColor });
-      this.renderCanvas(editorState.getCurrentImage());
-    });
-  }
 
   /**
    * Setup upload zone in editor tab
@@ -387,7 +379,6 @@ export class EditorUI {
     // Setup components
     this.setupToolbarButtons();
     this.setupActionButtons();
-    this.setupBackgroundColorPicker();
     this.setupEditorUpload();
     this.setupKeyboardShortcuts();
 

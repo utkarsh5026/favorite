@@ -11,11 +11,64 @@ async function getFaviconStates(): Promise<FaviconStates> {
 }
 
 /**
+ * Get favicon URL from the tab matching the hostname
+ */
+async function getFaviconFromTab(hostname: string): Promise<string | null> {
+  const tabs = await chrome.tabs.query({});
+  const tab = tabs.find((t) => {
+    if (!t.url) return false;
+    try {
+      const url = new URL(t.url);
+      return url.hostname === hostname;
+    } catch {
+      return false;
+    }
+  });
+
+  if (!tab) return null;
+
+  if (tab.favIconUrl) {
+    return tab.favIconUrl;
+  }
+
+  if (tab.url) {
+    try {
+      const parsedUrl = new URL(tab.url);
+      return `${parsedUrl.origin}/favicon.ico`;
+    } catch {
+      return null;
+    }
+  }
+
+  return null;
+}
+
+/**
  * Get the favicon state for a specific hostname
+ * If state doesn't exist, attempts to get favicon from tab and initializes state
  */
 export async function getFaviconState(hostname: string): Promise<FaviconState | null> {
   const states = await getFaviconStates();
-  return states[hostname] || null;
+
+  if (states[hostname]) {
+    return states[hostname];
+  }
+
+  const faviconUrl = await getFaviconFromTab(hostname);
+  if (!faviconUrl) {
+    return null;
+  }
+
+  const newState: FaviconState = {
+    original: faviconUrl,
+    current: faviconUrl,
+    timestamp: Date.now(),
+  };
+
+  states[hostname] = newState;
+  await chrome.storage.local.set({ [FAVICON_STATES_KEY]: states });
+
+  return newState;
 }
 
 /**

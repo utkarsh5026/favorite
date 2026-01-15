@@ -48,7 +48,11 @@
             </div>
             <div class="flex flex-col items-center gap-2">
               <div class="w-16 h-16 rounded-xl border border-border-light bg-surface-dark flex items-center justify-center p-1.5 shadow-inset">
-                <img id="originalFaviconImage" alt="Original favicon" class="w-full h-full rounded-lg object-contain" />
+                <img id="originalFaviconImage" alt="Original favicon" class="w-full h-full rounded-lg object-contain hidden" />
+                <div class="flex flex-col items-center justify-center gap-2 w-full h-full" id="originalFaviconLoading">
+                  <div class="spinner-circle animate-rotate"></div>
+                  <span class="text-2xs text-text-subtle text-center leading-tight">Loading...</span>
+                </div>
               </div>
               <span class="text-[9px] text-text-subtle uppercase tracking-wide">Original</span>
             </div>

@@ -67,7 +67,7 @@ export async function toggleSite(hostname: string) {
 /**
  * Gets the original favicon URL from the current tab.
  * Uses chrome.storage.local as the single source of truth for favicon state.
- * Falls back to {origin}/favicon.ico if no state exists.
+ * Falls back to tab.favIconUrl, then {origin}/favicon.ico if no state exists.
  */
 export async function getOriginalFaviconUrl(): Promise<string | null> {
   const hostname = await getCurrentTabHostname();
@@ -75,15 +75,21 @@ export async function getOriginalFaviconUrl(): Promise<string | null> {
     return null;
   }
 
-  // Try to get from persisted storage first
   const storedUrl = await getOriginalFaviconFromStorage(hostname);
   if (storedUrl) {
     return storedUrl;
   }
 
-  // Fallback to default favicon.ico
   const tab = await getCurrentTab();
-  if (tab?.url) {
+  if (!tab) {
+    return null;
+  }
+
+  if (tab.favIconUrl) {
+    return tab.favIconUrl;
+  }
+
+  if (tab.url) {
     try {
       const parsedUrl = new URL(tab.url);
       return `${parsedUrl.origin}/favicon.ico`;

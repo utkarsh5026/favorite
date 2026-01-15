@@ -60,14 +60,22 @@ export async function setupLivePreview(): Promise<void> {
  */
 export async function loadOriginalFavicon() {
   const originalImg = byID<HTMLImageElement>('originalFaviconImage');
+  const originalLoading = byID('originalFaviconLoading');
   if (!originalImg) return;
+
+  setVisible(originalImg, false);
+  toggleClasses(originalLoading, { hidden: false, flex: true });
 
   const faviconUrl = await getOriginalFaviconUrl();
 
+  toggleClasses(originalLoading, { hidden: true, flex: false });
+
   if (faviconUrl) {
     originalImg.src = faviconUrl;
+    setVisible(originalImg, true);
   } else {
     originalImg.style.opacity = '0.3';
+    setVisible(originalImg, true);
   }
 }
 

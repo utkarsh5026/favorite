@@ -95,6 +95,8 @@ export interface ContentScriptResponse {
 export interface LivePreviewMessage {
   type: 'hover-update';
   imageUrl: string | null;
+  /** Pre-processed 64px image data URL ready for display (includes shape masking) */
+  processedImageUrl?: string;
   imageInfo?: {
     width: number;
     height: number;

@@ -1,7 +1,7 @@
 /**
  * Mouse event handlers for image hover/leave
  */
-import { CONFIG, state, clearHoverTimeout, clearRestoreTimeout } from '@/extension';
+import { CONFIG, state, clearHoverTimeout, clearRestoreTimeout, loadSettings } from '@/extension';
 import { changeFavicon, restoreToDefaultFavicon } from '@/favicons';
 import { findImage, extractImageData, ImageExtractionResult } from '@/images';
 import { scriptState } from './state';
@@ -54,18 +54,27 @@ export function handleImageHover(event: MouseEvent): void {
 }
 
 /*
- * Briadcast the image to popup
+ * Broadcast the image to popup
  */
-function broadcastToPopup(img: Element, imageResult: ImageExtractionResult) {
+async function broadcastToPopup(img: Element, imageResult: ImageExtractionResult) {
   state.currentHoveredElement = img;
   changeFavicon(imageResult.url);
 
   const { width, height } = img.getBoundingClientRect();
-  broadcastHoverState(imageResult.url, {
-    width: Math.round(width),
-    height: Math.round(height),
-    imageType: imageResult.type.toUpperCase(),
-  });
+
+  // Load settings to get current shape preference
+  const settings = await loadSettings();
+
+  await broadcastHoverState(
+    imageResult.url,
+    {
+      width: Math.round(width),
+      height: Math.round(height),
+      imageType: imageResult.type.toUpperCase(),
+    },
+    img,
+    settings.faviconShape
+  );
 }
 
 /**

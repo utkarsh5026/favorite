@@ -29,7 +29,7 @@ function connectToBackground(): void {
 
     backgroundPort.onMessage.addListener((message: LivePreviewMessage) => {
       if (message.type === 'hover-update') {
-        updateLivePreview(message.imageUrl, message.imageInfo);
+        updateLivePreview(message.imageUrl, message.imageInfo, message.processedImageUrl);
       }
     });
 
@@ -73,10 +73,12 @@ export async function loadOriginalFavicon() {
 
 /**
  * Updates the live preview with the current hover image
+ * Now uses pre-processed image from content script for instant display
  */
 export async function updateLivePreview(
   imageUrl: string | null,
-  imageInfo?: { width: number; height: number; imageType: string }
+  imageInfo?: { width: number; height: number; imageType: string },
+  processedImageUrl?: string
 ): Promise<void> {
   const previewImage = byID<HTMLImageElement>('livePreviewImage');
   const previewEmpty = byID('livePreviewEmpty');
@@ -95,6 +97,21 @@ export async function updateLivePreview(
     return;
   }
 
+  if (processedImageUrl) {
+    previewImage.src = processedImageUrl;
+    setVisible(previewImage, true);
+    setVisible(previewEmpty, false);
+    toggleClasses(previewLoading, { hidden: true, flex: false });
+
+    if (previewInfo && imageInfo) {
+      previewInfo.classList.add('opacity-100');
+      setText(imageTypeEl, imageInfo.imageType);
+      setText(imageSizeEl, `${imageInfo.width}x${imageInfo.height}`);
+    }
+    return;
+  }
+
+  // Fallback: Process image in popup (slower, for backwards compatibility)
   const settings = await loadSettings();
 
   // Show loading state while image loads

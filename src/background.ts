@@ -93,9 +93,20 @@ let popupPort: chrome.runtime.Port | null = null;
 
 chrome.runtime.onConnect.addListener((port) => {
   if (port.name === 'popup') {
+    if (popupPort) {
+      try {
+        popupPort.disconnect();
+      } catch {
+        // Ignore errors from already disconnected port
+      }
+    }
+
     popupPort = port;
+
     port.onDisconnect.addListener(() => {
-      popupPort = null;
+      if (popupPort === port) {
+        popupPort = null;
+      }
     });
   }
 });

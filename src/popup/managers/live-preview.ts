@@ -5,7 +5,7 @@
 
 import type { LivePreviewMessage } from '@/types';
 import { byID, setVisible, toggleClasses, setText } from '@/utils';
-import { loadSettings, getOriginalFaviconUrl } from '@/extension';
+import { loadSettings, getFaviconDirectlyFromTab } from '@/extension';
 import { clipImageToShape } from '@/images';
 
 const RECONNECT_DELAY_MS = 500;
@@ -66,7 +66,7 @@ export async function loadOriginalFavicon() {
   setVisible(originalImg, false);
   toggleClasses(originalLoading, { hidden: false, flex: true });
 
-  const faviconUrl = await getOriginalFaviconUrl();
+  const faviconUrl = await getFaviconDirectlyFromTab();
 
   toggleClasses(originalLoading, { hidden: true, flex: false });
 

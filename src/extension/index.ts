@@ -8,9 +8,8 @@ export {
 export {
   getCurrentTabHostname,
   getCurrentTab,
-  isSiteDisabled,
   toggleSite,
-  getOriginalFaviconUrl,
+  getFaviconDirectlyFromTab,
 } from './stite';
 export * from './types';
 export * from './state';

@@ -4,7 +4,6 @@
  */
 
 import { loadSettings } from './settings';
-import { getOriginalFaviconUrl as getOriginalFaviconFromStorage } from '@/favicons/favicon-state';
 
 /**
  * Gets the hostname of the current active tab
@@ -35,16 +34,6 @@ export async function getCurrentTab(): Promise<chrome.tabs.Tab | null> {
 }
 
 /**
- * Checks if the extension is disabled for a specific site
- * @param hostname - The hostname to check
- * @returns Promise that resolves to true if the site is disabled, false otherwise
- */
-export async function isSiteDisabled(hostname: string): Promise<boolean> {
-  const settings = await loadSettings();
-  return settings.disabledSites.includes(hostname);
-}
-
-/**
  * Toggles the enabled/disabled state for a specific site
  * @param hostname - The hostname to toggle
  * @returns Promise that resolves to true if site was disabled, false if enabled
@@ -65,21 +54,10 @@ export async function toggleSite(hostname: string) {
 }
 
 /**
- * Gets the original favicon URL from the current tab.
- * Uses chrome.storage.local as the single source of truth for favicon state.
- * Falls back to tab.favIconUrl, then {origin}/favicon.ico if no state exists.
+ * Gets the current favicon URL from the current tab.
+ * Falls back to tab.favIconUrl, then {origin}/favicon.ico if not available.
  */
-export async function getOriginalFaviconUrl(): Promise<string | null> {
-  const hostname = await getCurrentTabHostname();
-  if (!hostname) {
-    return null;
-  }
-
-  const storedUrl = await getOriginalFaviconFromStorage(hostname);
-  if (storedUrl) {
-    return storedUrl;
-  }
-
+export async function getFaviconDirectlyFromTab(): Promise<string | null> {
   const tab = await getCurrentTab();
   if (!tab) {
     return null;

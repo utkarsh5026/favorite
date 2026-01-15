@@ -64,40 +64,6 @@ export async function loadSettings(): Promise<void> {
 }
 
 /**
- * Listens for settings changes and updates CONFIG in real-time
- */
-export function listenForSettingsChanges(onShapeOrSizeChange?: () => void): void {
-  if (typeof chrome === 'undefined' || !chrome.storage) {
-    return;
-  }
-
-  chrome.storage.onChanged.addListener((changes, areaName) => {
-    if (areaName !== 'sync') return;
-
-    let shouldRefresh = false;
-
-    if (changes.faviconShape) {
-      CONFIG.faviconShape = changes.faviconShape.newValue;
-      shouldRefresh = true;
-    }
-    if (changes.hoverDelay) {
-      CONFIG.hoverDelay = changes.hoverDelay.newValue;
-    }
-    if (changes.restoreDelay) {
-      CONFIG.restoreDelay = changes.restoreDelay.newValue;
-    }
-    if (changes.faviconSize) {
-      CONFIG.faviconSize = changes.faviconSize.newValue;
-      shouldRefresh = true;
-    }
-
-    if (shouldRefresh && onShapeOrSizeChange) {
-      onShapeOrSizeChange();
-    }
-  });
-}
-
-/**
  * Checks if the extension is disabled for a given hostname
  */
 export async function isSiteDisabled(hostname: string): Promise<boolean> {

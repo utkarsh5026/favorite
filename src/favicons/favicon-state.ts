@@ -1,3 +1,4 @@
+import { getFaviconDirectlyFromTab } from '@/extension';
 import type { FaviconState, FaviconStates } from '@/types';
 
 const FAVICON_STATES_KEY = 'faviconStates';
@@ -11,36 +12,25 @@ async function getFaviconStates(): Promise<FaviconStates> {
 }
 
 /**
- * Get favicon URL from the tab matching the hostname
+ * Save a new favicon state for a hostname
  */
-async function getFaviconFromTab(hostname: string): Promise<string | null> {
-  const tabs = await chrome.tabs.query({});
-  const tab = tabs.find((t) => {
-    if (!t.url) return false;
-    try {
-      const url = new URL(t.url);
-      return url.hostname === hostname;
-    } catch {
-      return false;
-    }
-  });
+async function saveNewState(
+  hostname: string,
+  original: string,
+  current: string
+): Promise<FaviconState> {
+  const states = await getFaviconStates();
 
-  if (!tab) return null;
+  const newState: FaviconState = {
+    original,
+    current,
+    timestamp: Date.now(),
+  };
 
-  if (tab.favIconUrl) {
-    return tab.favIconUrl;
-  }
+  states[hostname] = newState;
+  await chrome.storage.local.set({ [FAVICON_STATES_KEY]: states });
 
-  if (tab.url) {
-    try {
-      const parsedUrl = new URL(tab.url);
-      return `${parsedUrl.origin}/favicon.ico`;
-    } catch {
-      return null;
-    }
-  }
-
-  return null;
+  return newState;
 }
 
 /**
@@ -54,21 +44,12 @@ export async function getFaviconState(hostname: string): Promise<FaviconState | 
     return states[hostname];
   }
 
-  const faviconUrl = await getFaviconFromTab(hostname);
-  if (!faviconUrl) {
+  const original = await getFaviconDirectlyFromTab();
+  if (!original) {
     return null;
   }
 
-  const newState: FaviconState = {
-    original: faviconUrl,
-    current: faviconUrl,
-    timestamp: Date.now(),
-  };
-
-  states[hostname] = newState;
-  await chrome.storage.local.set({ [FAVICON_STATES_KEY]: states });
-
-  return newState;
+  return saveNewState(hostname, original, original);
 }
 
 /**
@@ -83,23 +64,11 @@ export async function initializeFaviconState(
   const states = await getFaviconStates();
 
   if (states[hostname]) {
-    if (states[hostname].original !== originalUrl) {
-      states[hostname].original = originalUrl;
-      await chrome.storage.local.set({ [FAVICON_STATES_KEY]: states });
-    }
-    return states[hostname];
+    const { current } = states[hostname];
+    return saveNewState(hostname, originalUrl, current);
   }
 
-  const newState: FaviconState = {
-    original: originalUrl,
-    current: originalUrl,
-    timestamp: Date.now(),
-  };
-
-  states[hostname] = newState;
-  await chrome.storage.local.set({ [FAVICON_STATES_KEY]: states });
-
-  return newState;
+  return saveNewState(hostname, originalUrl, originalUrl);
 }
 
 /**
@@ -107,19 +76,18 @@ export async function initializeFaviconState(
  */
 export async function setCurrentFavicon(hostname: string, faviconUrl: string): Promise<void> {
   const states = await getFaviconStates();
-
-  if (!states[hostname]) {
-    states[hostname] = {
-      original: faviconUrl,
-      current: faviconUrl,
-      timestamp: Date.now(),
-    };
-  } else {
-    states[hostname].current = faviconUrl;
-    states[hostname].timestamp = Date.now();
+  if (states[hostname]) {
+    const { original } = states[hostname];
+    saveNewState(hostname, original, faviconUrl);
+    return;
   }
 
-  await chrome.storage.local.set({ [FAVICON_STATES_KEY]: states });
+  const original = await getFaviconDirectlyFromTab();
+  if (!original) {
+    throw new Error('Unable to get original favicon from tab');
+  }
+
+  await saveNewState(hostname, original, faviconUrl);
 }
 
 /**

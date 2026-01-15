@@ -8,7 +8,7 @@ import {
   resetAllSettings,
   resetSiteSettings,
   showStatus,
-  getOriginalFaviconUrl,
+  getFaviconDirectlyFromTab,
 } from '@/extension';
 
 /**
@@ -18,9 +18,9 @@ async function loadOriginalFaviconIntoButton(): Promise<void> {
   const faviconImg = byID<HTMLImageElement>('resetSiteFavicon');
   if (!faviconImg) return;
 
-  const originalFaviconUrl = await getOriginalFaviconUrl();
-  if (originalFaviconUrl) {
-    faviconImg.src = originalFaviconUrl;
+  const favicon = await getFaviconDirectlyFromTab();
+  if (favicon) {
+    faviconImg.src = favicon;
   }
 }
 

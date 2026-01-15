@@ -16,8 +16,6 @@ export {
   initializeFaviconState,
   setCurrentFavicon,
   resetToOriginal,
-  hasCustomFavicon,
   getCurrentFaviconUrl,
   getOriginalFaviconUrl,
-  removeFaviconState,
 } from './favicon-state';

@@ -746,3 +746,17 @@ input[type='range']::-moz-range-thumb {
 #editorTab.has-image .editor-content {
   display: block;
 }
+
+/* Checkerboard transparency pattern for image previews */
+.checkerboard {
+  --checker-size: 8px;
+  --checker-light: #4a4a4f;
+  --checker-dark: #2a2a2d;
+  background-image: conic-gradient(
+    var(--checker-light) 0 25%,
+    var(--checker-dark) 0 50%,
+    var(--checker-light) 0 75%,
+    var(--checker-dark) 0
+  );
+  background-size: calc(var(--checker-size) * 2) calc(var(--checker-size) * 2);
+}

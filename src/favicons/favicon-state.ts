@@ -141,15 +141,6 @@ export async function resetToOriginal(hostname: string): Promise<string | null> 
 }
 
 /**
- * Check if a site has a custom favicon (current differs from original)
- */
-export async function hasCustomFavicon(hostname: string): Promise<boolean> {
-  const state = await getFaviconState(hostname);
-  if (!state) return false;
-  return state.current !== state.original;
-}
-
-/**
  * Get the current favicon URL for a hostname (or null if not set)
  */
 export async function getCurrentFaviconUrl(hostname: string): Promise<string | null> {
@@ -163,13 +154,4 @@ export async function getCurrentFaviconUrl(hostname: string): Promise<string | n
 export async function getOriginalFaviconUrl(hostname: string): Promise<string | null> {
   const state = await getFaviconState(hostname);
   return state?.original || null;
-}
-
-/**
- * Remove favicon state for a hostname (full reset)
- */
-export async function removeFaviconState(hostname: string): Promise<void> {
-  const states = await getFaviconStates();
-  delete states[hostname];
-  await chrome.storage.local.set({ [FAVICON_STATES_KEY]: states });
 }

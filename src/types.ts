@@ -38,6 +38,21 @@ export interface FaviconState {
 export type FaviconStates = Record<string, FaviconState>;
 
 /**
+ * Custom favicon entry for a site
+ */
+export interface CustomFavicon {
+  /** The custom favicon URL */
+  url: string;
+  /** Timestamp when the custom favicon was set */
+  timestamp: number;
+}
+
+/**
+ * Map of hostnames to their custom favicons
+ */
+export type CustomFavicons = Record<string, CustomFavicon>;
+
+/**
  * Context menu action types
  */
 export type ContextMenuAction = 'setDefault' | 'download' | 'edit' | 'preview';

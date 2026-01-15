@@ -691,6 +691,17 @@ input[type='range']::-moz-range-thumb {
   cursor: not-allowed;
 }
 
+.editor-action-btn.live-preview-active {
+  background: #22c55e;
+  border-color: #22c55e;
+  color: white;
+}
+
+.editor-action-btn.live-preview-active:hover:not(:disabled) {
+  background: #16a34a;
+  border-color: #16a34a;
+}
+
 .editor-action-btn svg {
   width: 14px;
   height: 14px;

@@ -5,7 +5,7 @@
 
 import { byID, downloadImage, setActive, toggleClasses, setDisabled, setVisible } from '@/utils';
 import { showStatus, getCurrentTabHostname, getCurrentTab, CONTEXT_MENU } from '@/extension';
-import { saveFaviconZIP, setCurrentFavicon } from '@/favicons';
+import { saveFaviconZIP } from '@/favicons';
 import { editorState } from './state';
 import { applyShapeToImage } from './transforms';
 import { setupUpload } from './upload';
@@ -19,6 +19,8 @@ import type { FaviconShape } from '@/types';
 export class EditorUI {
   private currentHostname: string | null = null;
   private backgroundColor: string = '#1a1a1d';
+  private livePreviewEnabled: boolean = false;
+  private previewDebounceTimeout: ReturnType<typeof setTimeout> | null = null;
 
   /**
    * Load an image into the editor
@@ -110,6 +112,11 @@ export class EditorUI {
     this.updateToolbarState();
     await this.renderCanvas(state.currentImageUrl);
     this.updateShapeButtons(state.currentShape);
+
+    // Auto-preview when live preview is enabled
+    if (this.livePreviewEnabled && state.currentImageUrl) {
+      this.sendPreviewToTab();
+    }
   }
 
   /**
@@ -166,6 +173,60 @@ export class EditorUI {
   }
 
   /**
+   * Update the preview button appearance based on live preview state
+   */
+  private updatePreviewButtonState(): void {
+    const btn = byID<HTMLButtonElement>('editorApplyFavicon');
+    if (!btn) return;
+
+    if (this.livePreviewEnabled) {
+      btn.classList.add('live-preview-active');
+      const textNode = Array.from(btn.childNodes).find(
+        (node) => node.nodeType === Node.TEXT_NODE && node.textContent?.trim()
+      );
+      if (textNode) {
+        textNode.textContent = '\n              Live Preview\n            ';
+      }
+    } else {
+      btn.classList.remove('live-preview-active');
+      const textNode = Array.from(btn.childNodes).find(
+        (node) => node.nodeType === Node.TEXT_NODE && node.textContent?.trim()
+      );
+      if (textNode) {
+        textNode.textContent = '\n              Preview\n            ';
+      }
+    }
+  }
+
+  /**
+   * Send preview to the current tab (debounced)
+   */
+  private sendPreviewToTab(): void {
+    if (this.previewDebounceTimeout) {
+      clearTimeout(this.previewDebounceTimeout);
+    }
+
+    this.previewDebounceTimeout = setTimeout(async () => {
+      const imageUrl = await this.getCurrentImage();
+      if (!imageUrl) return;
+
+      try {
+        const tab = await getCurrentTab();
+        if (tab?.id) {
+          await chrome.tabs.sendMessage(tab.id, {
+            type: 'contextMenuAction',
+            action: CONTEXT_MENU.PREVIEW,
+            imageUrl,
+            hostname: this.currentHostname || '',
+          });
+        }
+      } catch (error) {
+        console.error('Failed to send preview:', error);
+      }
+    }, 100);
+  }
+
+  /**
    * Generic handler for button actions with loading state and error handling
    */
   private async handleButtonAction(
@@ -208,18 +269,14 @@ export class EditorUI {
       );
     });
 
-    byID('editorApplyFavicon')?.addEventListener('click', async () => {
-      const imageUrl = await this.getCurrentImage();
-      if (!imageUrl || !this.currentHostname) return;
+    byID('editorApplyFavicon')?.addEventListener('click', () => {
+      this.livePreviewEnabled = !this.livePreviewEnabled;
+      this.updatePreviewButtonState();
 
-      await this.handleButtonAction(
-        'editorApplyFavicon',
-        async () => {
-          await setCurrentFavicon(this.currentHostname!, imageUrl);
-        },
-        'Applied!',
-        'Failed to set default'
-      );
+      // Send initial preview when enabling
+      if (this.livePreviewEnabled && editorState.hasImage()) {
+        this.sendPreviewToTab();
+      }
     });
 
     byID('editorSetDefault')?.addEventListener('click', async () => {

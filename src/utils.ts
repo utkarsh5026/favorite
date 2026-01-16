@@ -66,10 +66,7 @@ export async function getActiveTab(): Promise<chrome.tabs.Tab> {
  * @example
  * toggleClasses(element, { hidden: false, active: true, disabled: false });
  */
-export function toggleClasses(
-  element: HTMLElement | null,
-  classes: Record<string, boolean>
-): void {
+export function toggleClasses(element: HTMLElement | null, classes: Record<string, boolean>): void {
   if (!element) return;
 
   Object.entries(classes).forEach(([className, shouldAdd]) => {
@@ -126,5 +123,62 @@ export function setDisabled(
     element.removeAttribute('disabled');
     element.style.opacity = '';
     element.style.cursor = '';
+  }
+}
+
+/**
+ * Executes a synchronous function with try-catch error handling
+ * @param executeFn - The function to execute
+ * @param onErr - Error message string or error handler function that receives the error
+ * @param defaultValue - Optional default value to return on error
+ * @returns The result of executeFn or defaultValue if error occurs
+ */
+export function tryCatch<T>(
+  executeFn: () => T,
+  onErr: string | ((error: unknown) => void),
+  defaultValue?: T
+): T | undefined {
+  try {
+    return executeFn();
+  } catch (error) {
+    if (typeof onErr === 'string') {
+      console.error(onErr, error);
+    } else {
+      onErr(error);
+    }
+    return defaultValue;
+  }
+}
+
+type errorHandler = string | ((error: unknown) => void);
+type execFn<T> = () => Promise<T>;
+
+/**
+ * Executes an async function with try-catch error handling
+ * @param fn - The async function to execute
+ * @param onErr - Error message string or error handler function that receives the error
+ * @param defaultValue - Optional default value to return on error
+ * @returns Promise resolving to the result of executeFn or defaultValue if error occurs
+ */
+export async function tryCatchAsync<T>(
+  fn: execFn<T>,
+  onErr: errorHandler,
+  defaultValue: T
+): Promise<T>;
+export async function tryCatchAsync<T>(fn: execFn<T>, onErr: errorHandler): Promise<T | undefined>;
+export async function tryCatchAsync<T>(
+  fn: execFn<T>,
+  onErr: errorHandler,
+  defaultValue?: T
+): Promise<T | undefined> {
+  try {
+    return await fn();
+  } catch (error) {
+    if (typeof onErr === 'string') {
+      console.error(onErr, error);
+    } else {
+      onErr(error);
+    }
+    return defaultValue;
   }
 }

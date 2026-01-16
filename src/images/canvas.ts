@@ -22,7 +22,8 @@ export async function convertToDataUrl(
 
     img.onload = () => {
       try {
-        const canvasSize = size || Math.max(img.naturalWidth || img.width, img.naturalHeight || img.height);
+        const canvasSize =
+          size || Math.max(img.naturalWidth || img.width, img.naturalHeight || img.height);
         const canvas = setupCanvas(canvasSize, canvasSize);
 
         const ctx = canvas.getContext('2d');
@@ -61,6 +62,14 @@ function canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob> {
 }
 
 export async function resizeImageToBlob(img: HTMLImageElement, size: number): Promise<Blob> {
+  return await canvasToBlob(draw(img, size));
+}
+
+export function getImageAsDataUrl(img: HTMLImageElement, size: number) {
+  return draw(img, size).toDataURL(IMAGE_MIME_TYPE);
+}
+
+function draw(img: HTMLImageElement, size: number) {
   const canvas = setupCanvas(size, size);
 
   const ctx = canvas.getContext('2d');
@@ -71,6 +80,5 @@ export async function resizeImageToBlob(img: HTMLImageElement, size: number): Pr
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = 'high';
   ctx.drawImage(img, 0, 0, size, size);
-
-  return await canvasToBlob(canvas);
+  return canvas;
 }

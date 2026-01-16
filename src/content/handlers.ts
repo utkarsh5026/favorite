@@ -3,9 +3,42 @@
  */
 import { CONFIG, state, clearHoverTimeout, clearRestoreTimeout, loadSettings } from '@/extension';
 import { changeFavicon, restoreToDefaultFavicon } from '@/favicons';
-import { findImage, extractImageData, ImageExtractionResult } from '@/images';
+import { findImage, extractImageData, ImageExtractionResult, getImageAsDataUrl } from '@/images';
 import { scriptState } from './state';
-import { broadcastHoverState } from './broadcast';
+
+const BROADCAST_THROTTLE = 100; // ms
+const PREVIEW_SIZE = 64;
+
+/**
+ * Broadcasts hover state to popup via background script
+ * Now includes pre-processed image data for instant display
+ */
+export async function broadcastHoverState(
+  imageUrl: string | null,
+  imageInfo?: { width: number; height: number; imageType: string },
+  imgElement?: Element
+): Promise<void> {
+  const now = Date.now();
+  if (imageUrl && now - scriptState.lastBroadcast < BROADCAST_THROTTLE) return;
+  scriptState.updateLastBroadcast(now);
+
+  let processedImageUrl: string | undefined;
+  if (imgElement) {
+    processedImageUrl =
+      getImageAsDataUrl(imgElement as HTMLImageElement, PREVIEW_SIZE) || undefined;
+  }
+
+  const message = {
+    type: 'hover-update',
+    imageUrl,
+    processedImageUrl,
+    imageInfo,
+  };
+
+  chrome.runtime.sendMessage(message).catch((error) => {
+    console.log('[Content] Failed to broadcast:', error);
+  });
+}
 
 /**
  * Checks if an element meets minimum size requirements
@@ -20,7 +53,13 @@ function meetsMinimumSize(element: Element): boolean {
  */
 export function handleImageHover(event: MouseEvent): void {
   if (scriptState.isGloballyDisabled || scriptState.isCurrentSiteDisabled) {
-    console.log('[Content] Hover ignored - disabled (global:', scriptState.isGloballyDisabled, 'site:', scriptState.isCurrentSiteDisabled, ')');
+    console.log(
+      '[Content] Hover ignored - disabled (global:',
+      scriptState.isGloballyDisabled,
+      'site:',
+      scriptState.isCurrentSiteDisabled,
+      ')'
+    );
     return;
   }
 
@@ -72,8 +111,7 @@ async function broadcastToPopup(img: Element, imageResult: ImageExtractionResult
       height: Math.round(height),
       imageType: imageResult.type.toUpperCase(),
     },
-    img,
-    settings.faviconShape
+    img
   );
 }
 

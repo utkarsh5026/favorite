@@ -8,7 +8,6 @@ export interface ToolbarButtonConfig {
   disabled?: boolean;
 }
 
-// Button configurations
 export const TOOLBAR_BUTTONS: ToolbarButtonConfig[] = [
   {
     id: 'undo',
@@ -54,6 +53,12 @@ export const TOOLBAR_BUTTONS: ToolbarButtonConfig[] = [
     icon: '<path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/>',
     group: 'crop',
   },
+  {
+    id: 'reset',
+    title: 'Reset All Changes',
+    icon: '<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>',
+    group: 'actions',
+  },
 ];
 
 function capitalize(str: string): string {
@@ -63,13 +68,13 @@ function capitalize(str: string): string {
 export class Toolbar {
   private buttons = new Map<string, HTMLButtonElement>();
 
-  private createButton(config: ToolbarButtonConfig): HTMLButtonElement {
+  private createButton({ id, title, disabled, icon }: ToolbarButtonConfig): HTMLButtonElement {
     const btn = document.createElement('button');
     btn.className = 'editor-btn';
-    btn.id = `editor${capitalize(config.id)}`;
-    btn.title = config.title;
-    btn.disabled = config.disabled ?? false;
-    btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${config.icon}</svg>`;
+    btn.id = `editor${capitalize(id)}`;
+    btn.title = title;
+    btn.disabled = disabled ?? false;
+    btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${icon}</svg>`;
     return btn;
   }
 
@@ -79,7 +84,7 @@ export class Toolbar {
     return divider;
   }
 
-  init(container: HTMLElement, handlers: Record<string, () => void>): void {
+  init(container: HTMLElement, handlers: Record<string, () => void | Promise<void>>): void {
     this.buttons.clear();
     container.innerHTML = '';
 
@@ -93,7 +98,9 @@ export class Toolbar {
       const btn = this.createButton(config);
       const handler = handlers[config.id];
       if (handler) {
-        btn.addEventListener('click', handler);
+        btn.addEventListener('click', () => {
+          void handler();
+        });
       }
 
       this.buttons.set(config.id, btn);
@@ -102,10 +109,12 @@ export class Toolbar {
     }
   }
 
+  /** Enable or disable a toolbar button by ID */
   setDisabled(id: string, disabled: boolean) {
     setDisabled(this.buttons.get(id) || null, disabled);
   }
 
+  /** Enable or disable all toolbar buttons, with optional exceptions */
   setAllEnabled(enabled: boolean, except?: Record<string, boolean>): void {
     this.buttons.forEach((btn, id) => {
       if (enabled && except && id in except) {

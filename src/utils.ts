@@ -158,18 +158,26 @@ type execFn<T> = () => Promise<T>;
  * @param fn - The async function to execute
  * @param onErr - Error message string or error handler function that receives the error
  * @param defaultValue - Optional default value to return on error
+ * @param onFinally - Optional cleanup function to execute after try-catch completes
  * @returns Promise resolving to the result of executeFn or defaultValue if error occurs
  */
 export async function tryCatchAsync<T>(
   fn: execFn<T>,
   onErr: errorHandler,
-  defaultValue: T
+  defaultValue: T,
+  onFinally?: () => void | Promise<void>
 ): Promise<T>;
-export async function tryCatchAsync<T>(fn: execFn<T>, onErr: errorHandler): Promise<T | undefined>;
 export async function tryCatchAsync<T>(
   fn: execFn<T>,
   onErr: errorHandler,
-  defaultValue?: T
+  defaultValue?: undefined,
+  onFinally?: () => void | Promise<void>
+): Promise<T | undefined>;
+export async function tryCatchAsync<T>(
+  fn: execFn<T>,
+  onErr: errorHandler,
+  defaultValue?: T,
+  onFinally?: () => void | Promise<void>
 ): Promise<T | undefined> {
   try {
     return await fn();
@@ -180,5 +188,9 @@ export async function tryCatchAsync<T>(
       onErr(error);
     }
     return defaultValue;
+  } finally {
+    if (onFinally) {
+      await onFinally();
+    }
   }
 }

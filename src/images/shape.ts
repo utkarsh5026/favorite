@@ -1,6 +1,7 @@
 import type { FaviconShape } from '../types';
 import { byID, setupCanvas } from '../utils';
 import { convertToDataUrl } from './canvas';
+import { getClipper } from './clip';
 
 const IMAGE_MIME_TYPE = 'image/png';
 
@@ -15,36 +16,7 @@ export function createShapeClipPath(
   size: number,
   shape: FaviconShape
 ): void {
-  const center = size / 2;
-  const radius = size / 2;
-
-  switch (shape) {
-    case 'circle':
-      ctx.arc(center, center, radius, 0, Math.PI * 2);
-      break;
-    case 'rounded':
-      const cornerRadius = size * 0.2;
-      const lineLength = size - cornerRadius;
-
-      ctx.moveTo(cornerRadius, 0);
-
-      ctx.lineTo(lineLength, 0);
-      ctx.quadraticCurveTo(size, 0, size, cornerRadius);
-
-      ctx.lineTo(size, lineLength);
-      ctx.quadraticCurveTo(size, size, lineLength, size);
-
-      ctx.lineTo(cornerRadius, size);
-      ctx.quadraticCurveTo(0, size, 0, lineLength);
-
-      ctx.lineTo(0, cornerRadius);
-      ctx.quadraticCurveTo(0, 0, cornerRadius, 0);
-      break;
-    case 'square':
-    default:
-      ctx.rect(0, 0, size, size);
-      break;
-  }
+  return getClipper(shape)(ctx, size);
 }
 
 /**

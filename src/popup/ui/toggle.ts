@@ -5,6 +5,7 @@
 
 import { byID, toggleClasses, setText, setDisabled } from '@/utils';
 import { loadSettings, showStatus, isSiteDisabled, toggleSite } from '@/extension';
+import { setItems } from '@/extension/storage';
 
 interface ToggleConfig {
   toggleBtnId: string;
@@ -92,7 +93,7 @@ export async function setupToggles(currentHostname: string | null): Promise<void
       return settings.extensionEnabled;
     },
     setState: async (enabled) => {
-      await chrome.storage.sync.set({ extensionEnabled: enabled });
+      await setItems({ extensionEnabled: enabled }, 'sync');
     },
     labelTexts: {
       enabled: 'Active',

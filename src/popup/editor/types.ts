@@ -2,7 +2,7 @@
  * Types for the image editor
  */
 
-import type { FaviconShape } from './transforms/types';
+import type { FaviconShape } from '@/types';
 
 /**
  * State of the image editor

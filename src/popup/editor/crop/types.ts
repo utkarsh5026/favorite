@@ -38,6 +38,21 @@ export interface Point {
 }
 
 /**
+ * Boundary rectangle defining the constrained area for crop selection
+ * These are display coordinates (already scaled)
+ */
+export interface BoundaryRect {
+  /** X position of the image in the container */
+  x: number;
+  /** Y position of the image in the container */
+  y: number;
+  /** Display width of the image */
+  width: number;
+  /** Display height of the image */
+  height: number;
+}
+
+/**
  * Configuration for the crop overlay
  */
 export interface CropConfig {

@@ -4,10 +4,65 @@
  */
 
 import type { EditorState } from './types';
-import { rotateImage, flipImage } from './transforms';
+import { rotateImage, flipImage, executeTransform } from './transforms';
 import { loadImageAsDataUrl } from './utils';
+import { CropTransform } from './crop';
+import type { CropData } from './crop';
+import { getItem, setItem, removeItem } from '@/extension/storage';
 
 type StateChangeCallback = (state: EditorState) => void;
+
+/**
+ * Manages persistence of editor state to Chrome storage
+ */
+class EditorStatePersistence {
+  private currentTabId: number | null = null;
+
+  /**
+   * Initialize persistence for a specific tab ID
+   */
+  setTabId(tabId: number): void {
+    this.currentTabId = tabId;
+  }
+
+  /**
+   * Get the storage key for the current tab
+   */
+  private getStorageKey(): string | null {
+    if (this.currentTabId === null) return null;
+    return `editorState_tab_${this.currentTabId}`;
+  }
+
+  /**
+   * Persist the state to chrome storage
+   */
+  async save(state: EditorState): Promise<void> {
+    const storageKey = this.getStorageKey();
+    if (!storageKey) return;
+
+    await setItem(storageKey, state);
+  }
+
+  /**
+   * Load persisted state from chrome storage
+   */
+  async load(): Promise<EditorState | null> {
+    const storageKey = this.getStorageKey();
+    if (!storageKey) return null;
+
+    return (await getItem<EditorState>(storageKey, undefined)) ?? null;
+  }
+
+  /**
+   * Clear persisted state for the current tab
+   */
+  async clear(): Promise<void> {
+    const storageKey = this.getStorageKey();
+    if (!storageKey) return;
+
+    await removeItem(storageKey);
+  }
+}
 
 /**
  * Manages the state of the image editor with history support
@@ -15,10 +70,11 @@ type StateChangeCallback = (state: EditorState) => void;
 export class EditorStateManager {
   private state: EditorState;
   private listeners: StateChangeCallback[] = [];
-  private currentTabId: number | null = null;
+  private persistence: EditorStatePersistence;
 
   constructor() {
     this.state = this.createInitialState();
+    this.persistence = new EditorStatePersistence();
   }
 
   private createInitialState(): EditorState {
@@ -45,7 +101,7 @@ export class EditorStateManager {
   private notifyListeners(shouldPersist: boolean = true): void {
     this.listeners.forEach((cb) => cb(this.state));
     if (shouldPersist) {
-      this.persistState();
+      this.persistence.save(this.state);
     }
   }
 
@@ -53,52 +109,13 @@ export class EditorStateManager {
    * Initialize the editor with a specific tab ID for persistence
    */
   async initializeForTab(tabId: number): Promise<void> {
-    this.currentTabId = tabId;
-    await this.loadPersistedState();
-  }
+    this.persistence.setTabId(tabId);
+    const persistedState = await this.persistence.load();
 
-  /**
-   * Get the storage key for the current tab
-   */
-  private getStorageKey(): string | null {
-    if (this.currentTabId === null) return null;
-    return `editorState_tab_${this.currentTabId}`;
-  }
-
-  /**
-   * Persist the current state to chrome storage
-   */
-  private async persistState(): Promise<void> {
-    const storageKey = this.getStorageKey();
-    if (!storageKey) return;
-
-    try {
-      await chrome.storage.local.set({
-        [storageKey]: this.state,
-      });
-    } catch (error) {
-      console.error('Failed to persist editor state:', error);
-    }
-  }
-
-  /**
-   * Load persisted state from chrome storage
-   */
-  private async loadPersistedState(): Promise<void> {
-    const storageKey = this.getStorageKey();
-    if (!storageKey) return;
-
-    try {
-      const result = await chrome.storage.local.get(storageKey);
-      const persistedState = result[storageKey] as EditorState | undefined;
-
-      if (persistedState) {
-        this.state = persistedState;
-        // Notify listeners without persisting to avoid circular write
-        this.notifyListeners(false);
-      }
-    } catch (error) {
-      console.error('Failed to load persisted editor state:', error);
+    if (persistedState) {
+      this.state = persistedState;
+      // Notify listeners without persisting to avoid circular write
+      this.notifyListeners(false);
     }
   }
 
@@ -106,21 +123,13 @@ export class EditorStateManager {
    * Clear persisted state for the current tab
    */
   async clearPersistedState(): Promise<void> {
-    const storageKey = this.getStorageKey();
-    if (!storageKey) return;
-
-    try {
-      await chrome.storage.local.remove(storageKey);
-    } catch (error) {
-      console.error('Failed to clear persisted editor state:', error);
-    }
+    await this.persistence.clear();
   }
 
   /**
    * Load an image into the editor
    */
   async loadImage(imageUrl: string): Promise<void> {
-    // Convert to data URL if needed
     const dataUrl = await loadImageAsDataUrl(imageUrl);
 
     this.state = {
@@ -129,7 +138,7 @@ export class EditorStateManager {
       currentImageUrl: dataUrl,
       historyStack: [dataUrl],
       historyIndex: 0,
-      currentShape: 'square', // Reset shape when loading new image
+      currentShape: 'square',
     };
 
     this.notifyListeners();
@@ -139,7 +148,6 @@ export class EditorStateManager {
    * Push current state to history before making a change
    */
   private pushToHistory(newImageUrl: string): void {
-    // Remove any redo states (states after current index)
     if (this.state.historyIndex < this.state.historyStack.length - 1) {
       this.state.historyStack = this.state.historyStack.slice(0, this.state.historyIndex + 1);
     }
@@ -198,6 +206,13 @@ export class EditorStateManager {
   }
 
   /**
+   * Crop the image to the specified region
+   */
+  async cropImage(cropData: CropData): Promise<void> {
+    await this.applyTransformation((url) => executeTransform(url, new CropTransform(cropData)));
+  }
+
+  /**
    * Navigate history by applying an index delta
    */
   private navigateHistory(canNavigate: () => boolean, delta: number): boolean {
@@ -243,14 +258,6 @@ export class EditorStateManager {
   getCurrentImage(): string | null {
     return this.state.currentImageUrl;
   }
-
-  /**
-   * Get the original image URL
-   */
-  getOriginalImage(): string | null {
-    return this.state.originalImageUrl;
-  }
-
   /**
    * Get the full state
    */

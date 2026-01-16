@@ -3,14 +3,32 @@
  * Handles the editor tab UI, toolbar buttons, and canvas display
  */
 
-import { byID, downloadImage, setActive, toggleClasses, setDisabled, setVisible } from '@/utils';
+import {
+  byID,
+  downloadImage,
+  toggleClasses,
+  setDisabled,
+  setVisible,
+  tryCatchAsync,
+} from '@/utils';
 import { showStatus, getCurrentTabHostname, getCurrentTab, CONTEXT_MENU } from '@/extension';
 import { saveFaviconZIP } from '@/favicons';
 import { editorState } from './state';
 import { applyShapeToImage } from './transforms';
 import { setupUpload } from './upload';
+import { CropOverlay } from './crop';
+import { ShapeSelector } from './shapes';
+import { Toolbar } from './toolbar';
+import type { CropData } from './crop';
 import type { EditorState } from './types';
 import type { FaviconShape } from '@/types';
+
+const CHECKED_SQUARE_SIZE = 8;
+const EMPTY_CANVAS_SIZE = 200;
+const MAX_CANVAS_HEIGHT = 250;
+const CANVAS_PADDING = 2;
+const PREVIEW_DEBOUNCE_MS = 100;
+const CONTAINER_MIN_WIDTH = 300;
 
 /**
  * Editor UI Manager Class
@@ -20,6 +38,10 @@ export class EditorUI {
   private currentHostname: string | null = null;
   private livePreviewEnabled: boolean = false;
   private previewDebounceTimeout: ReturnType<typeof setTimeout> | null = null;
+  private cropOverlay: CropOverlay | null = null;
+  private isCropMode: boolean = false;
+  private shapeSelector: ShapeSelector | null = null;
+  private toolbar: Toolbar | null = null;
 
   /**
    * Load an image into the editor
@@ -32,18 +54,19 @@ export class EditorUI {
    * Update the toolbar button states based on editor state
    */
   private updateToolbarState(): void {
-    const undoBtn = byID<HTMLButtonElement>('editorUndo');
-    const redoBtn = byID<HTMLButtonElement>('editorRedo');
-
-    setDisabled(undoBtn, !editorState.canUndo());
-    setDisabled(redoBtn, !editorState.canRedo());
+    this.toolbar?.setDisabled('undo', !editorState.canUndo());
+    this.toolbar?.setDisabled('redo', !editorState.canRedo());
   }
 
   /**
    * Draw a checkered pattern background on the canvas
    */
-  private drawCheckeredBackground(ctx: CanvasRenderingContext2D, width: number, height: number): void {
-    const squareSize = 8;
+  private drawCheckeredBackground(
+    ctx: CanvasRenderingContext2D,
+    width: number,
+    height: number
+  ): void {
+    const squareSize = CHECKED_SQUARE_SIZE;
     const lightColor = '#ffffff';
     const darkColor = '#cccccc';
 
@@ -51,7 +74,7 @@ export class EditorUI {
       for (let x = 0; x < width; x += squareSize) {
         const isEvenRow = Math.floor(y / squareSize) % 2 === 0;
         const isEvenCol = Math.floor(x / squareSize) % 2 === 0;
-        ctx.fillStyle = (isEvenRow === isEvenCol) ? lightColor : darkColor;
+        ctx.fillStyle = isEvenRow === isEvenCol ? lightColor : darkColor;
         ctx.fillRect(x, y, squareSize, squareSize);
       }
     }
@@ -72,48 +95,46 @@ export class EditorUI {
 
     if (!imageUrl) {
       setVisible(loadingOverlay, false);
-      canvas.width = 200;
-      canvas.height = 200;
+      canvas.width = EMPTY_CANVAS_SIZE;
+      canvas.height = EMPTY_CANVAS_SIZE;
       this.drawCheckeredBackground(ctx, canvas.width, canvas.height);
       return;
     }
 
     setVisible(loadingOverlay, true);
 
-    try {
+    const drawCanvas = async () => {
       const currentShape = editorState.getShape();
       const shapedImageUrl = await applyShapeToImage(imageUrl, currentShape);
 
       const img = await downloadImage(shapedImageUrl);
-      let containerWidth = container.clientWidth - 2;
-      const maxHeight = 250;
+      let containerWidth = container.clientWidth - CANVAS_PADDING;
 
-      // If container hasn't been laid out yet, use a default width
       if (containerWidth <= 0) {
-        containerWidth = 300; // Default fallback width
+        containerWidth = CONTAINER_MIN_WIDTH;
       }
 
       let scale = 1;
       if (img.naturalWidth > containerWidth) {
         scale = containerWidth / img.naturalWidth;
       }
-      if (img.naturalHeight * scale > maxHeight) {
-        scale = maxHeight / img.naturalHeight;
+      if (img.naturalHeight * scale > MAX_CANVAS_HEIGHT) {
+        scale = MAX_CANVAS_HEIGHT / img.naturalHeight;
       }
 
       canvas.width = Math.round(img.naturalWidth * scale);
       canvas.height = Math.round(img.naturalHeight * scale);
 
-      // Draw checkered background pattern
       this.drawCheckeredBackground(ctx, canvas.width, canvas.height);
-
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
       setVisible(loadingOverlay, false);
-    } catch (error) {
-      console.error('Failed to render canvas:', error);
+    };
+
+    await tryCatchAsync(drawCanvas, () => {
+      console.error('Failed to render canvas');
       setVisible(loadingOverlay, false);
-    }
+    });
   }
 
   /**
@@ -132,8 +153,6 @@ export class EditorUI {
     this.updateToolbarState();
     await this.renderCanvas(state.currentImageUrl);
     this.updateShapeButtons(state.currentShape);
-
-    // Auto-preview when live preview is enabled
     if (this.livePreviewEnabled && state.currentImageUrl) {
       this.sendPreviewToTab();
     }
@@ -143,41 +162,54 @@ export class EditorUI {
    * Update the shape button states based on current shape
    */
   private updateShapeButtons(activeShape: FaviconShape): void {
-    document.querySelectorAll('.shape-btn').forEach((btn) => {
-      const shape = btn.getAttribute('data-shape');
-      setActive(btn as HTMLElement, shape === activeShape);
+    this.shapeSelector?.setActiveShape(activeShape);
+  }
+
+  /**
+   * Setup toolbar with all buttons
+   */
+  private setupToolbar(): void {
+    const container = byID('toolbarButtons');
+    if (!container) return;
+
+    this.toolbar = new Toolbar();
+    this.toolbar.init(container, {
+      undo: () => {
+        editorState.undo();
+      },
+      redo: () => {
+        editorState.redo();
+      },
+      rotateLeft: () => editorState.rotateCounterClockwise(),
+      rotateRight: () => editorState.rotateClockwise(),
+      flipH: () => editorState.flipHorizontal(),
+      flipV: () => editorState.flipVertical(),
+      crop: () => this.enterCropMode(),
+      reset: () => {
+        if (confirm('Reset all changes to the original image?')) {
+          editorState.resetToOriginal();
+        }
+      },
     });
   }
 
   /**
-   * Setup toolbar button event handlers
+   * Setup the shape selector component
    */
-  private setupToolbarButtons(): void {
-    byID('editorUndo')?.addEventListener('click', () => editorState.undo());
-    byID('editorRedo')?.addEventListener('click', () => editorState.redo());
+  private setupShapeSelector(): void {
+    const container = byID('shapeSelector');
+    if (!container) return;
 
-    byID('editorRotateLeft')?.addEventListener('click', () => {
-      editorState.rotateCounterClockwise();
-    });
-    byID('editorRotateRight')?.addEventListener('click', () => {
-      editorState.rotateClockwise();
+    this.shapeSelector = new ShapeSelector();
+    this.shapeSelector.init(container, (shape) => {
+      editorState.setShape(shape);
     });
 
-    byID('editorFlipH')?.addEventListener('click', () => {
-      editorState.flipHorizontal();
-    });
-    byID('editorFlipV')?.addEventListener('click', () => {
-      editorState.flipVertical();
-    });
-
-    document.querySelectorAll('.shape-btn').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const shape = btn.getAttribute('data-shape') as FaviconShape;
-        if (shape) {
-          editorState.setShape(shape);
-        }
-      });
-    });
+    const resetBtn = byID('editorReset');
+    if (resetBtn) {
+      resetBtn.classList.add('reset-btn-right');
+      container.appendChild(resetBtn);
+    }
   }
 
   /**
@@ -226,24 +258,28 @@ export class EditorUI {
       clearTimeout(this.previewDebounceTimeout);
     }
 
-    this.previewDebounceTimeout = setTimeout(async () => {
+    const sendPreview = async () => {
       const imageUrl = await this.getCurrentImage();
-      if (!imageUrl) return;
-
-      try {
-        const tab = await getCurrentTab();
-        if (tab?.id) {
-          await chrome.tabs.sendMessage(tab.id, {
-            type: 'contextMenuAction',
-            action: CONTEXT_MENU.PREVIEW,
-            imageUrl,
-            hostname: this.currentHostname || '',
-          });
-        }
-      } catch (error) {
-        console.error('Failed to send preview:', error);
+      if (!imageUrl) {
+        return;
       }
-    }, 100);
+
+      const tab = await getCurrentTab();
+      if (tab?.id) {
+        await chrome.tabs.sendMessage(tab.id, {
+          type: 'contextMenuAction',
+          action: CONTEXT_MENU.PREVIEW,
+          imageUrl,
+          hostname: this.currentHostname || '',
+        });
+      }
+    };
+
+    this.previewDebounceTimeout = setTimeout(async () => {
+      await tryCatchAsync(sendPreview, () => {
+        console.error('Failed to send preview to tab');
+      });
+    }, PREVIEW_DEBOUNCE_MS);
   }
 
   /**
@@ -322,7 +358,6 @@ export class EditorUI {
     });
   }
 
-
   /**
    * Setup upload zone in editor tab
    */
@@ -340,7 +375,6 @@ export class EditorUI {
       const result = await chrome.storage.local.get('pendingEditImage');
       if (result.pendingEditImage?.imageUrl) {
         await this.loadImageIntoEditor(result.pendingEditImage.imageUrl);
-        // Clear the pending image
         await chrome.storage.local.remove('pendingEditImage');
       }
     } catch (error) {
@@ -354,6 +388,7 @@ export class EditorUI {
   private setupKeyboardShortcuts(): void {
     document.addEventListener('keydown', (e) => {
       if (!editorState.hasImage()) return;
+      if (this.isCropMode) return;
 
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
         return;
@@ -372,38 +407,124 @@ export class EditorUI {
   }
 
   /**
+   * Enter crop mode - show the crop overlay
+   */
+  private async enterCropMode(): Promise<void> {
+    if (this.isCropMode || !editorState.hasImage()) return;
+
+    const container = byID('editorCanvasContainer');
+    const canvas = byID<HTMLCanvasElement>('editorCanvas');
+    const imageUrl = editorState.getCurrentImage();
+
+    if (!container || !canvas || !imageUrl) return;
+
+    try {
+      const img = await downloadImage(imageUrl);
+      const imageWidth = img.naturalWidth;
+      const imageHeight = img.naturalHeight;
+      let containerWidth = container.clientWidth - 2;
+      const maxHeight = 250;
+
+      if (containerWidth <= 0) {
+        containerWidth = 300;
+      }
+
+      let displayScale = 1;
+      if (imageWidth > containerWidth) {
+        displayScale = containerWidth / imageWidth;
+      }
+      if (imageHeight * displayScale > maxHeight) {
+        displayScale = maxHeight / imageHeight;
+      }
+
+      const canvasRect = canvas.getBoundingClientRect();
+      const containerRect = container.getBoundingClientRect();
+      const boundary = {
+        x: canvasRect.left - containerRect.left,
+        y: canvasRect.top - containerRect.top,
+        width: canvas.width,
+        height: canvas.height,
+      };
+
+      this.isCropMode = true;
+      this.cropOverlay = new CropOverlay();
+      this.setToolbarEnabled(false);
+
+      this.cropOverlay.init(
+        container,
+        imageWidth,
+        imageHeight,
+        displayScale,
+        boundary,
+        (cropData: CropData) => this.handleCropApply(cropData),
+        () => this.handleCropCancel()
+      );
+    } catch (error) {
+      console.error('Failed to enter crop mode:', error);
+      this.isCropMode = false;
+    }
+  }
+
+  /**
+   * Handle crop apply
+   */
+  private async handleCropApply(cropData: CropData): Promise<void> {
+    this.isCropMode = false;
+    this.cropOverlay = null;
+    this.setToolbarEnabled(true);
+
+    try {
+      await editorState.cropImage(cropData);
+      showStatus('Image cropped!');
+    } catch (error) {
+      console.error('Failed to apply crop:', error);
+      showStatus('Crop failed');
+    }
+  }
+
+  /**
+   * Handle crop cancel
+   */
+  private handleCropCancel(): void {
+    this.isCropMode = false;
+    this.cropOverlay = null;
+    this.setToolbarEnabled(true);
+  }
+
+  /**
+   * Enable/disable toolbar buttons
+   */
+  private setToolbarEnabled(enabled: boolean): void {
+    this.toolbar?.setAllEnabled(enabled, {
+      undo: editorState.canUndo(),
+      redo: editorState.canRedo(),
+    });
+  }
+
+  /**
    * Initialize the editor UI
    */
   async setup(): Promise<void> {
-    // Get current tab and hostname
     const tab = await getCurrentTab();
     this.currentHostname = await getCurrentTabHostname();
 
-    // Initialize state manager with tab ID for persistence
     if (tab?.id) {
       await editorState.initializeForTab(tab.id);
     }
 
-    // Subscribe to state changes
     editorState.subscribe(this.onStateChange.bind(this));
-
-    // Setup components
-    this.setupToolbarButtons();
+    this.setupToolbar();
+    this.setupShapeSelector();
     this.setupActionButtons();
     this.setupEditorUpload();
     this.setupKeyboardShortcuts();
-
-    // Check for pending edit image
     await this.checkPendingEditImage();
-
-    // Initial state update - use requestAnimationFrame to ensure container has proper dimensions
     requestAnimationFrame(() => {
       this.onStateChange(editorState.getState());
     });
   }
 }
 
-// Export singleton instance and convenience function
 export const editorUI = new EditorUI();
 export const setupEditorUI = () => editorUI.setup();
 export const loadImageIntoEditor = (imageUrl: string) => editorUI.loadImageIntoEditor(imageUrl);

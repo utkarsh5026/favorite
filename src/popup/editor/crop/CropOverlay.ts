@@ -5,7 +5,7 @@
  * with 8 handles (4 corners + 4 edges) and darkened overlay outside selection.
  */
 
-import type { CropData, CropConfig, HandlePosition, DragType, Point } from './types';
+import type { CropData, CropConfig, HandlePosition, DragType, Point, BoundaryRect } from './types';
 import { DEFAULT_CROP_CONFIG } from './types';
 
 /**
@@ -33,6 +33,9 @@ export class CropOverlay {
   // Display scale (display size / actual image size)
   private displayScale = 1;
 
+  // Boundary rect - where the image is displayed in the container
+  private boundary: BoundaryRect = { x: 0, y: 0, width: 0, height: 0 };
+
   // Callbacks
   private onApply: ((crop: CropData) => void) | null = null;
   private onCancel: (() => void) | null = null;
@@ -50,6 +53,7 @@ export class CropOverlay {
     imageWidth: number,
     imageHeight: number,
     displayScale: number,
+    boundary: BoundaryRect,
     onApply: (crop: CropData) => void,
     onCancel: () => void
   ): void {
@@ -57,6 +61,7 @@ export class CropOverlay {
     this.imageWidth = imageWidth;
     this.imageHeight = imageHeight;
     this.displayScale = displayScale;
+    this.boundary = boundary;
     this.onApply = onApply;
     this.onCancel = onCancel;
 
@@ -170,7 +175,11 @@ export class CropOverlay {
     e.preventDefault();
     this.isDragging = true;
     this.dragType = type;
-    this.dragStart = { x: e.clientX, y: e.clientY };
+    // Account for boundary offset when starting drag
+    this.dragStart = {
+      x: e.clientX - this.boundary.x,
+      y: e.clientY - this.boundary.y
+    };
     this.cropStart = { ...this.crop };
     this.overlayElement?.classList.add('dragging');
   }
@@ -188,8 +197,11 @@ export class CropOverlay {
   private handleMouseMove(e: MouseEvent): void {
     if (!this.isDragging || !this.dragType) return;
 
-    const deltaX = (e.clientX - this.dragStart.x) / this.displayScale;
-    const deltaY = (e.clientY - this.dragStart.y) / this.displayScale;
+    // Account for boundary offset in mouse position
+    const currentX = e.clientX - this.boundary.x;
+    const currentY = e.clientY - this.boundary.y;
+    const deltaX = (currentX - this.dragStart.x) / this.displayScale;
+    const deltaY = (currentY - this.dragStart.y) / this.displayScale;
 
     switch (this.dragType) {
       case 'move':
@@ -332,13 +344,17 @@ export class CropOverlay {
       height: this.crop.height * this.displayScale,
     };
 
+    // Position relative to boundary (where the image is displayed)
+    const absoluteX = this.boundary.x + displayCrop.x;
+    const absoluteY = this.boundary.y + displayCrop.y;
+
     // Use container dimensions to extend masks to full canvas
     const containerWidth = this.container.clientWidth;
     const containerHeight = this.container.clientHeight;
 
-    // Update selection position
-    this.selectionElement.style.left = `${displayCrop.x}px`;
-    this.selectionElement.style.top = `${displayCrop.y}px`;
+    // Update selection position (offset by boundary position)
+    this.selectionElement.style.left = `${absoluteX}px`;
+    this.selectionElement.style.top = `${absoluteY}px`;
     this.selectionElement.style.width = `${displayCrop.width}px`;
     this.selectionElement.style.height = `${displayCrop.height}px`;
 
@@ -352,27 +368,27 @@ export class CropOverlay {
       maskTop.style.left = '0';
       maskTop.style.top = '0';
       maskTop.style.width = `${containerWidth}px`;
-      maskTop.style.height = `${displayCrop.y}px`;
+      maskTop.style.height = `${absoluteY}px`;
     }
 
     if (maskBottom) {
       maskBottom.style.left = '0';
-      maskBottom.style.top = `${displayCrop.y + displayCrop.height}px`;
+      maskBottom.style.top = `${absoluteY + displayCrop.height}px`;
       maskBottom.style.width = `${containerWidth}px`;
-      maskBottom.style.height = `${containerHeight - displayCrop.y - displayCrop.height}px`;
+      maskBottom.style.height = `${containerHeight - absoluteY - displayCrop.height}px`;
     }
 
     if (maskLeft) {
       maskLeft.style.left = '0';
-      maskLeft.style.top = `${displayCrop.y}px`;
-      maskLeft.style.width = `${displayCrop.x}px`;
+      maskLeft.style.top = `${absoluteY}px`;
+      maskLeft.style.width = `${absoluteX}px`;
       maskLeft.style.height = `${displayCrop.height}px`;
     }
 
     if (maskRight) {
-      maskRight.style.left = `${displayCrop.x + displayCrop.width}px`;
-      maskRight.style.top = `${displayCrop.y}px`;
-      maskRight.style.width = `${containerWidth - displayCrop.x - displayCrop.width}px`;
+      maskRight.style.left = `${absoluteX + displayCrop.width}px`;
+      maskRight.style.top = `${absoluteY}px`;
+      maskRight.style.width = `${containerWidth - absoluteX - displayCrop.width}px`;
       maskRight.style.height = `${displayCrop.height}px`;
     }
   }

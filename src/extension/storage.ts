@@ -66,9 +66,9 @@ export async function getItems<T extends Record<string, any>>(
   errorMessage?: string
 ): Promise<Partial<T>> {
   return tryCatchAsync(
-    async () => (await getStorageArea(storageType).get(keys)) as Partial<T>,
-    errorMessage || `Failed to get items from storage:`,
-    {} as Partial<T>
+      async () => (await getStorageArea(storageType).get(keys)) as Partial<T>,
+      errorMessage || `Failed to get items from storage:`,
+      {} as Partial<T>
   ) as Promise<Partial<T>>;
 }
 
@@ -136,49 +136,6 @@ export async function removeItem(
       return true;
     },
     errorMessage || `Failed to remove item "${key}" from storage:`,
-    false
-  );
-}
-
-/**
- * Remove multiple values from chrome storage at once
- * @param keys - Array of storage keys to remove
- * @param storageType - Type of storage to use (defaults to 'local')
- * @param errorMessage - Optional custom error message to log on failure
- * @returns true if successful, false on error
- */
-export async function removeItems(
-  keys: string[],
-  storageType: StorageType = 'local',
-  errorMessage?: string
-): Promise<boolean> {
-  return tryCatchAsync(
-    async () => {
-      await getStorageArea(storageType).remove(keys);
-      return true;
-    },
-    errorMessage || `Failed to remove items from storage:`,
-    false
-  );
-}
-
-/**
- * Clear all values from chrome storage
- * WARNING: This will remove ALL stored data from the specified storage area
- * @param storageType - Type of storage to use (defaults to 'local')
- * @param errorMessage - Optional custom error message to log on failure
- * @returns true if successful, false on error
- */
-export async function clearAll(
-  storageType: StorageType = 'local',
-  errorMessage?: string
-): Promise<boolean> {
-  return tryCatchAsync(
-    async () => {
-      await getStorageArea(storageType).clear();
-      return true;
-    },
-    errorMessage || `Failed to clear storage:`,
     false
   );
 }

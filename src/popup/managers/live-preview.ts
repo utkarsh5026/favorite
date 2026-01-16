@@ -133,7 +133,7 @@ export async function updateLivePreview(
   img.onload = () => {
     clipImageToShape(
       64, // Preview size (matches w-16 h-16 container)
-      settings.faviconShape,
+      'rounded',
       img,
       () => {
         previewImage.src = imageUrl;

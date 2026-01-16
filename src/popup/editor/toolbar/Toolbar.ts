@@ -1,0 +1,118 @@
+import { setDisabled } from '@/utils';
+
+export interface ToolbarButtonConfig {
+  id: string;
+  title: string;
+  icon: string;
+  group?: string;
+  disabled?: boolean;
+}
+
+// Button configurations
+export const TOOLBAR_BUTTONS: ToolbarButtonConfig[] = [
+  {
+    id: 'undo',
+    title: 'Undo (Ctrl+Z)',
+    icon: '<path d="M3 7v6h6"/><path d="M3 13a9 9 0 1 0 3-7.5L3 7"/>',
+    group: 'history',
+    disabled: true,
+  },
+  {
+    id: 'redo',
+    title: 'Redo (Ctrl+Y)',
+    icon: '<path d="M21 7v6h-6"/><path d="M21 13a9 9 0 1 1-3-7.5L21 7"/>',
+    group: 'history',
+    disabled: true,
+  },
+  {
+    id: 'rotateLeft',
+    title: 'Rotate Left (90°)',
+    icon: '<path d="M2.5 2v6h6"/><path d="M2.5 8a10 10 0 0 1 17.07-5.93"/><path d="M22 12a10 10 0 0 1-18.56 5.14"/>',
+    group: 'rotate',
+  },
+  {
+    id: 'rotateRight',
+    title: 'Rotate Right (90°)',
+    icon: '<path d="M21.5 2v6h-6"/><path d="M21.5 8a10 10 0 0 0-17.07-5.93"/><path d="M2 12a10 10 0 0 0 18.56 5.14"/>',
+    group: 'rotate',
+  },
+  {
+    id: 'flipH',
+    title: 'Flip Horizontal',
+    icon: '<path d="M12 3v18"/><path d="M16 7l4 5-4 5"/><path d="M8 7l-4 5 4 5"/>',
+    group: 'flip',
+  },
+  {
+    id: 'flipV',
+    title: 'Flip Vertical',
+    icon: '<path d="M3 12h18"/><path d="M7 8l5-4 5 4"/><path d="M7 16l5 4 5-4"/>',
+    group: 'flip',
+  },
+  {
+    id: 'crop',
+    title: 'Crop Image',
+    icon: '<path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/>',
+    group: 'crop',
+  },
+];
+
+function capitalize(str: string): string {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+export class Toolbar {
+  private buttons = new Map<string, HTMLButtonElement>();
+
+  private createButton(config: ToolbarButtonConfig): HTMLButtonElement {
+    const btn = document.createElement('button');
+    btn.className = 'editor-btn';
+    btn.id = `editor${capitalize(config.id)}`;
+    btn.title = config.title;
+    btn.disabled = config.disabled ?? false;
+    btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${config.icon}</svg>`;
+    return btn;
+  }
+
+  private createDivider(): HTMLDivElement {
+    const divider = document.createElement('div');
+    divider.className = 'editor-toolbar-divider';
+    return divider;
+  }
+
+  init(container: HTMLElement, handlers: Record<string, () => void>): void {
+    this.buttons.clear();
+    container.innerHTML = '';
+
+    let lastGroup: string | undefined;
+
+    for (const config of TOOLBAR_BUTTONS) {
+      if (lastGroup && config.group !== lastGroup) {
+        container.appendChild(this.createDivider());
+      }
+
+      const btn = this.createButton(config);
+      const handler = handlers[config.id];
+      if (handler) {
+        btn.addEventListener('click', handler);
+      }
+
+      this.buttons.set(config.id, btn);
+      container.appendChild(btn);
+      lastGroup = config.group;
+    }
+  }
+
+  setDisabled(id: string, disabled: boolean) {
+    setDisabled(this.buttons.get(id) || null, disabled);
+  }
+
+  setAllEnabled(enabled: boolean, except?: Record<string, boolean>): void {
+    this.buttons.forEach((btn, id) => {
+      if (enabled && except && id in except) {
+        setDisabled(btn, !except[id]);
+      } else {
+        setDisabled(btn, !enabled);
+      }
+    });
+  }
+}

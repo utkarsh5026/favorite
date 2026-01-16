@@ -155,77 +155,8 @@
         <div class="editor-content" id="editorContent">
           <!-- Toolbar -->
           <div class="editor-toolbar" id="editorToolbar">
-            <!-- Undo/Redo -->
-            <button class="editor-btn" id="editorUndo" title="Undo (Ctrl+Z)" disabled>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M3 7v6h6" />
-                <path d="M3 13a9 9 0 1 0 3-7.5L3 7" />
-              </svg>
-            </button>
-            <button class="editor-btn" id="editorRedo" title="Redo (Ctrl+Y)" disabled>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 7v6h-6" />
-                <path d="M21 13a9 9 0 1 1-3-7.5L21 7" />
-              </svg>
-            </button>
-
-            <div class="editor-toolbar-divider"></div>
-
-            <!-- Rotate -->
-            <button class="editor-btn" id="editorRotateLeft" title="Rotate Left (90°)">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M2.5 2v6h6" />
-                <path d="M2.5 8a10 10 0 0 1 17.07-5.93" />
-                <path d="M22 12a10 10 0 0 1-18.56 5.14" />
-              </svg>
-            </button>
-            <button class="editor-btn" id="editorRotateRight" title="Rotate Right (90°)">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21.5 2v6h-6" />
-                <path d="M21.5 8a10 10 0 0 0-17.07-5.93" />
-                <path d="M2 12a10 10 0 0 0 18.56 5.14" />
-              </svg>
-            </button>
-
-            <div class="editor-toolbar-divider"></div>
-
-            <!-- Flip -->
-            <button class="editor-btn" id="editorFlipH" title="Flip Horizontal">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M12 3v18" />
-                <path d="M16 7l4 5-4 5" />
-                <path d="M8 7l-4 5 4 5" />
-              </svg>
-            </button>
-            <button class="editor-btn" id="editorFlipV" title="Flip Vertical">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M3 12h18" />
-                <path d="M7 8l5-4 5 4" />
-                <path d="M7 16l5 4 5-4" />
-              </svg>
-            </button>
-
-            <div class="editor-toolbar-divider"></div>
-
-            <!-- Force shape buttons to next line -->
-            <div class="editor-toolbar-break"></div>
-
-            <!-- Shape -->
-            <button class="editor-btn shape-btn" data-shape="circle" title="Circle Shape">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10" />
-              </svg>
-            </button>
-            <button class="editor-btn shape-btn" data-shape="rounded" title="Rounded Shape">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="3" y="3" width="18" height="18" rx="4" ry="4" />
-              </svg>
-            </button>
-            <button class="editor-btn shape-btn active" data-shape="square" title="Square Shape">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="3" y="3" width="18" height="18" />
-              </svg>
-            </button>
+            <div id="toolbarButtons"></div>
+            <div id="shapeSelector" class="shape-selector"></div>
           </div>
 
           <!-- Canvas Container -->

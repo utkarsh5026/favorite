@@ -1,7 +1,7 @@
 /**
  * Shape mask options for favicon display
  */
-export type FaviconShape = 'circle' | 'square' | 'rounded';
+export type FaviconShape = 'circle' | 'square' | 'rounded' | 'heart';
 
 /**
  * Configuration for the extension behavior

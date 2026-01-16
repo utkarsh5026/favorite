@@ -7,14 +7,16 @@ import type { UserSettings } from './types';
 import { DEFAULT_SETTINGS } from './state';
 import { byID } from '@/utils';
 import { resetToOriginal } from '@/favicons';
+import { getItems, setItems, removeItem } from './storage';
 
 /**
  * Loads user settings from Chrome storage
  * @returns Promise that resolves to the user settings object
  */
 export async function loadSettings(): Promise<UserSettings> {
-  const result = await chrome.storage.sync.get(DEFAULT_SETTINGS);
-  return result as UserSettings;
+  const keys = Object.keys(DEFAULT_SETTINGS);
+  const result = await getItems<UserSettings>(keys, 'sync', 'Failed to load settings');
+  return { ...DEFAULT_SETTINGS, ...result };
 }
 
 /**
@@ -22,7 +24,7 @@ export async function loadSettings(): Promise<UserSettings> {
  * @param settings - Partial user settings object to save
  */
 export async function saveSettings(settings: Partial<UserSettings>): Promise<void> {
-  await chrome.storage.sync.set(settings);
+  await setItems(settings, 'sync');
   showStatus('Settings saved');
 }
 
@@ -45,8 +47,8 @@ export function showStatus(message: string): void {
  * Resets all settings to defaults and clears all site-specific data
  */
 export async function resetAllSettings(): Promise<void> {
-  await chrome.storage.sync.set(DEFAULT_SETTINGS);
-  await chrome.storage.local.remove('faviconStates');
+  await setItems(DEFAULT_SETTINGS, 'sync');
+  await removeItem('faviconStates', 'local');
 }
 
 /**
@@ -56,7 +58,7 @@ export async function resetAllSettings(): Promise<void> {
 export async function resetSiteSettings(hostname: string): Promise<void> {
   const settings = await loadSettings();
   const disabledSites = settings.disabledSites.filter((site) => site !== hostname);
-  await chrome.storage.sync.set({ disabledSites });
+  await setItems({ disabledSites }, 'sync');
 
   await resetToOriginal(hostname);
 }

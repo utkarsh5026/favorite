@@ -1,4 +1,5 @@
-import type { RotationDegrees, FlipDirection, CanvasTransform, FaviconShape } from './types';
+import { FaviconShape } from '@/types';
+import type { RotationDegrees, FlipDirection, CanvasTransform } from './types';
 import { createShapeClipPath } from '@/images/shape';
 
 /**

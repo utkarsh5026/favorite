@@ -5,7 +5,8 @@
 
 import { downloadImage, setupCanvas } from '@/utils';
 import { RotateTransform, ShapeTransform, FlipTransform } from './classes';
-import type { CanvasTransform, FlipDirection, RotationDegrees, FaviconShape } from './types';
+import type { CanvasTransform, FlipDirection, RotationDegrees } from './types';
+import type { FaviconShape } from '@/types';
 
 /**
  * Executes a canvas transformation

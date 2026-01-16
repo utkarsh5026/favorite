@@ -28,8 +28,3 @@ export type RotationDegrees = 90 | 180 | 270;
  * Flip direction for image flipping
  */
 export type FlipDirection = 'horizontal' | 'vertical';
-
-/**
- * Shape mask options for favicon display
- */
-export type FaviconShape = 'circle' | 'square' | 'rounded';

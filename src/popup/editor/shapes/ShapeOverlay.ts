@@ -7,6 +7,7 @@
  */
 
 import type { FaviconShape } from '@/types';
+import { createSvgEl } from '@/utils';
 import { BaseOverlay } from '../overlay';
 import type { DisplayBoundingBox } from '../overlay';
 import type { ShapeManipulationData } from './types';
@@ -129,35 +130,28 @@ export class ShapeOverlay extends BaseOverlay<ShapeManipulationData, Manipulatio
   protected createOverlayContent(): void {
     if (!this.overlayElement) return;
 
-    this.svgElement = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    this.svgElement.classList.add('shape-mask-svg');
-    this.svgElement.setAttribute('width', '100%');
-    this.svgElement.setAttribute('height', '100%');
+    this.svgElement = createSvgEl('svg', {
+      class: 'shape-mask-svg',
+      width: '100%',
+      height: '100%',
+    });
 
-    const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
-    const mask = document.createElementNS('http://www.w3.org/2000/svg', 'mask');
-    mask.setAttribute('id', 'shapeMask');
+    const defs = createSvgEl('defs');
+    const mask = createSvgEl('mask', { id: 'shapeMask' });
 
-    // White background (reveals everything by default)
-    const maskBg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-    maskBg.setAttribute('width', '100%');
-    maskBg.setAttribute('height', '100%');
-    maskBg.setAttribute('fill', 'white');
-
-    // Black shape path (cuts out the shape)
-    this.shapePath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    this.shapePath.setAttribute('fill', 'black');
+    const maskBg = createSvgEl('rect', { width: '100%', height: '100%', fill: 'white' });
+    this.shapePath = createSvgEl('path', { fill: 'black' });
 
     mask.append(maskBg, this.shapePath);
     defs.appendChild(mask);
     this.svgElement.appendChild(defs);
 
-    // Dark overlay with mask applied
-    const darkOverlay = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-    darkOverlay.setAttribute('width', '100%');
-    darkOverlay.setAttribute('height', '100%');
-    darkOverlay.setAttribute('fill', 'rgba(0, 0, 0, 0.6)');
-    darkOverlay.setAttribute('mask', 'url(#shapeMask)');
+    const darkOverlay = createSvgEl('rect', {
+      width: '100%',
+      height: '100%',
+      fill: 'rgba(0, 0, 0, 0.6)',
+      mask: 'url(#shapeMask)',
+    });
     this.svgElement.appendChild(darkOverlay);
 
     this.overlayElement.appendChild(this.svgElement);

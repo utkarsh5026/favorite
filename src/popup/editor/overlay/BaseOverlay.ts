@@ -68,6 +68,11 @@ export abstract class BaseOverlay<TData, TStart = TData> {
   private boundHandleMouseUp: (() => void) | null = null;
   private boundHandleKeyDown: ((e: KeyboardEvent) => void) | null = null;
 
+  private cancelBtn: HTMLButtonElement | null = null;
+  private applyBtn: HTMLButtonElement | null = null;
+  private boundCancel: (() => void) | null = null;
+  private boundApply: (() => void) | null = null;
+
   /**
    * Get the CSS class prefix for this overlay type.
    * Used for: overlay element class, selection class, handle classes, action classes.
@@ -213,6 +218,14 @@ export abstract class BaseOverlay<TData, TStart = TData> {
     remove('mouseup', this.boundHandleMouseUp);
     remove('keydown', this.boundHandleKeyDown);
 
+    // Remove action button listeners
+    if (this.cancelBtn && this.boundCancel) {
+      this.cancelBtn.removeEventListener('click', this.boundCancel);
+    }
+    if (this.applyBtn && this.boundApply) {
+      this.applyBtn.removeEventListener('click', this.boundApply);
+    }
+
     this.cleanupOverlayContent();
 
     if (this.overlayElement && this.container) {
@@ -228,6 +241,10 @@ export abstract class BaseOverlay<TData, TStart = TData> {
     this.boundHandleMouseMove = null;
     this.boundHandleMouseUp = null;
     this.boundHandleKeyDown = null;
+    this.cancelBtn = null;
+    this.applyBtn = null;
+    this.boundCancel = null;
+    this.boundApply = null;
   }
 
   /**
@@ -266,19 +283,23 @@ export abstract class BaseOverlay<TData, TStart = TData> {
     const prefix = this.getClassPrefix();
     const actionsContainer = createEl('div', `${prefix}-actions`);
 
-    const button = (title: string, btnType: string, onclick: () => void) => {
-      const btn = createEl('button', `${prefix}-action-btn ${prefix}-${btnType}-btn`, {
-        innerHTML: btnType === 'cancel' ? ACTION_BUTTON_ICONS.cancel : ACTION_BUTTON_ICONS.apply,
-        title,
-      });
-      btn.addEventListener('click', onclick);
-      return btn;
-    };
+    this.cancelBtn = createEl('button', `${prefix}-action-btn ${prefix}-cancel-btn`, {
+      innerHTML: ACTION_BUTTON_ICONS.cancel,
+      title: 'Cancel (Esc)',
+    });
 
-    const cancelBtn = button('Cancel (Esc)', 'cancel', () => this.cancel());
-    const applyBtn = button('Apply (Enter)', 'apply', () => this.apply());
+    this.applyBtn = createEl('button', `${prefix}-action-btn ${prefix}-apply-btn`, {
+      innerHTML: ACTION_BUTTON_ICONS.apply,
+      title: 'Apply (Enter)',
+    });
 
-    actionsContainer.append(cancelBtn, applyBtn);
+    this.boundCancel = () => this.cancel();
+    this.boundApply = () => this.apply();
+
+    this.cancelBtn.addEventListener('click', this.boundCancel);
+    this.applyBtn.addEventListener('click', this.boundApply);
+
+    actionsContainer.append(this.cancelBtn, this.applyBtn);
     this.selectionElement.appendChild(actionsContainer);
   }
 

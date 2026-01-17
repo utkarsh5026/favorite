@@ -2,6 +2,9 @@
  * Types for the crop tool
  */
 
+// Re-export shared types from overlay module
+export type { HandlePosition, DragType, Point } from '../overlay/types';
+
 /**
  * Crop region data representing the selected area to crop
  * All values are in pixels relative to the original image
@@ -15,26 +18,6 @@ export interface CropData {
   width: number;
   /** Height of the crop region in pixels */
   height: number;
-}
-
-/**
- * Handle position identifiers for the crop overlay
- * - n, s, e, w: Edge handles (north, south, east, west)
- * - nw, ne, sw, se: Corner handles
- */
-export type HandlePosition = 'n' | 's' | 'e' | 'w' | 'nw' | 'ne' | 'sw' | 'se';
-
-/**
- * Types of drag operations
- */
-export type DragType = 'move' | HandlePosition | null;
-
-/**
- * Mouse position in pixels
- */
-export interface Point {
-  x: number;
-  y: number;
 }
 
 /**

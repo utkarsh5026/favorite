@@ -2,7 +2,7 @@
  * Declarative Shape Selector Component
  */
 
-import { setActive } from '@/utils';
+import { createEl, setActive } from '@/utils';
 import type { FaviconShape } from '@/types';
 
 const SHAPES: [FaviconShape, string, string][] = [
@@ -23,16 +23,27 @@ export class ShapeSelector {
   private buttons = new Map<FaviconShape, HTMLButtonElement>();
 
   private createButton(shape: FaviconShape, title: string, svgContent: string): HTMLButtonElement {
-    const btn = document.createElement('button');
-    btn.className = `editor-btn shape-btn${shape === DEFAULT_SHAPE ? ' active' : ''}`;
-    btn.dataset.shape = shape;
-    btn.title = title;
-    btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${svgContent}</svg>`;
-    return btn;
+    const className = `editor-btn shape-btn${shape === DEFAULT_SHAPE ? ' active' : ''}`;
+    return createEl('button', className, {
+      title,
+      dataset: { shape },
+      innerHTML: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${svgContent}</svg>`,
+    });
   }
 
   setActiveShape(shape: FaviconShape): void {
     this.buttons.forEach((btn, s) => setActive(btn, s === shape));
+  }
+
+  /**
+   * Enable or disable all shape buttons
+   */
+  setEnabled(enabled: boolean): void {
+    this.buttons.forEach((btn) => {
+      btn.disabled = !enabled;
+      btn.style.opacity = enabled ? '1' : '0.5';
+      btn.style.pointerEvents = enabled ? 'auto' : 'none';
+    });
   }
 
   init(container: HTMLElement, onSelect: (shape: FaviconShape) => void): void {

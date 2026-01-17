@@ -1,41 +1,41 @@
-import { byID, setActive } from '@/utils';
+import { byID, setActive, addListeners } from '@/utils';
 import { showStatus } from '@/extension';
 
-export function setupUpload(onFileUrl: (dataUrl: string) => Promise<void>) {
+export function setupUpload(onFileUrl: (dataUrl: string) => Promise<void>): () => void {
   const uploadZone = byID('editorUploadZone');
   const uploadInput = byID<HTMLInputElement>('editorUploadInput');
 
-  if (!uploadZone || !uploadInput) return;
+  if (!uploadZone || !uploadInput) return () => {};
 
-  uploadZone.addEventListener('click', () => {
-    uploadInput.click();
+  const cleanupZone = addListeners(uploadZone, {
+    click: () => uploadInput.click(),
+    dragover: (e) => {
+      e.preventDefault();
+      setActive(uploadZone, true);
+      uploadZone.classList.add('drag-over');
+    },
+    dragleave: () => uploadZone.classList.remove('drag-over'),
+    drop: (e) => {
+      e.preventDefault();
+      uploadZone.classList.remove('drag-over');
+      const files = e.dataTransfer?.files;
+      if (files && files.length > 0) {
+        handleUploadFile(files[0], onFileUrl);
+      }
+    },
   });
 
-  uploadZone.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    setActive(uploadZone, true);
-    uploadZone.classList.add('drag-over'); // Keep for specificity
-  });
-
-  uploadZone.addEventListener('dragleave', () => {
-    uploadZone.classList.remove('drag-over');
-  });
-
-  uploadZone.addEventListener('drop', (e) => {
-    e.preventDefault();
-    uploadZone.classList.remove('drag-over');
-
-    const files = e.dataTransfer?.files;
-    if (files && files.length > 0) {
-      handleUploadFile(files[0], onFileUrl);
-    }
-  });
-
-  uploadInput.addEventListener('change', () => {
+  const handleChange = () => {
     if (uploadInput.files && uploadInput.files.length > 0) {
       handleUploadFile(uploadInput.files[0], onFileUrl);
     }
-  });
+  };
+  uploadInput.addEventListener('change', handleChange);
+
+  return () => {
+    cleanupZone();
+    uploadInput.removeEventListener('change', handleChange);
+  };
 }
 
 function handleUploadFile(file: File, onFileUrl: (dataUrl: string) => Promise<void>) {

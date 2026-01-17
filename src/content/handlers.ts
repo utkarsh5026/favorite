@@ -4,6 +4,7 @@
 import { CONFIG, state, clearHoverTimeout, clearRestoreTimeout, loadSettings } from '@/extension';
 import { changeFavicon, restoreToDefaultFavicon } from '@/favicons';
 import { findImage, extractImageData, ImageExtractionResult, getImageAsDataUrl } from '@/images';
+import { addListeners as addEventListeners } from '@/utils';
 import { scriptState } from './state';
 
 const BROADCAST_THROTTLE = 100; // ms
@@ -130,18 +131,22 @@ export function handleImageLeave(_event: MouseEvent): void {
   }, CONFIG.restoreDelay);
 }
 
+let cleanupListeners: (() => void) | null = null;
+
 /**
  *  Adds event listeners for mouse events
  */
 export function addListeners() {
-  document.addEventListener('mouseover', handleImageHover);
-  document.addEventListener('mouseout', handleImageLeave);
+  cleanupListeners = addEventListeners(document, {
+    mouseover: handleImageHover,
+    mouseout: handleImageLeave,
+  });
 }
 
 /**
  *  Removes event listeners for mouse events
  */
 export function removeListeners() {
-  document.removeEventListener('mouseover', handleImageHover);
-  document.removeEventListener('mouseout', handleImageLeave);
+  cleanupListeners?.();
+  cleanupListeners = null;
 }

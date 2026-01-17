@@ -11,7 +11,7 @@
 
 import type { HandlePosition, DragType, Point, DisplayBoundingBox } from './types';
 import { HANDLE_POSITIONS, HANDLE_CURSORS, ACTION_BUTTON_ICONS } from './types';
-import { createEl } from '@/utils';
+import { createEl, addListeners } from '@/utils';
 
 /**
  * Base configuration for overlay initialization
@@ -64,14 +64,8 @@ export abstract class BaseOverlay<TData, TStart = TData> {
   private onApply: ((data: TData) => void) | null = null;
   private onCancel: (() => void) | null = null;
 
-  private boundHandleMouseMove: ((e: MouseEvent) => void) | null = null;
-  private boundHandleMouseUp: (() => void) | null = null;
-  private boundHandleKeyDown: ((e: KeyboardEvent) => void) | null = null;
-
-  private cancelBtn: HTMLButtonElement | null = null;
-  private applyBtn: HTMLButtonElement | null = null;
-  private boundCancel: (() => void) | null = null;
-  private boundApply: (() => void) | null = null;
+  private cleanupDocumentListeners: (() => void) | null = null;
+  private cleanupActionButtons: (() => void) | null = null;
 
   /**
    * Get the CSS class prefix for this overlay type.
@@ -208,24 +202,8 @@ export abstract class BaseOverlay<TData, TStart = TData> {
    * Clean up and remove the overlay.
    */
   destroy(): void {
-    const remove = (name: string, func: ((e: any) => void) | null) => {
-      if (func) {
-        document.removeEventListener(name, func);
-      }
-    };
-
-    remove('mousemove', this.boundHandleMouseMove);
-    remove('mouseup', this.boundHandleMouseUp);
-    remove('keydown', this.boundHandleKeyDown);
-
-    // Remove action button listeners
-    if (this.cancelBtn && this.boundCancel) {
-      this.cancelBtn.removeEventListener('click', this.boundCancel);
-    }
-    if (this.applyBtn && this.boundApply) {
-      this.applyBtn.removeEventListener('click', this.boundApply);
-    }
-
+    this.cleanupDocumentListeners?.();
+    this.cleanupActionButtons?.();
     this.cleanupOverlayContent();
 
     if (this.overlayElement && this.container) {
@@ -238,13 +216,8 @@ export abstract class BaseOverlay<TData, TStart = TData> {
     this.container = null;
     this.onApply = null;
     this.onCancel = null;
-    this.boundHandleMouseMove = null;
-    this.boundHandleMouseUp = null;
-    this.boundHandleKeyDown = null;
-    this.cancelBtn = null;
-    this.applyBtn = null;
-    this.boundCancel = null;
-    this.boundApply = null;
+    this.cleanupDocumentListeners = null;
+    this.cleanupActionButtons = null;
   }
 
   /**
@@ -283,23 +256,25 @@ export abstract class BaseOverlay<TData, TStart = TData> {
     const prefix = this.getClassPrefix();
     const actionsContainer = createEl('div', `${prefix}-actions`);
 
-    this.cancelBtn = createEl('button', `${prefix}-action-btn ${prefix}-cancel-btn`, {
+    const cancelBtn = createEl('button', `${prefix}-action-btn ${prefix}-cancel-btn`, {
       innerHTML: ACTION_BUTTON_ICONS.cancel,
       title: 'Cancel (Esc)',
     });
 
-    this.applyBtn = createEl('button', `${prefix}-action-btn ${prefix}-apply-btn`, {
+    const applyBtn = createEl('button', `${prefix}-action-btn ${prefix}-apply-btn`, {
       innerHTML: ACTION_BUTTON_ICONS.apply,
       title: 'Apply (Enter)',
     });
 
-    this.boundCancel = () => this.cancel();
-    this.boundApply = () => this.apply();
+    const cleanupCancel = addListeners(cancelBtn, { click: () => this.cancel() });
+    const cleanupApply = addListeners(applyBtn, { click: () => this.apply() });
 
-    this.cancelBtn.addEventListener('click', this.boundCancel);
-    this.applyBtn.addEventListener('click', this.boundApply);
+    this.cleanupActionButtons = () => {
+      cleanupCancel();
+      cleanupApply();
+    };
 
-    actionsContainer.append(this.cancelBtn, this.applyBtn);
+    actionsContainer.append(cancelBtn, applyBtn);
     this.selectionElement.appendChild(actionsContainer);
   }
 
@@ -326,13 +301,11 @@ export abstract class BaseOverlay<TData, TStart = TData> {
       });
     });
 
-    this.boundHandleMouseMove = this.handleMouseMove.bind(this);
-    this.boundHandleMouseUp = this.handleMouseUp.bind(this);
-    this.boundHandleKeyDown = this.handleKeyDown.bind(this);
-
-    document.addEventListener('mousemove', this.boundHandleMouseMove);
-    document.addEventListener('mouseup', this.boundHandleMouseUp);
-    document.addEventListener('keydown', this.boundHandleKeyDown);
+    this.cleanupDocumentListeners = addListeners(document, {
+      mousemove: this.handleMouseMove.bind(this),
+      mouseup: this.handleMouseUp.bind(this),
+      keydown: this.handleKeyDown.bind(this),
+    });
   }
 
   /**

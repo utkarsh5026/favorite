@@ -125,31 +125,6 @@ export function setDisabled(
     element.style.cursor = '';
   }
 }
-
-/**
- * Executes a synchronous function with try-catch error handling
- * @param executeFn - The function to execute
- * @param onErr - Error message string or error handler function that receives the error
- * @param defaultValue - Optional default value to return on error
- * @returns The result of executeFn or defaultValue if error occurs
- */
-export function tryCatch<T>(
-  executeFn: () => T,
-  onErr: string | ((error: unknown) => void),
-  defaultValue?: T
-): T | undefined {
-  try {
-    return executeFn();
-  } catch (error) {
-    if (typeof onErr === 'string') {
-      console.error(onErr, error);
-    } else {
-      onErr(error);
-    }
-    return defaultValue;
-  }
-}
-
 type errorHandler = string | ((error: unknown) => void);
 type execFn<T> = () => Promise<T>;
 
@@ -225,14 +200,23 @@ export function createEl(tag: string, className?: string, config?: ElementConfig
 export function createEl(tag: string, className?: string, config?: ElementConfig): HTMLElement {
   const el = document.createElement(tag);
   if (className) el.className = className;
-  if (!config) return el;
+  if (config) setEl(el, config);
+  return el;
+}
 
+/**
+ * Updates an existing HTML element with configuration options
+ * @param el - The element to update
+ * @param config - Configuration object for element properties
+ * @returns The updated element for chaining
+ */
+export function setEl<T extends HTMLElement>(el: T, config: ElementConfig): T {
   if (config.id) el.id = config.id;
   if (config.title) el.title = config.title;
   if (config.textContent) el.textContent = config.textContent;
   if (config.innerHTML) el.innerHTML = config.innerHTML;
-  if (config.disabled != null) (el as HTMLButtonElement).disabled = config.disabled;
-  if (config.htmlFor) (el as HTMLLabelElement).htmlFor = config.htmlFor;
+  if (config.disabled != null) (el as unknown as HTMLButtonElement).disabled = config.disabled;
+  if (config.htmlFor) (el as unknown as HTMLLabelElement).htmlFor = config.htmlFor;
 
   if (config.dataset) {
     for (const [key, value] of Object.entries(config.dataset)) {
@@ -253,4 +237,49 @@ export function createEl(tag: string, className?: string, config?: ElementConfig
   }
 
   return el;
+}
+
+/**
+ * Creates an SVG element with optional attributes
+ * @param tag - The SVG tag name (rect, path, circle, etc.)
+ * @param attrs - Optional attributes to set on the element
+ * @returns The created SVG element
+ */
+export function createSvgEl<K extends keyof SVGElementTagNameMap>(
+  tag: K,
+  attrs?: Record<string, string>
+): SVGElementTagNameMap[K] {
+  const SVG_NS = 'http://www.w3.org/2000/svg';
+  const el = document.createElementNS(SVG_NS, tag) as SVGElementTagNameMap[K];
+  if (attrs) {
+    for (const [key, value] of Object.entries(attrs)) {
+      el.setAttribute(key, value);
+    }
+  }
+  return el;
+}
+
+/**
+ * Add multiple event listeners to an element
+ * @param el - The element to attach listeners to
+ * @param events - Object mapping event names to handlers
+ * @returns Cleanup function to remove all listeners
+ */
+export function addListeners<T extends HTMLElement | Document>(
+  el: T | null,
+  events: { [K in keyof HTMLElementEventMap]?: (e: HTMLElementEventMap[K]) => void }
+): () => void {
+  if (!el) return () => {};
+
+  const entries = Object.entries(events) as [keyof HTMLElementEventMap, EventListener][];
+
+  entries.forEach(([event, handler]) => {
+    el.addEventListener(event, handler as EventListener);
+  });
+
+  return () => {
+    entries.forEach(([event, handler]) => {
+      el.removeEventListener(event, handler as EventListener);
+    });
+  };
 }

@@ -2,19 +2,33 @@
  * Declarative Shape Selector Component
  */
 
-import { createEl, setActive } from '@/utils';
+import { createEl, createSvgEl, setActive, setEl } from '@/utils';
 import type { FaviconShape } from '@/types';
 
-const SHAPES: [FaviconShape, string, string][] = [
-  ['circle', 'Circle Shape', '<circle cx="12" cy="12" r="10"/>'],
-  ['rounded', 'Rounded Shape', '<rect x="3" y="3" width="18" height="18" rx="4" ry="4"/>'],
-  ['square', 'Square Shape', '<rect x="3" y="3" width="18" height="18"/>'],
+type SvgShapeConfig = {
+  tag: 'circle' | 'rect' | 'path';
+  attrs: Record<string, string>;
+};
+
+const SHAPES: [FaviconShape, string, SvgShapeConfig][] = [
+  ['circle', 'Circle Shape', { tag: 'circle', attrs: { cx: '12', cy: '12', r: '10' } }],
+  [
+    'rounded',
+    'Rounded Shape',
+    { tag: 'rect', attrs: { x: '3', y: '3', width: '18', height: '18', rx: '4', ry: '4' } },
+  ],
+  ['square', 'Square Shape', { tag: 'rect', attrs: { x: '3', y: '3', width: '18', height: '18' } }],
   [
     'heart',
     'Heart Shape',
-    '<path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>',
+    {
+      tag: 'path',
+      attrs: {
+        d: 'M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z',
+      },
+    },
   ],
-  ['hexagon', 'Hexagon Shape', '<path d="M12 2l9 5v10l-9 5-9-5V7z" />'],
+  ['hexagon', 'Hexagon Shape', { tag: 'path', attrs: { d: 'M12 2l9 5v10l-9 5-9-5V7z' } }],
 ];
 
 const DEFAULT_SHAPE: FaviconShape = 'square';
@@ -22,13 +36,24 @@ const DEFAULT_SHAPE: FaviconShape = 'square';
 export class ShapeSelector {
   private buttons = new Map<FaviconShape, HTMLButtonElement>();
 
-  private createButton(shape: FaviconShape, title: string, svgContent: string): HTMLButtonElement {
+  private createButton(
+    shape: FaviconShape,
+    title: string,
+    { attrs, tag }: SvgShapeConfig
+  ): HTMLButtonElement {
     const className = `editor-btn shape-btn${shape === DEFAULT_SHAPE ? ' active' : ''}`;
-    return createEl('button', className, {
-      title,
-      dataset: { shape },
-      innerHTML: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${svgContent}</svg>`,
+
+    const svg = createSvgEl('svg', {
+      viewBox: '0 0 24 24',
+      fill: 'none',
+      stroke: 'currentColor',
+      'stroke-width': '2',
     });
+    svg.appendChild(createSvgEl(tag, attrs));
+
+    const btn = createEl('button', className, { title, dataset: { shape } });
+    btn.appendChild(svg);
+    return btn;
   }
 
   setActiveShape(shape: FaviconShape): void {
@@ -39,11 +64,12 @@ export class ShapeSelector {
    * Enable or disable all shape buttons
    */
   setEnabled(enabled: boolean): void {
-    this.buttons.forEach((btn) => {
-      btn.disabled = !enabled;
-      btn.style.opacity = enabled ? '1' : '0.5';
-      btn.style.pointerEvents = enabled ? 'auto' : 'none';
-    });
+    this.buttons.forEach((btn) =>
+      setEl(btn, {
+        disabled: !enabled,
+        style: { opacity: enabled ? '1' : '0.5', pointerEvents: enabled ? 'auto' : 'none' },
+      })
+    );
   }
 
   init(container: HTMLElement, onSelect: (shape: FaviconShape) => void): void {

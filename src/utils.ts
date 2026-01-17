@@ -194,3 +194,63 @@ export async function tryCatchAsync<T>(
     }
   }
 }
+
+type ElementConfig = {
+  textContent?: string;
+  innerHTML?: string;
+  id?: string;
+  title?: string;
+  dataset?: Record<string, string>;
+  style?: Partial<CSSStyleDeclaration>;
+  attributes?: Record<string, string>;
+  disabled?: boolean;
+  htmlFor?: string;
+  children?: (HTMLElement | string)[];
+};
+
+/**
+ * Creates an HTML element with optional class name and configuration
+ * @template K - The HTML element tag name from the HTMLElementTagNameMap
+ * @param tag - The HTML tag name to create
+ * @param className - Optional CSS class name(s) to apply to the element
+ * @param config - Optional configuration object for additional element properties
+ * @returns The created and configured HTML element with proper type safety
+ */
+export function createEl<K extends keyof HTMLElementTagNameMap>(
+  tag: K,
+  className?: string,
+  config?: ElementConfig
+): HTMLElementTagNameMap[K];
+export function createEl(tag: string, className?: string, config?: ElementConfig): HTMLElement;
+export function createEl(tag: string, className?: string, config?: ElementConfig): HTMLElement {
+  const el = document.createElement(tag);
+  if (className) el.className = className;
+  if (!config) return el;
+
+  if (config.id) el.id = config.id;
+  if (config.title) el.title = config.title;
+  if (config.textContent) el.textContent = config.textContent;
+  if (config.innerHTML) el.innerHTML = config.innerHTML;
+  if (config.disabled != null) (el as HTMLButtonElement).disabled = config.disabled;
+  if (config.htmlFor) (el as HTMLLabelElement).htmlFor = config.htmlFor;
+
+  if (config.dataset) {
+    for (const [key, value] of Object.entries(config.dataset)) {
+      el.dataset[key] = value;
+    }
+  }
+
+  if (config.style) Object.assign(el.style, config.style);
+
+  if (config.attributes) {
+    for (const [key, value] of Object.entries(config.attributes)) {
+      el.setAttribute(key, value);
+    }
+  }
+
+  if (config.children) {
+    el.append(...config.children);
+  }
+
+  return el;
+}

@@ -1,4 +1,4 @@
-import { setDisabled } from '@/utils';
+import { setDisabled, createEl } from '@/utils';
 
 export interface ToolbarButtonConfig {
   id: string;
@@ -69,19 +69,12 @@ export class Toolbar {
   private buttons = new Map<string, HTMLButtonElement>();
 
   private createButton({ id, title, disabled, icon }: ToolbarButtonConfig): HTMLButtonElement {
-    const btn = document.createElement('button');
-    btn.className = 'editor-btn';
-    btn.id = `editor${capitalize(id)}`;
-    btn.title = title;
-    btn.disabled = disabled ?? false;
-    btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${icon}</svg>`;
-    return btn;
-  }
-
-  private createDivider(): HTMLDivElement {
-    const divider = document.createElement('div');
-    divider.className = 'editor-toolbar-divider';
-    return divider;
+    return createEl('button', 'editor-btn', {
+      id: `editor${capitalize(id)}`,
+      title,
+      disabled: disabled ?? false,
+      innerHTML: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${icon}</svg>`,
+    });
   }
 
   init(container: HTMLElement, handlers: Record<string, () => void | Promise<void>>): void {
@@ -89,10 +82,11 @@ export class Toolbar {
     container.innerHTML = '';
 
     let lastGroup: string | undefined;
+    const children = [];
 
     for (const config of TOOLBAR_BUTTONS) {
       if (lastGroup && config.group !== lastGroup) {
-        container.appendChild(this.createDivider());
+        children.push(createEl('div', 'editor-toolbar-divider'));
       }
 
       const btn = this.createButton(config);
@@ -104,9 +98,11 @@ export class Toolbar {
       }
 
       this.buttons.set(config.id, btn);
-      container.appendChild(btn);
+      children.push(btn);
       lastGroup = config.group;
     }
+
+    container.append(...children);
   }
 
   /** Enable or disable a toolbar button by ID */

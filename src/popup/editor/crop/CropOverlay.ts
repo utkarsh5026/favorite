@@ -145,30 +145,30 @@ export class CropOverlay extends BaseOverlay<CropData, CropData> {
     const dy = deltaY / this.displayScale;
     const { x, y, width, height } = this.crop;
 
-    const updates: Partial<CropData> = {};
+    let updates: Partial<CropData> = {};
     const type = this.dragType ?? '';
 
     if (type === 'move') {
-      updates.x = x + dx;
-      updates.y = y + dy;
-      Object.assign(this.crop, updates);
+      Object.assign(this.crop, {
+        ...this.crop,
+        x: x + dx,
+        y: y + dy,
+      });
       this.constrainCrop();
       return;
     }
 
     if (type.includes('n')) {
-      updates.y = y + dy;
-      updates.height = height - dy;
+      updates = { ...updates, y: y + dy, height: height - dy };
     }
     if (type.includes('s')) {
-      updates.height = height + dy;
+      updates = { ...updates, height: height + dy };
     }
     if (type.includes('w')) {
-      updates.x = x + dx;
-      updates.width = width - dx;
+      updates = { ...updates, x: x + dx, width: width - dx };
     }
     if (type.includes('e')) {
-      updates.width = width + dx;
+      updates = { ...updates, width: width + dx };
     }
 
     Object.assign(this.crop, updates);

@@ -1,6 +1,6 @@
-import { Power, Globe } from 'lucide-react';
+import { Power, Globe, LucideIcon } from 'lucide-react';
 import { useChromeStorage } from '../../hooks/useChromeStorage';
-import { usePreviewStore } from '../../stores/previewStore';
+import { usePreviewStore } from '@/popup/stores/previewStore';
 
 
 export function TogglesSection() {
@@ -26,42 +26,76 @@ export function TogglesSection() {
 
   return (
     <div className="bg-white/2 rounded-lg p-2.5 border border-border-subtle backdrop-blur-xs">
-      <div className="flex items-center justify-between py-1.5 px-1 mb-2 pb-2.5 border-b border-white/5">
-        <div className="flex items-center gap-2">
-          <Power className="w-3.5 h-3.5 stroke-text-subtle" strokeWidth={2} />
-          <span className="text-xs text-text-secondary font-medium">Extension</span>
-          <span
-            className={`text-xs font-medium ${isExtensionEnabled ? 'text-accent-green' : 'text-text-muted'
-              }`}
-          >
-            {isExtensionEnabled ? 'Active' : 'Inactive'}
-          </span>
-        </div>
-        <ToggleButton
-          checked={isExtensionEnabled}
-          onChange={handleGlobalToggle}
-          title="Toggle extension on/off"
-        />
-      </div>
+      <ToggleRow
+        icon={Power}
+        label="Extension"
+        checked={isExtensionEnabled}
+        onChange={handleGlobalToggle}
+        title="Toggle extension on/off"
+        statusTitle={isExtensionEnabled ? 'Extension is active' : 'Extension is inactive'}
+        className="mb-2 pb-2.5 border-b border-white/5"
+      />
 
-      {/* Site Toggle */}
-      <div className="flex items-center justify-between py-1.5 px-1">
-        <div className="flex items-center gap-2 flex-1 min-w-0">
-          <Globe className="w-3.5 h-3.5 stroke-text-subtle shrink-0" strokeWidth={2} />
-          <span className="text-xs text-text-secondary font-medium shrink-0">Site</span>
+      <ToggleRow
+        icon={Globe}
+        label="Site"
+        checked={isSiteEnabled}
+        onChange={handleSiteToggle}
+        title="Toggle tracking for this site"
+        statusTitle={isSiteEnabled ? 'Site is active' : 'Site is inactive'}
+        disabled={!currentHostname}
+        additionalContent={
           <span className="text-xs text-text-primary truncate">{currentHostname || '-'}</span>
-        </div>
-        <ToggleButton
-          checked={isSiteEnabled}
-          onChange={handleSiteToggle}
-          title="Toggle tracking for this site"
-          disabled={!currentHostname}
-        />
-      </div>
+        }
+      />
     </div>
   );
 }
 
+
+interface ToggleRowProps {
+  icon: LucideIcon;
+  label: string;
+  checked: boolean;
+  onChange: () => void;
+  title?: string;
+  statusTitle?: string;
+  disabled?: boolean;
+  additionalContent?: React.ReactNode;
+  className?: string;
+}
+
+function ToggleRow({
+  icon: Icon,
+  label,
+  checked,
+  onChange,
+  title,
+  statusTitle,
+  disabled = false,
+  additionalContent,
+  className = '',
+}: ToggleRowProps) {
+  return (
+    <div className={`flex items-center justify-between py-1.5 px-1 ${className}`}>
+      <div className="flex items-center gap-2 flex-1 min-w-0">
+        <Icon className="w-3.5 h-3.5 stroke-text-subtle shrink-0" strokeWidth={2} />
+        <span className="text-xs text-text-secondary font-medium shrink-0">{label}</span>
+        <div className="flex items-center gap-1.5 flex-1 min-w-0">
+          {additionalContent}
+          {(!additionalContent || checked !== undefined) && (
+            <span
+              className={`w-1.5 h-1.5 rounded-full shrink-0 ${checked ? 'bg-accent-green' : 'bg-text-muted/40'
+                }`}
+              title={statusTitle}
+            />
+          )}
+        </div>
+      </div>
+      <ToggleButton checked={checked} onChange={onChange} title={title} disabled={disabled} />
+    </div>
+  );
+}
 
 interface ToggleButtonProps {
   checked: boolean;

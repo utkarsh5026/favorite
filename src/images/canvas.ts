@@ -65,8 +65,55 @@ export async function resizeImageToBlob(img: HTMLImageElement, size: number): Pr
   return await canvasToBlob(draw(img, size));
 }
 
-export function getImageAsDataUrl(img: HTMLImageElement, size: number) {
-  return draw(img, size).toDataURL(IMAGE_MIME_TYPE);
+export function getImageAsDataUrl(img: HTMLImageElement, size: number): string | null {
+  if (!img.complete || !img.naturalWidth || img.naturalWidth === 0) {
+    return null;
+  }
+
+  try {
+    return draw(img, size).toDataURL(IMAGE_MIME_TYPE);
+  } catch (error) {
+    console.error('[Canvas] Failed to convert image to data URL:', error);
+    return null;
+  }
+}
+
+/**
+ * Fetches an image URL and converts it to a data URL using fetch.
+ * This works for cross-origin images in extensions with host_permissions.
+ * @param imageUrl - The URL of the image to fetch
+ * @param size - Size to resize the image to
+ * @returns The data URL or null if failed
+ */
+export async function fetchImageAsDataUrl(
+  imageUrl: string,
+  size: number
+): Promise<string | null> {
+  try {
+    const response = await fetch(imageUrl);
+    if (!response.ok) {
+      console.error('[Canvas] Failed to fetch image:', response.status);
+      return null;
+    }
+
+    const blob = await response.blob();
+    const imageBitmap = await createImageBitmap(blob);
+
+    const canvas = setupCanvas(size, size);
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      return null;
+    }
+
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(imageBitmap, 0, 0, size, size);
+
+    return canvas.toDataURL(IMAGE_MIME_TYPE);
+  } catch (error) {
+    console.error('[Canvas] Failed to fetch and convert image:', error);
+    return null;
+  }
 }
 
 function draw(img: HTMLImageElement, size: number) {

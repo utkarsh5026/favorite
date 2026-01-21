@@ -3,7 +3,7 @@
  */
 import { CONFIG, state, clearHoverTimeout, clearRestoreTimeout, loadSettings } from '@/extension';
 import { changeFavicon, restoreToDefaultFavicon } from '@/favicons';
-import { findImage, extractImageData, ImageExtractionResult, getImageAsDataUrl } from '@/images';
+import { findImage, extractImageData, ImageExtractionResult, getImageAsDataUrl, fetchImageAsDataUrl } from '@/images';
 import { addListeners as addEventListeners } from '@/utils';
 import { scriptState } from './state';
 
@@ -17,22 +17,26 @@ const PREVIEW_SIZE = 64;
 export async function broadcastHoverState(
   imageUrl: string | null,
   imageInfo?: { width: number; height: number; imageType: string },
-  imgElement?: Element
+  imgElement?: HTMLImageElement
 ): Promise<void> {
   const now = Date.now();
   if (imageUrl && now - scriptState.lastBroadcast < BROADCAST_THROTTLE) return;
   scriptState.updateLastBroadcast(now);
 
-  let processedImageUrl: string | undefined;
-  if (imgElement) {
-    processedImageUrl =
-      getImageAsDataUrl(imgElement as HTMLImageElement, PREVIEW_SIZE) || undefined;
+  const fetchImage = async () => {
+    if (!imgElement) return null;
+    const processedImage = getImageAsDataUrl(imgElement, PREVIEW_SIZE);
+    if (!processedImage && imageUrl && !imageUrl.startsWith('data:')) {
+      return await fetchImageAsDataUrl(imageUrl, PREVIEW_SIZE);
+    }
+    return processedImage;
   }
 
+  const processedImageUrl = await fetchImage();
   const message = {
     type: 'hover-update',
     imageUrl,
-    processedImageUrl,
+    processedImageUrl: processedImageUrl || undefined,
     imageInfo,
   };
 
@@ -101,8 +105,6 @@ async function broadcastToPopup(img: Element, imageResult: ImageExtractionResult
   changeFavicon(imageResult.url);
 
   const { width, height } = img.getBoundingClientRect();
-
-  // Load settings to get current shape preference
   const settings = await loadSettings();
 
   await broadcastHoverState(
@@ -112,7 +114,7 @@ async function broadcastToPopup(img: Element, imageResult: ImageExtractionResult
       height: Math.round(height),
       imageType: imageResult.type.toUpperCase(),
     },
-    img
+    img as HTMLImageElement
   );
 }
 

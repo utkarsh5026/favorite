@@ -3,7 +3,7 @@ import { Download, Pencil, Image as ImageIcon } from 'lucide-react';
 import { usePreviewStore } from '../../stores/previewStore';
 import { useUIStore } from '@/popup/stores/uiStore';
 import { getFaviconDirectlyFromTab } from '@/extension';
-import { saveFaviconZIP } from '@/popup/services/zip';
+import { saveFaviconZIP } from '@/favicons';
 
 export function DownloadSection() {
   const { currentFaviconUrl, setCurrentFavicon } = usePreviewStore();

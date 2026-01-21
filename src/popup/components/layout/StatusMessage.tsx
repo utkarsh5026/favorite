@@ -5,8 +5,9 @@ export function StatusMessage() {
 
   return (
     <div
-      className={`text-sm text-center text-text-secondary min-h-4.5 transition-opacity duration-300 ease-bounce ${statusMessage ? 'opacity-100' : 'opacity-0'
-        }`}
+      className={`text-sm text-center text-text-secondary min-h-4.5 transition-opacity duration-300 ease-bounce ${
+        statusMessage ? 'opacity-100' : 'opacity-0'
+      }`}
     >
       {statusMessage || '\u00A0'}
     </div>

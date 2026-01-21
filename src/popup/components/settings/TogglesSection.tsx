@@ -5,8 +5,8 @@ import { usePreviewStore } from '@/popup/stores/previewStore';
 
 export function TogglesSection() {
   const currentHostname = usePreviewStore((state) => state.currentHostname);
-  const [isExtensionEnabled, setIsExtensionEnabled] = useChromeStorage('extensionEnabled', true);
-  const [disabledSites, setDisabledSites] = useChromeStorage<string[]>('disabledSites', []);
+  const [isExtensionEnabled, setIsExtensionEnabled] = useChromeStorage('extensionEnabled', true, 'sync');
+  const [disabledSites, setDisabledSites] = useChromeStorage<string[]>('disabledSites', [], 'sync');
 
   const isSiteEnabled = currentHostname ? !disabledSites.includes(currentHostname) : true;
 

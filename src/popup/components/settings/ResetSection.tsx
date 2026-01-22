@@ -1,12 +1,37 @@
 import { useEffect, useState } from 'react';
 import { RotateCcw } from 'lucide-react';
-import { usePreviewStore } from '../../stores/previewStore';
-import { useUIStore } from '../../stores/uiStore';
+import { useUIStore, usePreviewStore } from '@/popup/stores';
 import { getFaviconDirectlyFromTab } from '@/extension';
 import { removeItem } from '@/extension/storage';
 
-const BASE_BUTTON_CLASSES =
-  'flex-1 flex items-center justify-center gap-2 bg-white/[0.05] border rounded-lg px-3 py-2.5 cursor-pointer transition-all duration-250 ease-bounce text-sm font-medium font-mono tracking-tight hover:-translate-y-px';
+
+interface ResetButtonProps {
+  onClick: () => void;
+  disabled?: boolean;
+  title: string;
+  variant?: 'default' | 'danger';
+  icon?: React.ReactNode;
+  children: React.ReactNode;
+}
+
+function ResetButton({ onClick, disabled, title, variant = 'default', icon, children }: ResetButtonProps) {
+  const variantClasses = {
+    default: 'border-border-medium text-text-secondary hover:bg-white/8 hover:border-white/25 disabled:opacity-50 disabled:cursor-not-allowed',
+    danger: 'border-accent-red/30 text-accent-red hover:bg-accent-red/15 hover:border-accent-red/50',
+  };
+
+  return (
+    <button
+      className={`flex-1 flex items-center justify-center gap-2 bg-white/5 border rounded-lg px-3 py-2.5 cursor-pointer transition-all duration-250 ease-bounce text-sm font-medium font-mono tracking-tight hover:-translate-y-px ${variantClasses[variant]}`}
+      onClick={onClick}
+      disabled={disabled}
+      title={title}
+    >
+      {icon}
+      <span>{children}</span>
+    </button>
+  );
+}
 
 export function ResetSection() {
   const currentHostname = usePreviewStore((state) => state.currentHostname);
@@ -81,25 +106,23 @@ export function ResetSection() {
         Reset
       </label>
       <div className="flex gap-2.5">
-        <button
-          className={`${BASE_BUTTON_CLASSES} border-border-medium text-text-secondary hover:bg-white/8 hover:border-white/25 disabled:opacity-50 disabled:cursor-not-allowed`}
+        <ResetButton
           onClick={handleResetSite}
           disabled={!currentHostname}
           title="Reset settings for this site only"
+          variant="default"
+          icon={siteFaviconUrl && <img src={siteFaviconUrl} className="w-4 h-4 rounded-sm object-contain" alt="" />}
         >
-          {siteFaviconUrl && (
-            <img src={siteFaviconUrl} className="w-4 h-4 rounded-sm object-contain" alt="" />
-          )}
-          <span>This Site</span>
-        </button>
-        <button
-          className={`${BASE_BUTTON_CLASSES} border-accent-red/30 text-accent-red hover:bg-accent-red/15 hover:border-accent-red/50`}
+          This Site
+        </ResetButton>
+        <ResetButton
           onClick={handleResetAll}
           title="Reset all settings to default"
+          variant="danger"
+          icon={<RotateCcw className="w-3.5 h-3.5" strokeWidth={2} />}
         >
-          <RotateCcw className="w-3.5 h-3.5" strokeWidth={2} />
-          <span>Reset All</span>
-        </button>
+          Reset All
+        </ResetButton>
       </div>
     </div>
   );

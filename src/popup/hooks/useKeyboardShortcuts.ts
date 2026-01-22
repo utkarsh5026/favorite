@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useEditorStore } from '../stores/editorStore';
 import { useUIStore } from '../stores/uiStore';
-import { useHistory } from './useEditor';
+import { useHistory } from './editor';
 import { addListeners } from '@/utils';
 
 /**

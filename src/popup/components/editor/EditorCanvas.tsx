@@ -38,12 +38,12 @@ export function EditorCanvas({ children }: EditorCanvasProps) {
         <div className="flex flex-col items-center justify-center gap-3">
           <button
             onClick={handleClick}
-            className="group flex items-center gap-2 px-5 py-3 bg-white/5 border border-white/10 rounded-lg hover:bg-white/8 hover:border-white/20 transition-all duration-200"
+            className="group flex items-center gap-2 px-5 py-3 bg-white/15 border-2 border-white/30 rounded-lg hover:bg-white/25 hover:border-white/50 transition-all duration-200 shadow-lg"
           >
-            <Upload className="w-4 h-4 text-text-muted group-hover:text-accent-green transition-colors" />
-            <span className="text-text-secondary text-sm font-medium">Upload Image</span>
+            <Upload className="w-4 h-4 text-white/80 group-hover:text-accent-green transition-colors" />
+            <span className="text-white text-sm font-medium">Upload Image</span>
           </button>
-          <p className="text-text-muted text-xs text-center max-w-50">
+          <p className="text-white/70 text-xs text-center max-w-50">
             or right-click any image on a page to edit it here
           </p>
         </div>

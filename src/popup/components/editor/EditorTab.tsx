@@ -1,4 +1,4 @@
-import { useUIStore } from '@/popup/stores';
+import { useUIStore, useEditorStore } from '@/popup/stores';
 import { useKeyboardShortcuts } from '@/popup/hooks';
 import { EditorToolbar } from './EditorToolbar';
 import { EditorCanvas } from './EditorCanvas';
@@ -8,14 +8,15 @@ import { CropOverlay, ShapeOverlay } from './overlays';
 
 export function EditorTab() {
   const overlayMode = useUIStore((s) => s.overlayMode);
+  const hasImage = useEditorStore((s) => s.hasImage());
 
   useKeyboardShortcuts();
 
   return (
     <div id="editorTab" className="has-image">
-      <EditorToolbar disabled={overlayMode !== 'none'} />
+      <EditorToolbar disabled={!hasImage || overlayMode !== 'none'} />
 
-      <ShapeSelector disabled={overlayMode !== 'none'} />
+      <ShapeSelector disabled={!hasImage || overlayMode !== 'none'} />
 
       <EditorCanvas>
         {overlayMode === 'crop' && <CropOverlay />}

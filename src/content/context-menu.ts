@@ -1,7 +1,7 @@
 /**
  * Context menu action handlers
  */
-import { saveFaviconZIP, changeFavicon, setCurrentFavicon } from '@/favicons';
+import { saveFaviconZIP, changeFavicon, setCurrentFavicon, restoreToDefaultFavicon } from '@/favicons';
 import type { ContextMenuMessage } from './types';
 import { CONTEXT_MENU } from '@/extension';
 import { createEl, setEl, loadImage } from '@/utils';
@@ -104,6 +104,10 @@ export async function handleContextMenuAction(message: ContextMenuMessage): Prom
     case CONTEXT_MENU.PREVIEW:
       changeFavicon(imageUrl, false); // false = don't apply shape (already applied by editor)
       notify('Preview applied', imageUrl);
+      break;
+
+    case CONTEXT_MENU.CLEAR_PREVIEW:
+      await restoreToDefaultFavicon(null);
       break;
   }
 }

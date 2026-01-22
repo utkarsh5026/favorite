@@ -55,7 +55,7 @@ export type CustomFavicons = Record<string, CustomFavicon>;
 /**
  * Context menu action types
  */
-export type ContextMenuAction = 'setDefault' | 'download' | 'edit' | 'preview';
+export type ContextMenuAction = 'setDefault' | 'download' | 'edit' | 'preview' | 'clearPreview';
 
 /**
  * History entry for a previewed/locked favicon

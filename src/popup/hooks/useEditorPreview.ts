@@ -20,6 +20,7 @@ export function useEditorPreview() {
   const currentHostname = usePreviewStore((s) => s.currentHostname);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const prevLivePreviewRef = useRef(livePreviewEnabled);
 
   const sendPreview = useCallback(async () => {
     if (!currentImageUrl) return;
@@ -44,6 +45,22 @@ export function useEditorPreview() {
       console.error('Failed to send preview to tab:', error);
     }
   }, [currentImageUrl, currentShape, shapeManipulation, currentHostname]);
+
+  useEffect(() => {
+    if (prevLivePreviewRef.current && !livePreviewEnabled) {
+      void getCurrentTab().then((tab) => {
+        if (tab?.id) {
+          chrome.tabs.sendMessage(tab.id, {
+            type: 'contextMenuAction',
+            action: CONTEXT_MENU.CLEAR_PREVIEW,
+            imageUrl: '',
+            hostname: currentHostname || '',
+          });
+        }
+      });
+    }
+    prevLivePreviewRef.current = livePreviewEnabled;
+  }, [livePreviewEnabled, currentHostname]);
 
   // Debounced preview sending
   useEffect(() => {

@@ -1,7 +1,6 @@
 import { usePreviewStore } from '@/popup/stores';
 import { useLivePreview, useOriginalFavicon } from '@/popup/hooks';
-import { Image } from 'lucide-react';
-import React from 'react';
+import { PreviewBox } from '../common/PreviewBox';
 
 export function LivePreviewSection() {
   const livePreviewUrl = usePreviewStore((state) => state.livePreviewUrl);
@@ -40,43 +39,3 @@ export function LivePreviewSection() {
   );
 }
 
-interface PreviewBoxProps {
-  imageUrl: string | null;
-  isLoading?: boolean;
-  label: string;
-  placeholderLines: [string, string];
-  altText: string;
-}
-
-const PreviewBox: React.FC<PreviewBoxProps> = ({
-  imageUrl,
-  isLoading = false,
-  label,
-  placeholderLines,
-  altText,
-}) => {
-  return (
-    <div className="flex flex-col items-center gap-2">
-      <div className="w-16 h-16 rounded-xl border border-border-light checkerboard flex items-center justify-center p-1.5 shadow-inset">
-        {isLoading ? (
-          <div className="flex flex-col items-center justify-center gap-2 w-full h-full">
-            <div className="spinner-circle animate-rotate"></div>
-            <span className="text-2xs text-text-subtle text-center leading-tight">Loading...</span>
-          </div>
-        ) : imageUrl ? (
-          <img src={imageUrl} alt={altText} className="w-full h-full rounded-lg object-contain" />
-        ) : (
-          <div className="flex flex-col items-center justify-center gap-1.5">
-            <Image className="w-5 h-5 stroke-text-subtle" strokeWidth={1.5} />
-            <span className="text-2xs text-text-subtle text-center leading-tight">
-              {placeholderLines[0]}
-              <br />
-              {placeholderLines[1]}
-            </span>
-          </div>
-        )}
-      </div>
-      <span className="text-[9px] text-text-subtle uppercase tracking-wide">{label}</span>
-    </div>
-  );
-};

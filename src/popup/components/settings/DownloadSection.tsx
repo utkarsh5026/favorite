@@ -1,9 +1,9 @@
 import { useEffect, useState, useRef } from 'react';
-import { Download, Pencil, Image as ImageIcon } from 'lucide-react';
-import { usePreviewStore } from '../../stores/previewStore';
-import { useUIStore } from '@/popup/stores/uiStore';
+import { Download, Pencil } from 'lucide-react';
+import { useUIStore, usePreviewStore } from '@/popup/stores';
 import { getFaviconDirectlyFromTab } from '@/extension';
 import { saveFaviconZIP } from '@/favicons';
+import { PreviewBox } from '../common/PreviewBox';
 
 export function DownloadSection() {
   const { currentFaviconUrl, setCurrentFavicon } = usePreviewStore();
@@ -68,25 +68,13 @@ export function DownloadSection() {
       </div>
 
       <div className="flex items-center gap-3.5 bg-white/2 rounded-lg p-3.5 mb-3 border border-border-subtle backdrop-blur-xs">
-        <div className="w-13 h-13 bg-surface-dark rounded-lg flex items-center justify-center overflow-hidden relative border border-border-light shadow-inset">
-          {isLoading ? (
-            <div className="flex flex-col items-center justify-center gap-2 absolute">
-              <div className="spinner-circle animate-rotate"></div>
-              <span className="text-xs text-text-subtle">Loading...</span>
-            </div>
-          ) : currentFaviconUrl ? (
-            <img
-              src={currentFaviconUrl}
-              alt="Current favicon"
-              className="max-w-full max-h-full object-contain"
-            />
-          ) : (
-            <div className="flex flex-col items-center justify-center gap-1">
-              <ImageIcon className="w-5 h-5 stroke-text-subtle" strokeWidth={1.5} />
-              <span className="text-xs text-text-subtle text-center">No image</span>
-            </div>
-          )}
-        </div>
+        <PreviewBox
+          imageUrl={currentFaviconUrl}
+          isLoading={isLoading}
+          placeholderLines="No image"
+          altText="Current favicon"
+          size="sm"
+        />
         <div className="flex-1 flex flex-col gap-1">
           <span className="text-md text-text-primary font-normal">Image</span>
           <span className="text-sm text-text-muted">

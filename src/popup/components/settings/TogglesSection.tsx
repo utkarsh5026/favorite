@@ -2,10 +2,13 @@ import { Power, Globe, LucideIcon } from 'lucide-react';
 import { useChromeStorage } from '../../hooks/useChromeStorage';
 import { usePreviewStore } from '@/popup/stores/previewStore';
 
-
 export function TogglesSection() {
   const currentHostname = usePreviewStore((state) => state.currentHostname);
-  const [isExtensionEnabled, setIsExtensionEnabled] = useChromeStorage('extensionEnabled', true, 'sync');
+  const [isExtensionEnabled, setIsExtensionEnabled] = useChromeStorage(
+    'extensionEnabled',
+    true,
+    'sync'
+  );
   const [disabledSites, setDisabledSites] = useChromeStorage<string[]>('disabledSites', [], 'sync');
 
   const isSiteEnabled = currentHostname ? !disabledSites.includes(currentHostname) : true;
@@ -52,7 +55,6 @@ export function TogglesSection() {
   );
 }
 
-
 interface ToggleRowProps {
   icon: LucideIcon;
   label: string;
@@ -85,8 +87,9 @@ function ToggleRow({
           {additionalContent}
           {(!additionalContent || checked !== undefined) && (
             <span
-              className={`w-1.5 h-1.5 rounded-full shrink-0 ${checked ? 'bg-accent-green' : 'bg-text-muted/40'
-                }`}
+              className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                checked ? 'bg-accent-green' : 'bg-text-muted/40'
+              }`}
               title={statusTitle}
             />
           )}
@@ -105,11 +108,7 @@ interface ToggleButtonProps {
 }
 
 function ToggleButton({ checked, onChange, disabled = false, title }: ToggleButtonProps) {
-  const className = [
-    'toggle-switch',
-    checked && 'active',
-    disabled && 'disabled',
-  ]
+  const className = ['toggle-switch', checked && 'active', disabled && 'disabled']
     .filter(Boolean)
     .join(' ');
 

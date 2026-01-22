@@ -1,4 +1,5 @@
 import { Power, Globe, LucideIcon } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
 import { useChromeStorage } from '../../hooks/useChromeStorage';
 import { usePreviewStore } from '@/popup/stores/previewStore';
 
@@ -78,6 +79,21 @@ function ToggleRow({
   additionalContent,
   className = '',
 }: ToggleRowProps) {
+  const [isPulsing, setIsPulsing] = useState(false);
+  const isFirstRender = useRef(true);
+
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    if (checked) {
+      setIsPulsing(true);
+      const timer = setTimeout(() => setIsPulsing(false), 300);
+      return () => clearTimeout(timer);
+    }
+  }, [checked]);
+
   return (
     <div className={`flex items-center justify-between py-1.5 px-1 ${className}`}>
       <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -87,9 +103,9 @@ function ToggleRow({
           {additionalContent}
           {(!additionalContent || checked !== undefined) && (
             <span
-              className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+              className={`w-1.5 h-1.5 rounded-full shrink-0 transition-transform duration-300 ${
                 checked ? 'bg-accent-green' : 'bg-text-muted/40'
-              }`}
+              } ${isPulsing ? 'animate-pulse-scale' : ''}`}
               title={statusTitle}
             />
           )}

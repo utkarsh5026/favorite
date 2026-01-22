@@ -66,9 +66,9 @@ export async function getItems<T extends Record<string, any>>(
   errorMessage?: string
 ): Promise<Partial<T>> {
   return tryCatchAsync(
-      async () => (await getStorageArea(storageType).get(keys)) as Partial<T>,
-      errorMessage || `Failed to get items from storage:`,
-      {} as Partial<T>
+    async () => (await getStorageArea(storageType).get(keys)) as Partial<T>,
+    errorMessage || `Failed to get items from storage:`,
+    {} as Partial<T>
   ) as Promise<Partial<T>>;
 }
 

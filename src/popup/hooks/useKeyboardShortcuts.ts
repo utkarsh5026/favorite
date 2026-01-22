@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useEditorStore } from '../stores/editorStore';
 import { useUIStore } from '../stores/uiStore';
+import { useHistory } from './useEditor';
 import { addListeners } from '@/utils';
 
 /**
@@ -10,8 +11,7 @@ import { addListeners } from '@/utils';
  * - Escape: Exit overlay mode (handled by overlays themselves)
  */
 export function useKeyboardShortcuts() {
-  const undo = useEditorStore((s) => s.undo);
-  const redo = useEditorStore((s) => s.redo);
+  const { undo, redo } = useHistory();
   const hasImage = useEditorStore((s) => s.hasImage);
   const overlayMode = useUIStore((s) => s.overlayMode);
 

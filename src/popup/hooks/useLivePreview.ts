@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { usePreviewStore } from '../stores/previewStore';
+import { usePreviewStore } from '@/popup/stores';
 import type { LivePreviewMessage } from '@/types';
 
 const RECONNECT_DELAY_MS = 500;
@@ -9,33 +9,34 @@ export function useLivePreview() {
   const clearLivePreview = usePreviewStore((state) => state.clearLivePreview);
 
   useEffect(() => {
-    let backgroundPort: chrome.runtime.Port | null = null;
+    let port: chrome.runtime.Port | null = null;
 
     const connectToBackground = () => {
-      if (backgroundPort) {
+      if (port) {
         try {
-          backgroundPort.disconnect();
+          port.disconnect();
         } catch {}
-        backgroundPort = null;
+        port = null;
       }
 
       try {
-        backgroundPort = chrome.runtime.connect({ name: 'popup' });
+        port = chrome.runtime.connect({ name: 'popup' });
 
-        backgroundPort.onMessage.addListener((message: LivePreviewMessage) => {
-          if (message.type === 'hover-update') {
-            if (message.imageUrl && message.processedImageUrl) {
-              setLivePreview(message.processedImageUrl, message.imageInfo);
-            } else {
-              clearLivePreview();
-            }
+        port.onMessage.addListener((message: LivePreviewMessage) => {
+          if (message.type != 'hover-update') {
+            return;
           }
+
+          const { imageUrl, imageInfo, processedImageUrl } = message;
+          imageUrl && processedImageUrl
+            ? setLivePreview(processedImageUrl, imageInfo)
+            : clearLivePreview();
         });
 
-        backgroundPort.onDisconnect.addListener(() => {
-          backgroundPort = null;
+        port.onDisconnect.addListener(() => {
+          port = null;
           setTimeout(() => {
-            if (!backgroundPort) {
+            if (!port) {
               connectToBackground();
             }
           }, RECONNECT_DELAY_MS);
@@ -49,9 +50,9 @@ export function useLivePreview() {
     connectToBackground();
 
     return () => {
-      if (backgroundPort) {
+      if (port) {
         try {
-          backgroundPort.disconnect();
+          port.disconnect();
         } catch {}
       }
     };

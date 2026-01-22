@@ -1,6 +1,5 @@
-import { useUIStore, useEditorStore } from '@/popup/stores';
+import { useUIStore } from '@/popup/stores';
 import { useKeyboardShortcuts } from '@/popup/hooks';
-import { UploadZone } from './UploadZone';
 import { EditorToolbar } from './EditorToolbar';
 import { EditorCanvas } from './EditorCanvas';
 import { ShapeSelector } from './ShapeSelector';
@@ -8,18 +7,9 @@ import { EditorActions } from './EditorActions';
 import { CropOverlay, ShapeOverlay } from './overlays';
 
 export function EditorTab() {
-  const hasImage = useEditorStore((s) => s.hasImage);
   const overlayMode = useUIStore((s) => s.overlayMode);
 
   useKeyboardShortcuts();
-
-  if (!hasImage()) {
-    return (
-      <div id="editorTab">
-        <UploadZone />
-      </div>
-    );
-  }
 
   return (
     <div id="editorTab" className="has-image">
@@ -32,7 +22,6 @@ export function EditorTab() {
       </EditorCanvas>
 
       <EditorActions />
-      <UploadZone />
     </div>
   );
 }

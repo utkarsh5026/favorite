@@ -11,6 +11,7 @@ import {
   type LucideProps,
 } from 'lucide-react';
 import { useUIStore, useEditorStore } from '@/popup/stores';
+import { useImageTransform, useHistory } from '@/popup/hooks';
 
 interface ToolbarButtonConfig {
   id: string;
@@ -75,17 +76,9 @@ interface EditorToolbarProps {
 }
 
 export function EditorToolbar({ disabled = false }: EditorToolbarProps) {
-  const {
-    undo,
-    redo,
-    canUndo,
-    canRedo,
-    rotateClockwise,
-    rotateCounterClockwise,
-    flipHorizontal,
-    flipVertical,
-    resetToOriginal,
-  } = useEditorStore();
+  const { undo, redo, canUndo, canRedo } = useHistory();
+  const { rotate, flip } = useImageTransform();
+  const resetToOriginal = useEditorStore((s) => s.resetToOriginal);
   const enterCropMode = useUIStore((s) => s.enterCropMode);
 
   const handleClick = useCallback(
@@ -98,16 +91,16 @@ export function EditorToolbar({ disabled = false }: EditorToolbarProps) {
           redo();
           break;
         case 'rotateLeft':
-          void rotateCounterClockwise();
+          void rotate(270);
           break;
         case 'rotateRight':
-          void rotateClockwise();
+          void rotate(90);
           break;
         case 'flipH':
-          void flipHorizontal();
+          void flip('horizontal');
           break;
         case 'flipV':
-          void flipVertical();
+          void flip('vertical');
           break;
         case 'crop':
           enterCropMode();
@@ -122,10 +115,8 @@ export function EditorToolbar({ disabled = false }: EditorToolbarProps) {
     [
       undo,
       redo,
-      rotateClockwise,
-      rotateCounterClockwise,
-      flipHorizontal,
-      flipVertical,
+      rotate,
+      flip,
       enterCropMode,
       resetToOriginal,
     ]
@@ -134,8 +125,8 @@ export function EditorToolbar({ disabled = false }: EditorToolbarProps) {
   const isButtonDisabled = useCallback(
     (id: string) => {
       if (disabled) return true;
-      if (id === 'undo') return !canUndo();
-      if (id === 'redo') return !canRedo();
+      if (id === 'undo') return !canUndo;
+      if (id === 'redo') return !canRedo;
       return false;
     },
     [disabled, canUndo, canRedo]

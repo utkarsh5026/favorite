@@ -1,16 +1,24 @@
-import { Loader2 } from 'lucide-react';
+import { useRef, useCallback } from 'react';
+import { Loader2, Upload } from 'lucide-react';
 import { useEditorStore, useUIStore } from '@/popup/stores';
-import { useCanvasRenderer } from '@/popup/hooks';
+import { useCanvasRenderer, useCurrentImageUrl, useImageUpload, useShapeInfo } from '@/popup/hooks';
 
 interface EditorCanvasProps {
   children?: React.ReactNode;
 }
 
 export function EditorCanvas({ children }: EditorCanvasProps) {
-  const currentImageUrl = useEditorStore((s) => s.currentImageUrl);
-  const currentShape = useEditorStore((s) => s.currentShape);
-  const shapeManipulation = useEditorStore((s) => s.shapeManipulation);
+  const currentImageUrl = useCurrentImageUrl();
+  const { currentShape, shapeManipulation } = useShapeInfo();
+  const loadImage = useEditorStore((s) => s.loadImage);
   const overlayMode = useUIStore((s) => s.overlayMode);
+
+  const inputRef = useRef<HTMLInputElement>(null);
+  const { handleFileSelect } = useImageUpload({ onUpload: loadImage });
+
+  const handleClick = useCallback(() => {
+    inputRef.current?.click();
+  }, []);
 
   const { canvasRef, containerRef, isLoading, canvasSize, displayScale, imageSize } =
     useCanvasRenderer({
@@ -19,6 +27,36 @@ export function EditorCanvas({ children }: EditorCanvasProps) {
       shapeManipulation,
       isShapeEditMode: overlayMode === 'shape',
     });
+
+  // Empty state with upload button
+  if (!currentImageUrl) {
+    return (
+      <div
+        id="editorCanvasContainer"
+        className="editor-canvas-container relative flex items-center justify-center"
+      >
+        <div className="flex flex-col items-center justify-center gap-3">
+          <button
+            onClick={handleClick}
+            className="group flex items-center gap-2 px-5 py-3 bg-white/5 border border-white/10 rounded-lg hover:bg-white/8 hover:border-white/20 transition-all duration-200"
+          >
+            <Upload className="w-4 h-4 text-text-muted group-hover:text-accent-green transition-colors" />
+            <span className="text-text-secondary text-sm font-medium">Upload Image</span>
+          </button>
+          <p className="text-text-muted text-xs text-center max-w-50">
+            or right-click any image on a page to edit it here
+          </p>
+        </div>
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handleFileSelect}
+        />
+      </div>
+    );
+  }
 
   return (
     <div
@@ -32,7 +70,7 @@ export function EditorCanvas({ children }: EditorCanvasProps) {
       <canvas
         id="editorCanvas"
         ref={canvasRef}
-        className="editor-canvas"
+        className="editor-canvas border-2 border-red-500 rounded-lg bg-black"
         width={canvasSize.width}
         height={canvasSize.height}
       />

@@ -31,7 +31,7 @@ export const useUIStore = create<UIStore>((set, get) => ({
   currentTab: 'settings',
   overlayMode: 'none',
   pendingShape: null,
-  livePreviewEnabled: true,
+  livePreviewEnabled: false,
   isLoading: false,
   loadingMessage: null,
   statusMessage: null,

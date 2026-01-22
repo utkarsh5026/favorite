@@ -33,7 +33,7 @@ export function EditorCanvas({ children }: EditorCanvasProps) {
     return (
       <div
         id="editorCanvasContainer"
-        className="editor-canvas-container relative flex items-center justify-center"
+        className="editor-canvas-container relative flex items-center justify-center mb-4"
       >
         <div className="flex flex-col items-center justify-center gap-3">
           <button
@@ -62,7 +62,7 @@ export function EditorCanvas({ children }: EditorCanvasProps) {
     <div
       id="editorCanvasContainer"
       ref={containerRef}
-      className="editor-canvas-container relative flex items-center justify-center"
+      className="editor-canvas-container relative flex items-center justify-center mb-4"
       data-display-scale={displayScale}
       data-image-width={imageSize.width}
       data-image-height={imageSize.height}

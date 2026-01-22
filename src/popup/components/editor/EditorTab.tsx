@@ -14,6 +14,7 @@ export function EditorTab() {
   return (
     <div id="editorTab" className="has-image">
       <EditorToolbar disabled={overlayMode !== 'none'} />
+
       <ShapeSelector disabled={overlayMode !== 'none'} />
 
       <EditorCanvas>

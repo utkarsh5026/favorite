@@ -64,7 +64,7 @@ export function ShapeSelector({ disabled = false }: ShapeSelectorProps) {
   );
 
   return (
-    <div id="shapeSelector" className="shape-selector">
+    <div id="shapeSelector" className="shape-selector mb-4">
       {SHAPES.map(({ shape, title, svgContent }) => (
         <button
           key={shape}

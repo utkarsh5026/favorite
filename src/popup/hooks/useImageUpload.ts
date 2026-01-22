@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useUIStore } from '../stores/uiStore';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -7,24 +7,13 @@ interface UseImageUploadOptions {
   onUpload: (dataUrl: string) => Promise<void>;
 }
 
-interface UseImageUploadReturn {
-  isDragging: boolean;
-  isLoading: boolean;
-  handleDragOver: (e: React.DragEvent) => void;
-  handleDragLeave: () => void;
-  handleDrop: (e: React.DragEvent) => void;
-  handleFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  handleClick: () => void;
-  inputRef: React.RefObject<HTMLInputElement | null>;
-}
-
 export function useImageUpload({
   onUpload,
-}: UseImageUploadOptions): UseImageUploadReturn {
+}: UseImageUploadOptions) {
   const [isDragging, setIsDragging] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const showStatus = useUIStore((s) => s.showStatus);
-  const inputRef = { current: null as HTMLInputElement | null };
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const processFile = useCallback(
     async (file: File) => {
@@ -41,20 +30,7 @@ export function useImageUpload({
       setIsLoading(true);
 
       try {
-        const dataUrl = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = (e) => {
-            const result = e.target?.result as string;
-            if (result) {
-              resolve(result);
-            } else {
-              reject(new Error('Failed to read file'));
-            }
-          };
-          reader.onerror = () => reject(reader.error);
-          reader.readAsDataURL(file);
-        });
-
+        const dataUrl = await uploadFile(file);
         await onUpload(dataUrl);
       } catch (error) {
         console.error('Failed to process file:', error);
@@ -114,4 +90,21 @@ export function useImageUpload({
     handleClick,
     inputRef,
   };
+}
+
+
+async function uploadFile(file: File): Promise<string> {
+  return await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const result = e.target?.result as string;
+      if (result) {
+        resolve(result);
+      } else {
+        reject(new Error('Failed to read file'));
+      }
+    };
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
 }

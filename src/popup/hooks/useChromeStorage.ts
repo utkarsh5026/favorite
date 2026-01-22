@@ -2,6 +2,23 @@ import { useState, useEffect, useCallback } from 'react';
 import { getItem, setItem } from '@/extension/storage';
 import type { StorageType } from '@/extension/storage';
 
+/**
+ * Custom React hook for managing Chrome storage with automatic synchronization.
+ * 
+ * This hook provides a convenient interface for reading from and writing to Chrome's
+ * storage API (local or sync), with automatic updates when storage changes occur
+ * from other parts of the extension.
+ * 
+ * @template T - The type of the stored value
+ * @param {string} key - The storage key to read/write
+ * @param {T} defaultValue - The default value to use if the key doesn't exist in storage
+ * @param {StorageType} [storageType='local'] - The type of storage to use ('local' or 'sync')
+ * 
+ * @returns {[T, (value: T) => Promise<void>, boolean]} A tuple containing:
+ *   - The current value from storage
+ *   - A function to update the stored value
+ *   - A boolean indicating whether the initial load is complete
+ */
 export function useChromeStorage<T>(
   key: string,
   defaultValue: T,

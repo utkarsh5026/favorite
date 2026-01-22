@@ -1,12 +1,9 @@
-import { usePreviewStore } from '@/popup/stores';
 import { useLivePreview, useOriginalFavicon } from '@/popup/hooks';
 import { PreviewBox } from '../common/PreviewBox';
 
 export function LivePreviewSection() {
-  const livePreviewUrl = usePreviewStore((state) => state.livePreviewUrl);
   const { originalFaviconUrl, isLoadingOriginal } = useOriginalFavicon();
-
-  useLivePreview();
+  const { livePreviewUrl } = useLivePreview();
 
   return (
     <div className="bg-white/2 rounded-xl p-5 mb-4 border border-border-subtle">

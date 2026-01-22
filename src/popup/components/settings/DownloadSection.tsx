@@ -1,12 +1,13 @@
 import { useEffect, useState, useRef } from 'react';
 import { Download, Pencil } from 'lucide-react';
-import { useUIStore, usePreviewStore } from '@/popup/stores';
+import { useUIStore } from '@/popup/stores';
 import { getFaviconDirectlyFromTab } from '@/extension';
 import { saveFaviconZIP } from '@/favicons';
 import { PreviewBox } from '../common/PreviewBox';
+import { useCurrentFavicon } from '@/popup/hooks';
 
 export function DownloadSection() {
-  const { currentFaviconUrl, setCurrentFavicon } = usePreviewStore();
+  const { currentFaviconUrl, setCurrentFavicon } = useCurrentFavicon();
   const switchToTab = useUIStore((state) => state.switchToTab);
   const [isLoading, setIsLoading] = useState(true);
   const [imageSize, setImageSize] = useState<{ width: number; height: number } | null>(null);

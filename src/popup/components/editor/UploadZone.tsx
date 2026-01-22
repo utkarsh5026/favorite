@@ -1,77 +1,14 @@
 import { useRef, useCallback } from 'react';
 import { Upload } from 'lucide-react';
-import { useUIStore, useEditorStore } from '@/popup/stores';
+import { useEditorStore } from '@/popup/stores';
+import { useImageUpload } from '@/popup/hooks';
 
 export function UploadZone() {
   const loadImage = useEditorStore((s) => s.loadImage);
-  const showStatus = useUIStore((s) => s.showStatus);
   const inputRef = useRef<HTMLInputElement>(null);
-
-  const processFile = useCallback(
-    async (file: File) => {
-      if (!file.type.startsWith('image/')) {
-        showStatus('Please select an image file');
-        return;
-      }
-
-      if (file.size > 5 * 1024 * 1024) {
-        showStatus('File too large (max 5MB)');
-        return;
-      }
-
-      try {
-        const dataUrl = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = (e) => {
-            const result = e.target?.result as string;
-            if (result) resolve(result);
-            else reject(new Error('Failed to read file'));
-          };
-          reader.onerror = () => reject(reader.error);
-          reader.readAsDataURL(file);
-        });
-
-        await loadImage(dataUrl);
-      } catch (error) {
-        console.error('Failed to process file:', error);
-        showStatus('Failed to load image');
-      }
-    },
-    [loadImage, showStatus]
-  );
-
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.currentTarget.classList.add('drag-over');
-  }, []);
-
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
-    e.currentTarget.classList.remove('drag-over');
-  }, []);
-
-  const handleDrop = useCallback(
-    (e: React.DragEvent) => {
-      e.preventDefault();
-      e.currentTarget.classList.remove('drag-over');
-
-      const files = e.dataTransfer?.files;
-      if (files && files.length > 0) {
-        void processFile(files[0]);
-      }
-    },
-    [processFile]
-  );
-
-  const handleFileSelect = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const files = e.target.files;
-      if (files && files.length > 0) {
-        void processFile(files[0]);
-      }
-      e.target.value = '';
-    },
-    [processFile]
-  );
+  const { handleDragOver, handleDrop, handleDragLeave, handleFileSelect } = useImageUpload({
+    onUpload: loadImage,
+  });
 
   const handleClick = useCallback(() => {
     inputRef.current?.click();
@@ -80,15 +17,17 @@ export function UploadZone() {
   return (
     <div
       id="editorUploadZone"
-      className="upload-zone"
+      className="upload-zone group flex flex-col items-center justify-center py-10 px-6 border-2 border-dashed border-border-medium rounded-xl bg-white/2 cursor-pointer transition-all duration-200 ease-out text-center hover:border-border-strong hover:bg-white/4"
       onClick={handleClick}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      <Upload className="w-12 h-12 text-text-tertiary mb-3" strokeWidth={1.5} />
-      <p className="text-text-secondary text-sm mb-1">Drop an image here or click to upload</p>
-      <p className="text-text-tertiary text-xs">PNG, JPG, SVG, ICO up to 5MB</p>
+      <div className="flex items-center justify-center w-14 h-14 rounded-xl bg-white/4 border border-border-subtle mb-4 transition-all duration-200 group-hover:-translate-y-0.5">
+        <Upload className="w-6 h-6 text-text-muted transition-colors duration-200 group-hover:text-accent-green" strokeWidth={1.5} />
+      </div>
+      <p className="text-text-secondary text-base font-medium mb-1">Drop an image here or click to upload</p>
+      <p className="text-text-muted text-xs">PNG, JPG, SVG, ICO up to 5MB</p>
       <input
         ref={inputRef}
         id="editorUploadInput"

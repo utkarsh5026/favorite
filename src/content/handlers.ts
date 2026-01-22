@@ -3,7 +3,13 @@
  */
 import { CONFIG, state, clearHoverTimeout, clearRestoreTimeout, loadSettings } from '@/extension';
 import { changeFavicon, restoreToDefaultFavicon } from '@/favicons';
-import { findImage, extractImageData, ImageExtractionResult, getImageAsDataUrl, fetchImageAsDataUrl } from '@/images';
+import {
+  findImage,
+  extractImageData,
+  ImageExtractionResult,
+  getImageAsDataUrl,
+  fetchImageAsDataUrl,
+} from '@/images';
 import { addListeners as addEventListeners } from '@/utils';
 import { scriptState } from './state';
 
@@ -30,7 +36,7 @@ export async function broadcastHoverState(
       return await fetchImageAsDataUrl(imageUrl, PREVIEW_SIZE);
     }
     return processedImage;
-  }
+  };
 
   const processedImageUrl = await fetchImage();
   const message = {

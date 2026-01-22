@@ -1,4 +1,4 @@
-import { setupCanvas } from '@/utils';
+import { setupCanvas, loadImage } from '@/utils';
 
 const IMAGE_MIME_TYPE = 'image/png';
 
@@ -17,35 +17,30 @@ export async function convertToDataUrl(
   error?: string;
 }> {
   return new Promise((resolve) => {
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
+    loadImage(
+      imageUrl,
+      (img) => {
+        try {
+          const canvasSize =
+            size || Math.max(img.naturalWidth || img.width, img.naturalHeight || img.height);
+          const canvas = setupCanvas(canvasSize, canvasSize);
 
-    img.onload = () => {
-      try {
-        const canvasSize =
-          size || Math.max(img.naturalWidth || img.width, img.naturalHeight || img.height);
-        const canvas = setupCanvas(canvasSize, canvasSize);
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            resolve({ url: '', error: 'Failed to get canvas context' });
+            return;
+          }
 
-        const ctx = canvas.getContext('2d');
-        if (!ctx) {
-          resolve({ url: '', error: 'Failed to get canvas context' });
-          return;
+          beforeDraw?.(ctx, canvasSize);
+          ctx.drawImage(img, 0, 0, canvasSize, canvasSize);
+          const dataUrl = canvas.toDataURL(IMAGE_MIME_TYPE);
+          resolve({ url: dataUrl });
+        } catch (error) {
+          resolve({ url: '', error: error instanceof Error ? error.message : 'Unknown error' });
         }
-
-        beforeDraw?.(ctx, canvasSize);
-        ctx.drawImage(img, 0, 0, canvasSize, canvasSize);
-        const dataUrl = canvas.toDataURL(IMAGE_MIME_TYPE);
-        resolve({ url: dataUrl });
-      } catch (error) {
-        resolve({ url: '', error: error instanceof Error ? error.message : 'Unknown error' });
-      }
-    };
-
-    img.onerror = () => {
-      resolve({ url: '', error: 'Failed to load image' });
-    };
-
-    img.src = imageUrl;
+      },
+      () => resolve({ url: '', error: 'Failed to load image' })
+    );
   });
 }
 
@@ -85,10 +80,7 @@ export function getImageAsDataUrl(img: HTMLImageElement, size: number): string |
  * @param size - Size to resize the image to
  * @returns The data URL or null if failed
  */
-export async function fetchImageAsDataUrl(
-  imageUrl: string,
-  size: number
-): Promise<string | null> {
+export async function fetchImageAsDataUrl(imageUrl: string, size: number): Promise<string | null> {
   try {
     const response = await fetch(imageUrl);
     if (!response.ok) {

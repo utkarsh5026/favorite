@@ -19,22 +19,34 @@ export function all<T extends HTMLElement>(selector: string, container?: Element
 }
 
 /**
+ * Loads an image from a URL with crossOrigin set to 'anonymous'
+ * @param url - The URL of the image to load
+ * @param onLoad - Callback when image loads successfully
+ * @param onError - Optional callback when image fails to load
+ */
+export function loadImage(
+  url: string,
+  onLoad: (img: HTMLImageElement) => void,
+  onError?: (error: Error) => void
+): HTMLImageElement {
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = () => onLoad(img);
+  img.onerror = () => onError?.(new Error('Failed to load image'));
+  img.src = url;
+  return img;
+}
+
+/**
  * Downloads an image from a URL and returns it as an HTMLImageElement
  * @param url - The URL of the image to download
  * @returns Promise that resolves to the loaded image element
  * @throws Error if the image fails to load
  */
 export async function downloadImage(url: string): Promise<HTMLImageElement> {
-  const img = new Image();
-  img.crossOrigin = 'anonymous';
-
-  await new Promise<void>((resolve, reject) => {
-    img.onload = () => resolve();
-    img.onerror = () => reject(new Error('Failed to load image'));
-    img.src = url;
+  return new Promise((resolve, reject) => {
+    loadImage(url, resolve, reject);
   });
-
-  return img;
 }
 
 /**

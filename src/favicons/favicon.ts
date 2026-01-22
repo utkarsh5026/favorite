@@ -1,5 +1,5 @@
 import { CONFIG, state } from '@/extension';
-import { all, setupCanvas } from '@/utils';
+import { all, setupCanvas, loadImage } from '@/utils';
 import { clipImageToShape } from '@/images';
 import { initializeFaviconState } from './favicon-state';
 
@@ -93,50 +93,47 @@ const setFaviconDirectly = (imageUrl: string) => {
  * Applies a shape mask to the image and sets it as favicon
  */
 const applyShapeMaskAndSetFavicon = (imageUrl: string, loadingId: number) => {
-  const img = new Image();
-  img.crossOrigin = 'anonymous';
+  loadImage(
+    imageUrl,
+    (img) => {
+      // Only proceed if this is still the latest request
+      if (state.currentLoadingId !== loadingId) return;
 
-  img.onload = () => {
-    // Only proceed if this is still the latest request
-    if (state.currentLoadingId !== loadingId) return;
-
-    try {
-      clipImageToShape(
-        CONFIG.faviconSize,
-        CONFIG.faviconShape,
-        img,
-        () => {
-          // Check again before setting, as masking is async
-          if (state.currentLoadingId === loadingId) {
-            Loader.getInstance().stopLoadingAnimation();
-            setFaviconDirectly(imageUrl);
+      try {
+        clipImageToShape(
+          CONFIG.faviconSize,
+          CONFIG.faviconShape,
+          img,
+          () => {
+            // Check again before setting, as masking is async
+            if (state.currentLoadingId === loadingId) {
+              Loader.getInstance().stopLoadingAnimation();
+              setFaviconDirectly(imageUrl);
+            }
+          },
+          (dataUrl: string) => {
+            // Check again before setting, as masking is async
+            if (state.currentLoadingId === loadingId) {
+              Loader.getInstance().stopLoadingAnimation();
+              setFaviconDirectly(dataUrl);
+            }
           }
-        },
-        (dataUrl: string) => {
-          // Check again before setting, as masking is async
-          if (state.currentLoadingId === loadingId) {
-            Loader.getInstance().stopLoadingAnimation();
-            setFaviconDirectly(dataUrl);
-          }
+        );
+      } catch (error) {
+        console.warn('Image Favicon Preview: Failed to apply shape mask, using original', error);
+        if (state.currentLoadingId === loadingId) {
+          Loader.getInstance().stopLoadingAnimation();
+          setFaviconDirectly(imageUrl);
         }
-      );
-    } catch (error) {
-      console.warn('Image Favicon Preview: Failed to apply shape mask, using original', error);
+      }
+    },
+    () => {
       if (state.currentLoadingId === loadingId) {
         Loader.getInstance().stopLoadingAnimation();
         setFaviconDirectly(imageUrl);
       }
     }
-  };
-
-  img.onerror = () => {
-    if (state.currentLoadingId === loadingId) {
-      Loader.getInstance().stopLoadingAnimation();
-      setFaviconDirectly(imageUrl);
-    }
-  };
-
-  img.src = imageUrl;
+  );
 };
 
 /**

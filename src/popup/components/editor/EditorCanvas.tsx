@@ -20,7 +20,7 @@ export function EditorCanvas({ children }: EditorCanvasProps) {
     inputRef.current?.click();
   }, []);
 
-  const { canvasRef, containerRef, isLoading, canvasSize, displayScale, imageSize } =
+  const { canvasRef, containerRef, isLoading, displayScale, imageSize } =
     useCanvasRenderer({
       imageUrl: currentImageUrl,
       shape: currentShape,
@@ -70,9 +70,7 @@ export function EditorCanvas({ children }: EditorCanvasProps) {
       <canvas
         id="editorCanvas"
         ref={canvasRef}
-        className="editor-canvas border-2 border-red-500 rounded-lg bg-black"
-        width={canvasSize.width}
-        height={canvasSize.height}
+        className="editor-canvas border-2 border-red-500 rounded-lg"
       />
 
       {isLoading && (

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { usePreviewStore } from '@/popup/stores';
-import { getFaviconDirectlyFromTab } from '@/extension';
+import { getCurrentTabHostname } from '@/extension';
+import { getOriginalFaviconUrl } from '@/favicons';
 import { useShallow } from 'zustand/shallow';
 
 export function useOriginalFavicon() {
@@ -11,7 +12,8 @@ export function useOriginalFavicon() {
   useEffect(() => {
     const loadOriginalFavicon = async () => {
       setIsLoadingOriginal(true);
-      const faviconUrl = await getFaviconDirectlyFromTab();
+      const hostname = await getCurrentTabHostname();
+      const faviconUrl = hostname ? await getOriginalFaviconUrl(hostname) : null;
       setOriginalFavicon(faviconUrl);
       setIsLoadingOriginal(false);
     };

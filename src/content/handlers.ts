@@ -111,7 +111,7 @@ async function broadcastToPopup(img: Element, imageResult: ImageExtractionResult
   changeFavicon(imageResult.url);
 
   const { width, height } = img.getBoundingClientRect();
-  const settings = await loadSettings();
+  await loadSettings();
 
   await broadcastHoverState(
     imageResult.url,

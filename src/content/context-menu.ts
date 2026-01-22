@@ -4,7 +4,7 @@
 import { saveFaviconZIP, changeFavicon, setCurrentFavicon } from '@/favicons';
 import type { ContextMenuMessage } from './types';
 import { CONTEXT_MENU } from '@/extension';
-import { createEl, setEl } from '@/utils';
+import { createEl, setEl, loadImage } from '@/utils';
 
 const notificationStyle: Partial<CSSStyleDeclaration> = {
   position: 'fixed',
@@ -69,24 +69,19 @@ export function notify(message: string, imageUrl?: string): void {
  * Downloads favicon from context menu action
  */
 async function downloadFaviconFromContextMenu(imageUrl: string, hostname: string): Promise<void> {
-  const img = new Image();
-  img.crossOrigin = 'anonymous';
-
-  img.onload = async () => {
-    try {
-      await saveFaviconZIP(img, imageUrl, hostname);
-      notify('Favicon downloaded', imageUrl);
-    } catch (error) {
-      console.error('Failed to download favicon:', error);
-      notify('Download failed', imageUrl);
-    }
-  };
-
-  img.onerror = () => {
-    notify('Failed to load image');
-  };
-
-  img.src = imageUrl;
+  loadImage(
+    imageUrl,
+    async (img) => {
+      try {
+        await saveFaviconZIP(img, imageUrl, hostname);
+        notify('Favicon downloaded', imageUrl);
+      } catch (error) {
+        console.error('Failed to download favicon:', error);
+        notify('Download failed', imageUrl);
+      }
+    },
+    () => notify('Failed to load image')
+  );
 }
 
 /**

@@ -39,7 +39,9 @@
   --color-border-strong: rgba(255, 255, 255, 0.15);
 
   /* Fonts */
-  --font-mono: CascadiaCode, 'Cascadia Code', CascadiaMono, 'Cascadia Mono', 'Fira Code', 'JetBrains Mono', Consolas, Monaco, 'Courier New', monospace;
+  --font-mono:
+    CascadiaCode, 'Cascadia Code', CascadiaMono, 'Cascadia Mono', 'Fira Code', 'JetBrains Mono',
+    Consolas, Monaco, 'Courier New', monospace;
   --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 
   /* Font sizes */
@@ -173,6 +175,18 @@ input[type='range']::-moz-range-thumb {
   }
 }
 
+@keyframes pulseScale {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.8);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
 /* Animation utility classes */
 .animate-rotate {
   animation: rotate 0.8s linear infinite;
@@ -192,6 +206,10 @@ input[type='range']::-moz-range-thumb {
 
 .animate-live {
   animation: livePulse 1.5s ease-in-out infinite;
+}
+
+.animate-pulse-scale {
+  animation: pulseScale 0.3s ease-out;
 }
 
 /* ============================================
@@ -330,8 +348,20 @@ input[type='range']::-moz-range-thumb {
 
 /* Upload zone drag-over state */
 .upload-zone.drag-over {
-  border-color: #78dc96;
-  background: rgba(120, 220, 150, 0.05);
+  border-color: var(--color-accent-green) !important;
+  border-style: solid !important;
+  background: rgba(120, 220, 150, 0.08) !important;
+  box-shadow: 0 0 0 4px rgba(120, 220, 150, 0.1);
+}
+
+.upload-zone.drag-over > div:first-child {
+  background: rgba(120, 220, 150, 0.15);
+  border-color: rgba(120, 220, 150, 0.3);
+  transform: scale(1.05);
+}
+
+.upload-zone.drag-over > div:first-child svg {
+  color: var(--color-accent-green);
 }
 
 /* Button loading/success states */
@@ -669,70 +699,6 @@ input[type='range']::-moz-range-thumb {
   border-color: rgba(255, 255, 255, 0.3);
 }
 
-/* Editor Actions */
-.editor-actions {
-  display: flex;
-  gap: 0.5rem;
-  margin-top: 1rem;
-}
-
-.editor-action-btn {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 10px 12px;
-  border-radius: 8px;
-  font-size: 11px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.editor-action-btn.primary {
-  background: white;
-  border: none;
-  color: var(--color-text-dark);
-}
-
-.editor-action-btn.primary:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-}
-
-.editor-action-btn.secondary {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--color-border-medium);
-  color: var(--color-text-secondary);
-}
-
-.editor-action-btn.secondary:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.25);
-}
-
-.editor-action-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.editor-action-btn.live-preview-active {
-  background: #22c55e;
-  border-color: #22c55e;
-  color: white;
-}
-
-.editor-action-btn.live-preview-active:hover:not(:disabled) {
-  background: #16a34a;
-  border-color: #16a34a;
-}
-
-.editor-action-btn svg {
-  width: 14px;
-  height: 14px;
-  stroke: currentColor;
-}
 
 /* Editor Empty State */
 .editor-empty {
@@ -1009,5 +975,150 @@ input[type='range']::-moz-range-thumb {
 }
 
 .crop-overlay.dragging .crop-handle {
+  pointer-events: none;
+}
+
+/* ============================================================================
+   Shape Overlay Styles
+   Interactive shape manipulation overlay with SVG mask and drag handles
+   ============================================================================ */
+
+.shape-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 100;
+  pointer-events: none;
+}
+
+.shape-mask-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.shape-selection {
+  position: absolute;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5);
+  cursor: move;
+  pointer-events: auto;
+  box-sizing: border-box;
+}
+
+.shape-selection.dragging {
+  cursor: grabbing;
+}
+
+/* Shape handles - 8 point resize system */
+.shape-handle {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background: #fff;
+  border: 2px solid var(--color-accent-green);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: auto;
+  transition: all 0.15s ease;
+  z-index: 10;
+}
+
+.shape-handle:hover {
+  background: var(--color-accent-green);
+  transform: translate(-50%, -50%) scale(1.2);
+}
+
+/* Handle cursor overrides */
+.shape-handle-nw {
+  cursor: nw-resize;
+}
+.shape-handle-n {
+  cursor: n-resize;
+}
+.shape-handle-ne {
+  cursor: ne-resize;
+}
+.shape-handle-e {
+  cursor: e-resize;
+}
+.shape-handle-se {
+  cursor: se-resize;
+}
+.shape-handle-s {
+  cursor: s-resize;
+}
+.shape-handle-sw {
+  cursor: sw-resize;
+}
+.shape-handle-w {
+  cursor: w-resize;
+}
+
+/* Shape action buttons */
+.shape-actions {
+  position: absolute;
+  bottom: -44px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  background: rgba(20, 20, 22, 0.95);
+  padding: 6px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border-medium);
+  z-index: 10;
+}
+
+.shape-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--color-border-medium);
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-primary);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.shape-action-btn:hover {
+  background: var(--color-bg-secondary);
+}
+
+.shape-action-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.shape-action-btn.primary {
+  background: var(--color-accent-green);
+  border-color: var(--color-accent-green);
+  color: #000;
+}
+
+.shape-action-btn.primary:hover {
+  background: #90ee90;
+}
+
+.shape-cancel-btn:hover {
+  background: rgba(255, 100, 100, 0.25);
+  border-color: rgba(255, 100, 100, 0.5);
+}
+
+/* Shape overlay dragging state */
+.shape-overlay.dragging .shape-selection {
+  cursor: grabbing;
+}
+
+.shape-overlay.dragging .shape-handle {
   pointer-events: none;
 }

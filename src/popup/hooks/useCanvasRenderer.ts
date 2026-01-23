@@ -4,15 +4,26 @@ import { applyShapeToImage } from '../editor/transforms';
 import type { FaviconShape } from '@/types';
 import type { ShapeManipulationData } from '../editor/shapes/types';
 
+/**
+ * Represents a rectangular dimension with width and height
+ */
 type Box = {
   width: number;
   height: number;
 };
 
+/** Size of each square in the checkered background pattern (in pixels) */
 const CHECKED_SQUARE_SIZE = 8;
+
+/** Maximum height constraint for the canvas display (in pixels) */
 const MAX_CANVAS_HEIGHT = 250;
+
+/** Padding around the canvas within its container (in pixels) */
 const CANVAS_PADDING = 2;
+
+/** Minimum width fallback when container width cannot be determined (in pixels) */
 const CONTAINER_MIN_WIDTH = 300;
+
 
 interface UseCanvasRendererOptions {
   imageUrl: string | null;
@@ -20,8 +31,14 @@ interface UseCanvasRendererOptions {
   shapeManipulation: ShapeManipulationData | null;
   isShapeEditMode: boolean;
 }
+
 /**
- * Hook for rendering the editor canvas with checkered background and image
+ * Hook for rendering images on a canvas with responsive scaling and checkered background
+ *
+ * The canvas automatically scales images to fit the container width while respecting
+ * a maximum height constraint. The display scale factor is calculated and returned
+ * to help with coordinate transformations for overlay interactions.
+ *
  */
 export function useCanvasRenderer({
   imageUrl,
@@ -37,6 +54,10 @@ export function useCanvasRenderer({
   const [imageSize, setImageSize] = useState<Box>({ width: 0, height: 0 });
   const [canvasMounted, setCanvasMounted] = useState(false);
 
+  /**
+   * Ref callback that tracks canvas mounting state
+   * Triggers re-render when canvas element becomes available in the DOM
+   */
   const setCanvasRef = useCallback((node: HTMLCanvasElement | null) => {
     canvasRef.current = node;
     if (node) {
@@ -44,6 +65,13 @@ export function useCanvasRenderer({
     }
   }, []);
 
+  /**
+   * Calculates optimal scaling to fit an image within container constraints
+   *
+   * Ensures the image fits within both the container width and maximum height
+   * while maintaining aspect ratio. Returns the scaled dimensions and scale factor.
+   *
+   */
   const scaleFitImage = useCallback((img: HTMLImageElement) => {
     const container = containerRef.current;
     let containerWidth = container ? container.clientWidth - CANVAS_PADDING : CONTAINER_MIN_WIDTH;
@@ -69,6 +97,14 @@ export function useCanvasRenderer({
     };
   }, []);
 
+  /**
+   * Updates canvas dimensions, state, and renders the checkered background with optional image
+   *
+   * This function synchronizes all canvas-related state and performs the actual drawing.
+   * It updates the canvas element dimensions, state variables, and renders the background
+   * pattern. If an image is provided, it draws the image over the background.
+   *
+   */
   const updateUI = useCallback(
     (
       canvas: HTMLCanvasElement,
@@ -94,6 +130,16 @@ export function useCanvasRenderer({
     []
   );
 
+  /**
+   * Loads and renders an image onto the canvas with optional shape overlay
+   *
+   * Handles the complete image rendering pipeline:
+   * 1. Applies shape overlay if not in edit mode
+   * 2. Downloads/loads the image
+   * 3. Calculates appropriate scaling
+   * 4. Updates UI with the rendered result
+   *
+   */
   const renderImageOnCanvas = useCallback(
     async (canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, imageUrl: string) => {
       const displayImageUrl = !isShapeEditMode
@@ -106,7 +152,7 @@ export function useCanvasRenderer({
         canvas,
         ctx,
         { width, height },
-        { width, height },
+        { width: img.naturalWidth, height: img.naturalHeight },
         scale,
         img
       );
@@ -123,20 +169,10 @@ export function useCanvasRenderer({
 
     const renderCanvas = async () => {
       if (!imageUrl) {
-        console.log('Loading empty background');
-        return updateUI(
-          canvas,
-          ctx,
-          { width: 200, height: 200 },
-          { width: 0, height: 0 },
-          1,
-          null
-        );
+        return updateUI(canvas, ctx, { width: 200, height: 200 }, { width: 0, height: 0 }, 1, null);
       }
 
       setIsLoading(true);
-      console.log('Will show the image', imageUrl);
-
       try {
         await renderImageOnCanvas(canvas, ctx, imageUrl);
       } catch (error) {
@@ -160,7 +196,11 @@ export function useCanvasRenderer({
 }
 
 /**
- * Draw a checkered pattern background on the canvas
+ * Draws a checkered pattern background on the canvas for transparency visualization
+ *
+ * Creates an alternating pattern of light and dark squares to provide a standard
+ * background for viewing images with transparent regions. The pattern uses 8x8 pixel
+ * squares with light gray (#ffffff) and medium gray (#cccccc) colors.
  */
 function drawCheckeredBackground(ctx: CanvasRenderingContext2D, { width, height }: Box): void {
   const squareSize = CHECKED_SQUARE_SIZE;

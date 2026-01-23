@@ -1,10 +1,9 @@
 export { useInitialize } from './useInitialize';
-export { useLivePreview } from './preview/useLivePreview';
 export { useChromeStorage } from './useChromeStorage';
 export { useCanvasRenderer } from './useCanvasRenderer';
 export { useKeyboardShortcuts } from './useKeyboardShortcuts';
 export { useImageUpload } from './useImageUpload';
-export { useEditorPreview } from './preview/useEditorPreview';
+export { useEditorPreview, useLivePreview } from './preview';
 export { useHistory, useImageTransform, useShapeInfo } from './editor';
 export { useCrop } from './overlays/useImageCrop';
 export { useOriginalFavicon, useCurrentFavicon } from './favicon';

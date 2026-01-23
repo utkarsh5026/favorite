@@ -5,25 +5,30 @@ import { useShallow } from 'zustand/shallow';
 
 /**
  * Delay in milliseconds before attempting to reconnect to the background script
- * after a connection is lost.
+ * after a connection is lost. This helps to avoid rapid reconnection attempts
  */
 const RECONNECT_DELAY_MS = 500;
 
 /**
- * Hook that manages a persistent connection to the background script for live preview updates.
+ * Custom React hook that manages real-time favicon preview when hovering over images on web pages.
  *
- * Establishes a long-lived connection via chrome.runtime.connect and listens for hover-update
- * messages containing image preview data. Automatically handles reconnection if the connection
- * is lost.
+ * This hook establishes and maintains a persistent connection with the background script to receive
+ * live preview updates when users hover over images in the browser. The connection is resilient and
+ * automatically recovers from disconnections.
  *
- * @returns An object containing:
- * - `livePreviewInfo`: Metadata about the currently previewed image
- * - `livePreviewUrl`: The URL of the processed preview image
+ * @returns Object containing:
+ * - `livePreviewInfo`: Metadata about the currently hovered image (alt text, dimensions, etc.)
+ * - `livePreviewUrl`: Data URL of the processed preview image ready for display
  */
 export function useLivePreview() {
   const setLivePreview = usePreviewStore((state) => state.setLivePreview);
   const clearLivePreview = usePreviewStore((state) => state.clearLivePreview);
 
+  /**
+   * Safely disconnects a Chrome runtime port connection.
+   *
+   * @param port - The Chrome runtime port to disconnect, or null if no connection exists
+   */
   const disconnectPort = useCallback((port: chrome.runtime.Port | null) => {
     if (port) {
       try {
@@ -38,8 +43,13 @@ export function useLivePreview() {
     let port: chrome.runtime.Port | null = null;
 
     /**
-     * Establishes a connection to the background script and sets up message listeners.
-     * Automatically attempts to reconnect if the connection is lost.
+     * Establishes a connection to the background script and configures message handling.
+     *
+     * The connection is resilient - if it disconnects (e.g., due to extension reload,
+     * context invalidation, or browser issues), it automatically attempts to reconnect
+     * after a short delay.
+     *
+     * @throws Catches and logs any connection errors, then schedules a reconnection attempt
      */
     const connectToBackground = () => {
       if (port) {
@@ -78,7 +88,6 @@ export function useLivePreview() {
     };
 
     connectToBackground();
-
     return () => disconnectPort(port);
   }, [setLivePreview, clearLivePreview, disconnectPort]);
 

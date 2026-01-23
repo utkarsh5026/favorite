@@ -182,6 +182,7 @@ export async function tryCatchAsync<T>(
   }
 }
 
+// Helper function
 type ElementConfig = {
   textContent?: string;
   innerHTML?: string;
@@ -281,7 +282,7 @@ export function addListeners<T extends HTMLElement | Document>(
   el: T | null,
   events: { [K in keyof HTMLElementEventMap]?: (e: HTMLElementEventMap[K]) => void }
 ): () => void {
-  if (!el) return () => {};
+  if (!el) return () => { };
 
   const entries = Object.entries(events) as [keyof HTMLElementEventMap, EventListener][];
 
@@ -294,4 +295,13 @@ export function addListeners<T extends HTMLElement | Document>(
       el.removeEventListener(event, handler as EventListener);
     });
   };
+}
+
+/*
+ * Clears a timeout if the provided timeout ID is not null
+ */
+export function clearTimeoutIfExists(timeoutId: ReturnType<typeof window.setTimeout> | null): void {
+  if (timeoutId !== null) {
+    window.clearTimeout(timeoutId);
+  }
 }

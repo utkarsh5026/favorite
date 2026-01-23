@@ -1,9 +1,9 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { getCurrentTab, CONTEXT_MENU } from '@/extension';
-import { useEditorStore } from '../stores/editorStore';
-import { useUIStore } from '../stores/uiStore';
-import { usePreviewStore } from '../stores/previewStore';
-import { useShape } from './editor';
+import { useEditorStore } from '../../stores/editorStore';
+import { useUIStore } from '../../stores/uiStore';
+import { usePreviewStore } from '../../stores/previewStore';
+import { useShape } from '../editor';
 
 const PREVIEW_DEBOUNCE_MS = 100;
 

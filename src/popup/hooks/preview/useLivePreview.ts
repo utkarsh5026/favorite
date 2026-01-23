@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 import { usePreviewStore } from '@/popup/stores';
 import type { LivePreviewMessage } from '@/types';
 import { useShallow } from 'zustand/shallow';
@@ -11,11 +11,11 @@ const RECONNECT_DELAY_MS = 500;
 
 /**
  * Hook that manages a persistent connection to the background script for live preview updates.
- * 
+ *
  * Establishes a long-lived connection via chrome.runtime.connect and listens for hover-update
  * messages containing image preview data. Automatically handles reconnection if the connection
  * is lost.
- * 
+ *
  * @returns An object containing:
  * - `livePreviewInfo`: Metadata about the currently previewed image
  * - `livePreviewUrl`: The URL of the processed preview image
@@ -23,6 +23,16 @@ const RECONNECT_DELAY_MS = 500;
 export function useLivePreview() {
   const setLivePreview = usePreviewStore((state) => state.setLivePreview);
   const clearLivePreview = usePreviewStore((state) => state.clearLivePreview);
+
+  const disconnectPort = useCallback((port: chrome.runtime.Port | null) => {
+    if (port) {
+      try {
+        port.disconnect();
+      } catch {
+        console.warn('[Popup] Error disconnecting port');
+      }
+    }
+  }, []);
 
   useEffect(() => {
     let port: chrome.runtime.Port | null = null;
@@ -33,9 +43,7 @@ export function useLivePreview() {
      */
     const connectToBackground = () => {
       if (port) {
-        try {
-          port.disconnect();
-        } catch { }
+        disconnectPort(port);
         port = null;
       }
 
@@ -48,9 +56,11 @@ export function useLivePreview() {
           }
 
           const { imageUrl, imageInfo, processedImageUrl } = message;
-          imageUrl && processedImageUrl
-            ? setLivePreview(processedImageUrl, imageInfo)
-            : clearLivePreview();
+          if (imageUrl && processedImageUrl) {
+            setLivePreview(processedImageUrl, imageInfo);
+          } else {
+            clearLivePreview();
+          }
         });
 
         port.onDisconnect.addListener(() => {
@@ -69,19 +79,15 @@ export function useLivePreview() {
 
     connectToBackground();
 
-    return () => {
-      if (port) {
-        try {
-          port.disconnect();
-        } catch { }
-      }
-    };
-  }, [setLivePreview, clearLivePreview]);
+    return () => disconnectPort(port);
+  }, [setLivePreview, clearLivePreview, disconnectPort]);
 
-  return usePreviewStore(useShallow(({ livePreviewInfo, livePreviewUrl }) => {
-    return {
-      livePreviewInfo,
-      livePreviewUrl,
-    }
-  }));
+  return usePreviewStore(
+    useShallow(({ livePreviewInfo, livePreviewUrl }) => {
+      return {
+        livePreviewInfo,
+        livePreviewUrl,
+      };
+    })
+  );
 }

@@ -38,7 +38,9 @@ export function useEditorPreview() {
    * @throws Logs error if preview message fails to send
    */
   const sendPreview = useCallback(async () => {
-    if (!currentImageUrl) return;
+    if (!currentImageUrl) {
+      return;
+    }
 
     try {
       const imageUrl = await applyShape(currentImageUrl, currentShape, shapeManipulation);
@@ -75,8 +77,9 @@ export function useEditorPreview() {
    * Cleanup function cancels pending updates to prevent stale previews.
    */
   useEffect(() => {
-    if (!livePreviewEnabled || !currentImageUrl) return;
-
+    if (!livePreviewEnabled || !currentImageUrl) {
+      return;
+    }
     clearTimeoutIfExists(debounceRef.current);
     debounceRef.current = setTimeout(sendPreview, PREVIEW_DEBOUNCE_MS);
     return () => clearTimeoutIfExists(debounceRef.current);
@@ -99,12 +102,18 @@ async function sendPreviewMessage(
   action: (typeof CONTEXT_MENU)[keyof typeof CONTEXT_MENU]
 ) {
   const tab = await getCurrentTab();
-  if (!tab || !tab.id) return;
+  if (!tab || !tab.id) {
+    return;
+  }
 
-  chrome.tabs.sendMessage(tab.id, {
-    type: 'contextMenuAction',
-    action,
-    imageUrl,
-    hostname: currentHostname || '',
-  });
+  try {
+    await chrome.tabs.sendMessage(tab.id, {
+      type: 'contextMenuAction',
+      action,
+      imageUrl,
+      hostname: currentHostname || '',
+    });
+  } catch (error) {
+    console.error('[sendPreviewMessage] Failed to send message:', error);
+  }
 }

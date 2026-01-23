@@ -3,7 +3,7 @@ import { getCurrentTab, CONTEXT_MENU } from '@/extension';
 import { useEditorStore } from '../stores/editorStore';
 import { useUIStore } from '../stores/uiStore';
 import { usePreviewStore } from '../stores/previewStore';
-import { applyShapeToImage } from '../editor/transforms';
+import { useShape } from './editor';
 
 const PREVIEW_DEBOUNCE_MS = 100;
 
@@ -21,16 +21,13 @@ export function useEditorPreview() {
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prevLivePreviewRef = useRef(livePreviewEnabled);
+  const applyShape = useShape();
 
   const sendPreview = useCallback(async () => {
     if (!currentImageUrl) return;
 
     try {
-      const imageUrl = await applyShapeToImage(
-        currentImageUrl,
-        currentShape,
-        shapeManipulation
-      );
+      const imageUrl = await applyShape(currentImageUrl, currentShape, shapeManipulation);
 
       const tab = await getCurrentTab();
       if (tab?.id) {
@@ -44,7 +41,7 @@ export function useEditorPreview() {
     } catch (error) {
       console.error('Failed to send preview to tab:', error);
     }
-  }, [currentImageUrl, currentShape, shapeManipulation, currentHostname]);
+  }, [currentImageUrl, applyShape, currentHostname, currentShape, shapeManipulation]);
 
   useEffect(() => {
     if (prevLivePreviewRef.current && !livePreviewEnabled) {
@@ -83,8 +80,6 @@ export function useEditorPreview() {
     livePreviewEnabled,
     hasImage,
     currentImageUrl,
-    currentShape,
-    shapeManipulation,
     sendPreview,
   ]);
 

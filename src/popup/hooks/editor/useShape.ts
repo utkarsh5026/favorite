@@ -7,39 +7,43 @@ import {
   DEFAULT_SHAPE_MANIPULATION,
 } from '@/popup/editor/shapes/types';
 
-export function useShape(shape: FaviconShape, manipulation?: ShapeManipulationData | null) {
-  const applyTransform = useCallback(
-    (ctx: CanvasRenderingContext2D, img: HTMLImageElement) => {
-      const canvas = ctx.canvas;
-      const data = manipulation
-        ? {
-            centerX: manipulation.centerX,
-            centerY: manipulation.centerY,
-            scale: manipulation.scale,
-          }
-        : DEFAULT_SHAPE_MANIPULATION;
+export function useShape() {
+  const { executeTransform } = useCanvasTransform();
 
-      const baseSize = Math.min(canvas.width, canvas.height);
-      const shapeSize = baseSize * data.scale;
-      const shapeCenterX = canvas.width * data.centerX;
-      const shapeCenterY = canvas.height * data.centerY;
+  return useCallback(
+    (imageUrl: string, shape: FaviconShape, manipulation?: ShapeManipulationData | null) => {
+      const computeSize = (img: HTMLImageElement) => {
+        const size = Math.max(img.naturalWidth, img.naturalHeight);
+        return { width: size, height: size };
+      };
 
-      ctx.beginPath();
-      createCenteredShapeClipPath(ctx, shapeCenterX, shapeCenterY, shapeSize, shape);
-      ctx.closePath();
-      ctx.clip();
+      const applyTransform = (ctx: CanvasRenderingContext2D, img: HTMLImageElement) => {
+        const canvas = ctx.canvas;
+        const data = manipulation
+          ? {
+              centerX: manipulation.centerX,
+              centerY: manipulation.centerY,
+              scale: manipulation.scale,
+            }
+          : DEFAULT_SHAPE_MANIPULATION;
 
-      const offsetX = (canvas.width - img.naturalWidth) / 2;
-      const offsetY = (canvas.height - img.naturalHeight) / 2;
-      ctx.drawImage(img, offsetX, offsetY);
+        const baseSize = Math.min(canvas.width, canvas.height);
+        const shapeSize = baseSize * data.scale;
+        const shapeCenterX = canvas.width * data.centerX;
+        const shapeCenterY = canvas.height * data.centerY;
+
+        ctx.beginPath();
+        createCenteredShapeClipPath(ctx, shapeCenterX, shapeCenterY, shapeSize, shape);
+        ctx.closePath();
+        ctx.clip();
+
+        const offsetX = (canvas.width - img.naturalWidth) / 2;
+        const offsetY = (canvas.height - img.naturalHeight) / 2;
+        ctx.drawImage(img, offsetX, offsetY);
+      };
+
+      return executeTransform(imageUrl, computeSize, applyTransform);
     },
-    [shape, manipulation]
+    [executeTransform]
   );
-
-  return useCanvasTransform({ computeSize, applyTransform });
-}
-
-function computeSize(img: HTMLImageElement) {
-  const size = Math.max(img.naturalWidth, img.naturalHeight);
-  return { width: size, height: size };
 }

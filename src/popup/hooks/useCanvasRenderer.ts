@@ -1,6 +1,6 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
 import { downloadImage } from '@/utils';
-import { useShape } from './editor/useShape';
+import { useShape } from './editor';
 import {
   CHECKED_SQUARE_SIZE,
   EMPTY_CANVAS_SIZE,
@@ -47,7 +47,7 @@ export function useCanvasRenderer({
   const [displayScale, setDisplayScale] = useState(1);
   const [imageSize, setImageSize] = useState<Box>({ width: 0, height: 0 });
   const [canvasMounted, setCanvasMounted] = useState(false);
-  const { executeTransform: applyShape } = useShape(shape, shapeManipulation);
+  const applyShape = useShape();
 
   /**
    * Ref callback that tracks canvas mounting state
@@ -137,7 +137,7 @@ export function useCanvasRenderer({
    */
   const renderImageOnCanvas = useCallback(
     async (canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, imageUrl: string) => {
-      const displayImageUrl = !isShapeEditMode ? await applyShape(imageUrl) : imageUrl;
+      const displayImageUrl = !isShapeEditMode ? await applyShape(imageUrl, shape, shapeManipulation) : imageUrl;
 
       const img = await downloadImage(displayImageUrl);
       const { width, height, scale } = scaleFitImage(img);
@@ -150,7 +150,7 @@ export function useCanvasRenderer({
         img
       );
     },
-    [isShapeEditMode, applyShape, updateUI, scaleFitImage]
+    [isShapeEditMode, applyShape, updateUI, scaleFitImage, shape, shapeManipulation]
   );
 
   useEffect(() => {

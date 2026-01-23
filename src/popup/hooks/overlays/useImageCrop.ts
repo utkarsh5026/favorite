@@ -1,7 +1,7 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useCallback, useRef, useEffect, useMemo } from 'react';
 import type { CropData, DragType, HandlePosition, Point } from '@/popup/editor/crop/types';
 import { useCanvasContext } from '@/popup/canvas';
-import { addListeners } from '@/utils';
+import { useOverlayDrag } from './useOverlayDrag';
 
 interface UseCropOptions {
   minCropSize: number;
@@ -10,7 +10,7 @@ interface UseCropOptions {
 export function useCrop({ minCropSize }: UseCropOptions) {
   const { displayScale, imageWidth, imageHeight, canvasRef } = useCanvasContext();
 
-  const [crop, setCrop] = useState<CropData>(() => {
+  const crop = useMemo<CropData>(() => {
     const margin = 0.1;
     const w = imageWidth > 0 ? imageWidth : 200;
     const h = imageHeight > 0 ? imageHeight : 200;
@@ -20,24 +20,19 @@ export function useCrop({ minCropSize }: UseCropOptions) {
       width: w * (1 - 2 * margin),
       height: h * (1 - 2 * margin),
     };
-  });
-  const [isDragging, setIsDragging] = useState(false);
-
-  const dragStartRef = useRef<Point>({ x: 0, y: 0 });
-  const dragTypeRef = useRef<DragType>(null);
-  const cropStartRef = useRef<CropData>(crop);
+  }, [imageWidth, imageHeight]);
 
   const minCropSizeRef = useRef(minCropSize);
   useEffect(() => {
     minCropSizeRef.current = minCropSize;
   });
 
-  const getMousePos = useCallback((e: MouseEvent): Point => {
-    const canvas = canvasRef.current;
+  const getMousePos = useCallback((e: MouseEvent, containerRef: React.RefObject<HTMLCanvasElement | null>): Point => {
+    const canvas = containerRef.current;
     if (!canvas) return { x: 0, y: 0 };
     const rect = canvas.getBoundingClientRect();
     return { x: e.clientX - rect.left, y: e.clientY - rect.top };
-  }, [canvasRef]);
+  }, []);
 
   const computeDragResult = useCallback(
     (dragType: DragType, delta: Point, startState: CropData): CropData => {
@@ -66,49 +61,12 @@ export function useCrop({ minCropSize }: UseCropOptions) {
     [displayScale, imageWidth, imageHeight]
   );
 
-  const startDrag = useCallback(
-    (e: React.MouseEvent, type: DragType) => {
-      e.preventDefault();
-      e.stopPropagation();
-
-      const pos = getMousePos(e.nativeEvent);
-      dragStartRef.current = pos;
-      dragTypeRef.current = type;
-      setCrop((current) => {
-        cropStartRef.current = current;
-        return current;
-      });
-      setIsDragging(true);
-    },
-    [getMousePos]
-  );
-
-  useEffect(() => {
-    if (!isDragging) return;
-
-    const handleMouseMove = (e: MouseEvent) => {
-      const current = getMousePos(e);
-      const delta: Point = {
-        x: current.x - dragStartRef.current.x,
-        y: current.y - dragStartRef.current.y,
-      };
-      const newCrop = computeDragResult(dragTypeRef.current, delta, cropStartRef.current);
-      setCrop(newCrop);
-    };
-
-    const handleMouseUp = () => {
-      setIsDragging(false);
-      dragTypeRef.current = null;
-    };
-
-    const cleanup = addListeners(document, {
-      mouseup: handleMouseUp,
-      mousemove: handleMouseMove,
-    });
-    return cleanup;
-  }, [isDragging, computeDragResult, getMousePos]);
-
-  return { crop, isDragging, startDrag, displayScale };
+  return useOverlayDrag<CropData>({
+    initialState: crop,
+    onDragMove: computeDragResult,
+    containerRef: canvasRef,
+    getMousePosition: getMousePos,
+  });
 }
 
 function constrainCrop(

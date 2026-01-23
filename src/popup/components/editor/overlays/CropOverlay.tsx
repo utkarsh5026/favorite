@@ -12,8 +12,8 @@ const MIN_CROP_SIZE = 16;
 
 export function CropOverlay() {
   const { cropImage } = useImageTransform()
-  const { crop, isDragging, startDrag, displayScale } = useCrop({ minCropSize: MIN_CROP_SIZE });
-  const { getBoundary } = useCanvasContext();
+  const { isDragging, startDrag, state: crop } = useCrop({ minCropSize: MIN_CROP_SIZE });
+  const { getBoundary, displayScale } = useCanvasContext();
   const exitOverlayMode = useUIStore((s) => s.exitOverlayMode);
 
   const handleApply = useCallback(async () => {

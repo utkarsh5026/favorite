@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import type { CropData, DragType, HandlePosition, Point } from '@/popup/editor/crop/types';
-import { useCanvas } from './useCanvas';
+import { useCanvasContext } from '@/popup/canvas';
 import { addListeners } from '@/utils';
 
 interface UseCropOptions {
@@ -8,20 +8,20 @@ interface UseCropOptions {
 }
 
 export function useCrop({ minCropSize }: UseCropOptions) {
-  const getCanvasInfo = useCanvas();
+  const { displayScale, imageWidth, imageHeight, canvasRef } = useCanvasContext();
 
   const [crop, setCrop] = useState<CropData>(() => {
-    const { imageWidth, imageHeight } = getCanvasInfo();
     const margin = 0.1;
+    const w = imageWidth > 0 ? imageWidth : 200;
+    const h = imageHeight > 0 ? imageHeight : 200;
     return {
-      x: imageWidth * margin,
-      y: imageHeight * margin,
-      width: imageWidth * (1 - 2 * margin),
-      height: imageHeight * (1 - 2 * margin),
+      x: w * margin,
+      y: h * margin,
+      width: w * (1 - 2 * margin),
+      height: h * (1 - 2 * margin),
     };
   });
   const [isDragging, setIsDragging] = useState(false);
-  const [initialized, setInitialized] = useState(false);
 
   const dragStartRef = useRef<Point>({ x: 0, y: 0 });
   const dragTypeRef = useRef<DragType>(null);
@@ -32,34 +32,15 @@ export function useCrop({ minCropSize }: UseCropOptions) {
     minCropSizeRef.current = minCropSize;
   });
 
-  useEffect(() => {
-    if (initialized) return;
-    const frameId = requestAnimationFrame(() => {
-      const { imageWidth, imageHeight } = getCanvasInfo();
-      if (imageWidth > 0 && imageHeight > 0) {
-        const margin = 0.1;
-        setCrop({
-          x: imageWidth * margin,
-          y: imageHeight * margin,
-          width: imageWidth * (1 - 2 * margin),
-          height: imageHeight * (1 - 2 * margin),
-        });
-        setInitialized(true);
-      }
-    });
-    return () => cancelAnimationFrame(frameId);
-  }, [initialized, getCanvasInfo]);
-
   const getMousePos = useCallback((e: MouseEvent): Point => {
-    const canvas = document.getElementById('editorCanvas');
+    const canvas = canvasRef.current;
     if (!canvas) return { x: 0, y: 0 };
     const rect = canvas.getBoundingClientRect();
     return { x: e.clientX - rect.left, y: e.clientY - rect.top };
-  }, []);
+  }, [canvasRef]);
 
   const computeDragResult = useCallback(
     (dragType: DragType, delta: Point, startState: CropData): CropData => {
-      const { displayScale, imageWidth, imageHeight } = getCanvasInfo();
       const min = minCropSizeRef.current;
 
       const dx = delta.x / displayScale;
@@ -70,20 +51,19 @@ export function useCrop({ minCropSize }: UseCropOptions) {
         return constrainCrop({ ...startState, x: x + dx, y: y + dy }, imageHeight, imageWidth, min);
       }
 
-      const type = dragType || '';
+      const type = dragType || '' as HandlePosition;
       const updates = resizeCrop(
-        type as HandlePosition,
+        type,
         startState,
         dx,
         dy,
-        startState,
         imageHeight,
         imageWidth,
         min
       );
       return constrainCrop({ ...startState, ...updates }, imageHeight, imageWidth, min);
     },
-    [getCanvasInfo]
+    [displayScale, imageWidth, imageHeight]
   );
 
   const startDrag = useCallback(
@@ -128,7 +108,7 @@ export function useCrop({ minCropSize }: UseCropOptions) {
     return cleanup;
   }, [isDragging, computeDragResult, getMousePos]);
 
-  return { crop, isDragging, startDrag, getCanvasInfo };
+  return { crop, isDragging, startDrag, displayScale };
 }
 
 function constrainCrop(
@@ -150,7 +130,6 @@ function resizeCrop(
   start: CropData,
   dx: number,
   dy: number,
-  crop: CropData,
   imageHeight: number,
   imageWidth: number,
   min: number

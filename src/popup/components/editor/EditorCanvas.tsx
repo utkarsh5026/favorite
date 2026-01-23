@@ -1,7 +1,8 @@
-import { useRef, useCallback } from 'react';
+import { useRef, useCallback, useMemo } from 'react';
 import { Loader2, Upload } from 'lucide-react';
 import { useEditorStore, useUIStore } from '@/popup/stores';
 import { useCanvasRenderer, useCurrentImageUrl, useImageUpload, useShapeInfo } from '@/popup/hooks';
+import { CanvasContext, type CanvasContextValue } from '@/popup/canvas';
 
 interface EditorCanvasProps {
   children?: React.ReactNode;
@@ -20,15 +21,38 @@ export function EditorCanvas({ children }: EditorCanvasProps) {
     inputRef.current?.click();
   }, []);
 
-  const { canvasRef, containerRef, isLoading, displayScale, imageSize } =
-    useCanvasRenderer({
-      imageUrl: currentImageUrl,
-      shape: currentShape,
-      shapeManipulation,
-      isShapeEditMode: overlayMode === 'shape',
-    });
+  const {
+    setCanvasRef: canvasRef,
+    canvasElRef,
+    containerRef,
+    isLoading,
+    canvasSize,
+    displayScale,
+    imageSize,
+    getBoundary,
+  } = useCanvasRenderer({
+    imageUrl: currentImageUrl,
+    shape: currentShape,
+    shapeManipulation,
+    isShapeEditMode: overlayMode === 'shape',
+  });
 
-  // Empty state with upload button
+  const canvasContextValue: CanvasContextValue = useMemo(
+    () => ({
+      displayScale,
+      imageWidth: imageSize.width,
+      imageHeight: imageSize.height,
+      canvasWidth: canvasSize.width,
+      canvasHeight: canvasSize.height,
+      getBoundary,
+      containerRef,
+      canvasRef: canvasElRef,
+    }),
+    [displayScale, imageSize, canvasSize, getBoundary, containerRef, canvasElRef]
+  );
+
+  console.log('EditorCanvas rendered', isLoading, currentImageUrl);
+
   if (!currentImageUrl) {
     return (
       <div
@@ -59,31 +83,29 @@ export function EditorCanvas({ children }: EditorCanvasProps) {
   }
 
   return (
-    <div
-      id="editorCanvasContainer"
-      ref={containerRef}
-      className="editor-canvas-container relative flex items-center justify-center mb-4"
-      data-display-scale={displayScale}
-      data-image-width={imageSize.width}
-      data-image-height={imageSize.height}
-    >
-      <canvas
-        id="editorCanvas"
-        ref={canvasRef}
-        className="editor-canvas border-2 border-red-500 rounded-lg"
-      />
+    <CanvasContext.Provider value={canvasContextValue}>
+      <div
+        id="editorCanvasContainer"
+        ref={containerRef}
+        className="editor-canvas-container relative flex items-center justify-center mb-4"
+      >
+        <canvas
+          id="editorCanvas"
+          ref={canvasRef}
+          className="editor-canvas border-2 border-red-500 rounded-lg"
+        />
 
-      {isLoading && (
-        <div
-          id="editorLoading"
-          className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-lg"
-        >
-          <Loader2 className="w-8 h-8 text-white animate-spin" />
-        </div>
-      )}
+        {isLoading && (
+          <div
+            id="editorLoading"
+            className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-lg"
+          >
+            <Loader2 className="w-8 h-8 text-white animate-spin" />
+          </div>
+        )}
 
-      {/* Overlay components (CropOverlay, ShapeOverlay) are rendered here */}
-      {children}
-    </div>
+        {children}
+      </div>
+    </CanvasContext.Provider>
   );
 }

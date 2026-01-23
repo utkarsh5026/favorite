@@ -1,29 +1,20 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
 import { downloadImage } from '@/utils';
-import { applyShapeToImage } from '../editor/transforms';
+import { useShape } from './editor/useShape';
+import {
+  CHECKED_SQUARE_SIZE,
+  EMPTY_CANVAS_SIZE,
+  MAX_CANVAS_HEIGHT,
+  CANVAS_PADDING,
+  CONTAINER_MIN_WIDTH,
+} from '@/popup/canvas';
 import type { FaviconShape } from '@/types';
 import type { ShapeManipulationData } from '../editor/shapes/types';
 
-/**
- * Represents a rectangular dimension with width and height
- */
 type Box = {
   width: number;
   height: number;
 };
-
-/** Size of each square in the checkered background pattern (in pixels) */
-const CHECKED_SQUARE_SIZE = 8;
-
-/** Maximum height constraint for the canvas display (in pixels) */
-const MAX_CANVAS_HEIGHT = 250;
-
-/** Padding around the canvas within its container (in pixels) */
-const CANVAS_PADDING = 2;
-
-/** Minimum width fallback when container width cannot be determined (in pixels) */
-const CONTAINER_MIN_WIDTH = 300;
-
 
 interface UseCanvasRendererOptions {
   imageUrl: string | null;
@@ -49,10 +40,14 @@ export function useCanvasRenderer({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [canvasSize, setCanvasSize] = useState<Box>({ width: 200, height: 200 });
+  const [canvasSize, setCanvasSize] = useState<Box>({
+    width: EMPTY_CANVAS_SIZE,
+    height: EMPTY_CANVAS_SIZE,
+  });
   const [displayScale, setDisplayScale] = useState(1);
   const [imageSize, setImageSize] = useState<Box>({ width: 0, height: 0 });
   const [canvasMounted, setCanvasMounted] = useState(false);
+  const { executeTransform: applyShape } = useShape(shape, shapeManipulation);
 
   /**
    * Ref callback that tracks canvas mounting state
@@ -142,9 +137,7 @@ export function useCanvasRenderer({
    */
   const renderImageOnCanvas = useCallback(
     async (canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, imageUrl: string) => {
-      const displayImageUrl = !isShapeEditMode
-        ? await applyShapeToImage(imageUrl, shape, shapeManipulation)
-        : imageUrl;
+      const displayImageUrl = !isShapeEditMode ? await applyShape(imageUrl) : imageUrl;
 
       const img = await downloadImage(displayImageUrl);
       const { width, height, scale } = scaleFitImage(img);
@@ -157,7 +150,7 @@ export function useCanvasRenderer({
         img
       );
     },
-    [isShapeEditMode, shape, shapeManipulation, scaleFitImage, updateUI]
+    [isShapeEditMode, applyShape, updateUI, scaleFitImage]
   );
 
   useEffect(() => {
@@ -169,7 +162,14 @@ export function useCanvasRenderer({
 
     const renderCanvas = async () => {
       if (!imageUrl) {
-        return updateUI(canvas, ctx, { width: 200, height: 200 }, { width: 0, height: 0 }, 1, null);
+        return updateUI(
+          canvas,
+          ctx,
+          { width: EMPTY_CANVAS_SIZE, height: EMPTY_CANVAS_SIZE },
+          { width: 0, height: 0 },
+          1,
+          null
+        );
       }
 
       setIsLoading(true);
@@ -183,17 +183,37 @@ export function useCanvasRenderer({
     };
 
     renderCanvas();
-  }, [imageUrl, canvasMounted, scaleFitImage, updateUI, renderImageOnCanvas]);
+  }, [imageUrl, canvasMounted, updateUI, renderImageOnCanvas]);
+
+  const getBoundary = useCallback(() => {
+    const canvas = canvasRef.current;
+    const container = containerRef.current;
+
+    if (!canvas || !container) {
+      return { x: 0, y: 0, width: EMPTY_CANVAS_SIZE, height: EMPTY_CANVAS_SIZE };
+    }
+    const canvasRect = canvas.getBoundingClientRect();
+    const containerRect = container.getBoundingClientRect();
+    return {
+      x: canvasRect.left - containerRect.left,
+      y: canvasRect.top - containerRect.top,
+      width: canvas.width,
+      height: canvas.height,
+    };
+  }, []);
 
   return {
-    canvasRef: setCanvasRef,
+    setCanvasRef: setCanvasRef,
+    canvasElRef: canvasRef,
     containerRef,
     isLoading,
     canvasSize,
     displayScale,
     imageSize,
+    getBoundary,
   };
 }
+
 
 /**
  * Draws a checkered pattern background on the canvas for transparency visualization

@@ -19,7 +19,11 @@ export type ApplyTransform = (ctx: CanvasRenderingContext2D, img: HTMLImageEleme
  */
 export function useCanvasTransform() {
   const executeTransform = useCallback(
-    async (imageUrl: string, computeSize: ComputeSize, applyTransform: ApplyTransform): Promise<string> => {
+    async (
+      imageUrl: string,
+      computeSize: ComputeSize,
+      applyTransform: ApplyTransform
+    ): Promise<string> => {
       const img = await downloadImage(imageUrl);
       const size = computeSize(img);
       const canvas = setupCanvas(size.width, size.height);

@@ -1,5 +1,6 @@
 import { useCallback, useEffect } from 'react';
 import { useUIStore } from '@/popup/stores';
+import { useCanvasContext } from '@/popup/canvas';
 import { HANDLE_POSITIONS } from '@/popup/editor/overlay/types';
 import { ResizeHandle } from './ResizeHandle';
 import { OverlayActions } from './OverlayActions';
@@ -11,7 +12,8 @@ const MIN_CROP_SIZE = 16;
 
 export function CropOverlay() {
   const { cropImage } = useImageTransform()
-  const { crop, isDragging, startDrag, getCanvasInfo } = useCrop({ minCropSize: MIN_CROP_SIZE });
+  const { crop, isDragging, startDrag, displayScale } = useCrop({ minCropSize: MIN_CROP_SIZE });
+  const { getBoundary } = useCanvasContext();
   const exitOverlayMode = useUIStore((s) => s.exitOverlayMode);
 
   const handleApply = useCallback(async () => {
@@ -51,7 +53,7 @@ export function CropOverlay() {
   }, [handleApply, handleCancel]);
 
 
-  const { boundary, displayScale } = getCanvasInfo();
+  const boundary = getBoundary();
   const displayBox = {
     left: boundary.x + crop.x * displayScale,
     top: boundary.y + crop.y * displayScale,
@@ -59,24 +61,20 @@ export function CropOverlay() {
     height: crop.height * displayScale,
   };
 
-  const containerEl = document.getElementById('editorCanvasContainer');
-  const containerWidth = containerEl?.clientWidth || 400;
-  const containerHeight = containerEl?.clientHeight || 300;
-
   return (
     <div className={`${CLASS_PREFIX}-overlay ${isDragging ? 'dragging' : ''}`}>
       {/* Darkened mask areas */}
       <div
         className={`${CLASS_PREFIX}-mask ${CLASS_PREFIX}-mask-top`}
-        style={{ left: 0, top: 0, width: containerWidth, height: displayBox.top }}
+        style={{ left: 0, top: 0, right: 0, height: displayBox.top }}
       />
       <div
         className={`${CLASS_PREFIX}-mask ${CLASS_PREFIX}-mask-bottom`}
         style={{
           left: 0,
           top: displayBox.top + displayBox.height,
-          width: containerWidth,
-          height: containerHeight - displayBox.top - displayBox.height,
+          right: 0,
+          bottom: 0,
         }}
       />
       <div
@@ -88,7 +86,7 @@ export function CropOverlay() {
         style={{
           left: displayBox.left + displayBox.width,
           top: displayBox.top,
-          width: containerWidth - displayBox.left - displayBox.width,
+          right: 0,
           height: displayBox.height,
         }}
       />

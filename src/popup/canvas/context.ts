@@ -39,8 +39,20 @@ const DEFAULT_CONTEXT: CanvasContextValue = {
   canvasRef: { current: null },
 };
 
+/**
+ * React context for sharing canvas-related state and refs throughout the component tree.
+ * Provides access to canvas dimensions, scaling factors, and DOM element references.
+ * @see CanvasContextValue for available properties
+ */
 export const CanvasContext = createContext<CanvasContextValue>(DEFAULT_CONTEXT);
 
+/**
+ * Custom hook to access the canvas context value.
+ * Must be used within a CanvasContext.Provider.
+ * @returns {CanvasContextValue} Canvas state including dimensions, scale, and element refs
+ * @example
+ * const { displayScale, canvasWidth, canvasHeight } = useCanvasContext();
+ */
 export function useCanvasContext(): CanvasContextValue {
   return useContext(CanvasContext);
 }

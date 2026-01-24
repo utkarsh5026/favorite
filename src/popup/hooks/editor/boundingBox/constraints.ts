@@ -11,6 +11,11 @@ export interface FullBoundingBoxConfig extends BoundingBoxConfig {
   imageBounds: Rectangle;
 }
 
+type Change = {
+  dx: number;
+  dy: number;
+};
+
 /**
  * Clamps a value between minimum and maximum bounds.
  */
@@ -88,7 +93,7 @@ export function resizeBox(
   const { aspectRatio, minSize, imageBounds } = config;
 
   const newBox = aspectRatio
-    ? resizeWithAspectRatio(handle, startBox, dx, dy, aspectRatio, minSize)
+    ? resizeWithAspectRatio(handle, startBox, dx, dy, aspectRatio, minSize, imageBounds)
     : resizeFree(handle, startBox, dx, dy, minSize, imageBounds);
 
   return constrainBox(newBox, config);
@@ -96,6 +101,7 @@ export function resizeBox(
 
 /**
  * Resize with aspect ratio constraint (for shapes).
+ * Handles boundary constraints during resize to prevent overflow.
  */
 function resizeWithAspectRatio(
   handle: HandlePosition,
@@ -103,7 +109,8 @@ function resizeWithAspectRatio(
   dx: number,
   dy: number,
   aspectRatio: number,
-  minSize: number
+  minSize: number,
+  imageBounds: Rectangle
 ): BoundingBox {
   const { x, y, width, height } = startBox;
   const isCorner = handle.length === 2;
@@ -115,6 +122,7 @@ function resizeWithAspectRatio(
   let newY = y;
 
   if (isCorner) {
+    console.log('Resizing from corner handle:', handle);
     const horizontalDelta = isLeft ? -dx : dx;
     const verticalDelta = isTop ? -dy : dy;
 
@@ -125,28 +133,103 @@ function resizeWithAspectRatio(
 
     if (isLeft) {
       newX = x + width - newSize;
+      // Constrain to left boundary
+      if (newX < 0) {
+        newSize = x + width;
+        newX = 0;
+      }
     }
     if (isTop) {
       newY = y + height - newSize;
+      // Constrain to top boundary
+      if (newY < 0) {
+        newSize = Math.min(newSize, y + height);
+        newY = 0;
+        if (isLeft) {
+          newX = x + width - newSize;
+        }
+      }
+    }
+    // Constrain to right boundary
+    if (!isLeft && newX + newSize > imageBounds.width) {
+      newSize = imageBounds.width - newX;
+    }
+    // Constrain to bottom boundary
+    if (!isTop && newY + newSize / aspectRatio > imageBounds.height) {
+      newSize = (imageBounds.height - newY) * aspectRatio;
     }
   } else if (handle === 'n' || handle === 's') {
+    console.log('Resizing from vertical handle:', handle);
     const newHeight =
       handle === 'n' ? Math.max(minSize, height - dy) : Math.max(minSize, height + dy);
     newSize = newHeight * aspectRatio;
 
+    // Calculate centered X, then clamp to bounds
     newX = x + (width - newSize) / 2;
+    if (newX < 0) {
+      newX = 0;
+    } else if (newX + newSize > imageBounds.width) {
+      newX = imageBounds.width - newSize;
+      if (newX < 0) {
+        newX = 0;
+        newSize = imageBounds.width;
+      }
+    }
+
     if (handle === 'n') {
       newY = y + height - newHeight;
+      // Constrain to top boundary
+      if (newY < 0) {
+        const constrainedHeight = y + height;
+        newSize = constrainedHeight * aspectRatio;
+        newY = 0;
+        newX = x + (width - newSize) / 2;
+        if (newX < 0) newX = 0;
+      }
+    } else {
+      // Constrain to bottom boundary
+      if (newY + newSize / aspectRatio > imageBounds.height) {
+        newSize = (imageBounds.height - newY) * aspectRatio;
+        newX = x + (width - newSize) / 2;
+        if (newX < 0) newX = 0;
+      }
     }
   } else {
+    console.log('Resizing from horizontal handle:', handle);
     const newWidth = handle === 'w' ? Math.max(minSize, width - dx) : Math.max(minSize, width + dx);
     newSize = newWidth;
 
+    // Calculate centered Y, then clamp to bounds
     newY = y + (height - newSize / aspectRatio) / 2;
+    if (newY < 0) {
+      newY = 0;
+    } else if (newY + newSize / aspectRatio > imageBounds.height) {
+      newY = imageBounds.height - newSize / aspectRatio;
+      if (newY < 0) {
+        newY = 0;
+        newSize = imageBounds.height * aspectRatio;
+      }
+    }
+
     if (handle === 'w') {
       newX = x + width - newWidth;
+      if (newX < 0) {
+        newSize = x + width;
+        newX = 0;
+        newY = y + (height - newSize / aspectRatio) / 2;
+        if (newY < 0) newY = 0;
+      }
+    } else {
+      // Constrain to right boundary
+      if (newX + newSize > imageBounds.width) {
+        newSize = imageBounds.width - newX;
+        newY = y + (height - newSize / aspectRatio) / 2;
+        if (newY < 0) newY = 0;
+      }
     }
   }
+
+  newSize = Math.max(minSize, newSize);
 
   return {
     x: newX,
@@ -154,6 +237,19 @@ function resizeWithAspectRatio(
     width: newSize,
     height: newSize / aspectRatio,
   };
+}
+
+function moveCoordinate(cord: number, prevSize: number, newSize: number): number {
+  return Math.min(cord + (prevSize - newSize) / 2, 0);
+}
+
+function calculateOppositeDimension(
+  currDimension: 'h' | 'w',
+  dimension: number,
+  aspectRatio: number
+): number {
+  const result = currDimension === 'h' ? dimension * aspectRatio : dimension / aspectRatio;
+  return Math.round(result); // Keeps pixels whole
 }
 
 /**
@@ -165,36 +261,74 @@ function resizeFree(
   dx: number,
   dy: number,
   minSize: number,
-  imageBounds: { width: number; height: number }
+  imageBounds: Rectangle
 ): BoundingBox {
-  const { x, y, width, height } = startBox;
-  const newBox = { ...startBox };
+  let updates: Partial<BoundingBox> = {};
+  const ydir = handle.includes('n') ? 'n' : handle.includes('s') ? 's' : null;
+  const xdir = handle.includes('w') ? 'w' : handle.includes('e') ? 'e' : null;
 
-  if (handle.includes('n')) {
-    const bottom = y + height;
-    const clampedTop = Math.max(0, y + dy);
-    const clampedHeight = Math.max(minSize, bottom - clampedTop);
-    newBox.y = bottom - clampedHeight;
-    newBox.height = clampedHeight;
+  if (ydir) {
+    updates = resizeY(startBox, dy, minSize, imageBounds.height, ydir);
   }
 
-  if (handle.includes('s')) {
-    const clampedHeight = Math.max(minSize, Math.min(height + dy, imageBounds.height - y));
-    newBox.height = clampedHeight;
+  if (xdir) {
+    updates = {
+      ...updates,
+      ...resizeX(startBox, dx, minSize, imageBounds.width, xdir),
+    };
   }
 
-  if (handle.includes('w')) {
-    const right = x + width;
-    const clampedLeft = Math.max(0, x + dx);
-    const clampedWidth = Math.max(minSize, right - clampedLeft);
-    newBox.x = right - clampedWidth;
-    newBox.width = clampedWidth;
+  return { ...startBox, ...updates };
+}
+
+function resizeY(
+  start: BoundingBox,
+  dy: number,
+  minSize: number,
+  imageHeight: number,
+  direction: 'n' | 's'
+): Partial<Pick<BoundingBox, 'height' | 'y'>> {
+  const { y: top, height } = start;
+
+  if (direction === 's') {
+    const nh = height + dy;
+    return {
+      height: clamp(nh, minSize, imageHeight - top),
+    };
   }
 
-  if (handle.includes('e')) {
-    const clampedWidth = Math.max(minSize, Math.min(width + dx, imageBounds.width - x));
-    newBox.width = clampedWidth;
+  const boxBottom = top + height;
+  const clampedTop = Math.max(0, top + dy);
+  const clampedHeight = Math.max(minSize, boxBottom - clampedTop);
+
+  return {
+    y: boxBottom - clampedHeight,
+    height: clampedHeight,
+  };
+}
+
+function resizeX(
+  start: BoundingBox,
+  dx: number,
+  minSize: number,
+  imageWidth: number,
+  direction: 'w' | 'e'
+): Partial<Pick<BoundingBox, 'width' | 'x'>> {
+  const { x: left, width } = start;
+
+  if (direction === 'e') {
+    const nx = width + dx;
+    return {
+      width: clamp(nx, minSize, imageWidth - left),
+    };
   }
 
-  return newBox;
+  const right = left + width;
+  const clampedLeft = Math.max(0, left + dx);
+  const clampedWidth = Math.max(minSize, right - clampedLeft);
+
+  return {
+    x: right - clampedWidth,
+    width: clampedWidth,
+  };
 }

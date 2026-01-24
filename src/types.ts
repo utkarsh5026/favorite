@@ -112,9 +112,33 @@ export interface LivePreviewMessage {
   imageUrl: string | null;
   /** Pre-processed 64px image data URL ready for display (includes shape masking) */
   processedImageUrl?: string;
-  imageInfo?: {
-    width: number;
-    height: number;
+  imageInfo?: Rectangle & {
     imageType: string;
   };
 }
+
+/**
+ * Represents rectangular dimensions
+ */
+export type Rectangle = {
+  /** Width in pixels */
+  width: number;
+  /** Height in pixels */
+  height: number;
+};
+
+/**
+ * Represents a 2D coordinate position
+ */
+export type Position = {
+  /** Horizontal position (x-coordinate) */
+  x: number;
+  /** Vertical position (y-coordinate) */
+  y: number;
+};
+
+/**
+ * Combines rectangular dimensions with position coordinates.
+ * Useful for representing positioned rectangular areas (e.g., crop regions, bounding boxes).
+ */
+export type RectangleWithPosition = Rectangle & Position;

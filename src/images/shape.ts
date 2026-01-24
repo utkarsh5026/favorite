@@ -1,7 +1,7 @@
 import type { FaviconShape } from '../types';
 import { byID, setupCanvas } from '../utils';
 import { convertToDataUrl } from './canvas';
-import { getClipper } from './clip';
+import { getClipper, getCenteredClipper } from './clip';
 
 const IMAGE_MIME_TYPE = 'image/png';
 
@@ -17,6 +17,25 @@ export function createShapeClipPath(
   shape: FaviconShape
 ): void {
   return getClipper(shape)(ctx, size);
+}
+
+/**
+ * Creates a shape clip path centered at the specified position.
+ * Used for shape manipulation with custom position and scale.
+ * @param ctx - The canvas rendering context
+ * @param centerX - Center X position in canvas coordinates
+ * @param centerY - Center Y position in canvas coordinates
+ * @param size - Size of the shape in pixels
+ * @param shape - The shape type
+ */
+export function createCenteredShapeClipPath(
+  ctx: CanvasRenderingContext2D,
+  centerX: number,
+  centerY: number,
+  size: number,
+  shape: FaviconShape
+): void {
+  return getCenteredClipper(shape)(ctx, centerX, centerY, size);
 }
 
 /**

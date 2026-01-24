@@ -1,8 +1,8 @@
 import { useCurrentImageUrl } from '../image';
 import { useEditorStore, useUIStore } from '@/popup/stores';
 import { useCallback, useState } from 'react';
-import { RotationDegrees, FlipDirection } from './types';
-import { CropData } from '@/popup/editor/crop';
+import type { RotationDegrees, FlipDirection } from './types';
+import type { RectangleWithPosition } from '@/types';
 import { useRotate } from './useRotate';
 import { useFlip } from './useFlip';
 import { useCrop } from '../crop/useCrop';
@@ -60,7 +60,7 @@ export function useImageTransform() {
   );
 
   const cropImage = useCallback(
-    async (cropData: CropData) => {
+    async (cropData: RectangleWithPosition) => {
       if (!currentImageUrl) return;
       await transform(() => cropTransform(currentImageUrl, cropData), 'Failed to crop image');
     },

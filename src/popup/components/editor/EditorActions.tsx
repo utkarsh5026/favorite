@@ -4,8 +4,8 @@ import { Download, Eye, Star } from 'lucide-react';
 import { downloadImage } from '@/utils';
 import { saveFaviconZIP } from '@/favicons';
 import { getCurrentTab, CONTEXT_MENU } from '@/extension';
-import { useEditorStore, usePreviewStore, useUIStore } from '@/popup/stores';
-import { applyShapeToImage } from '../../editor/transforms';
+import { usePreviewStore, useUIStore } from '@/popup/stores';
+import { useShape, useCurrentImageUrl, useShapeInfo } from '@/popup/hooks';
 import { useEditorPreview } from '@/popup/hooks';
 
 interface ActionButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -30,9 +30,10 @@ const ActionButton: React.FC<ActionButtonProps> = ({
         text-xs font-semibold
         cursor-pointer transition-all duration-200
         disabled:opacity-40 disabled:cursor-not-allowed
-        ${isActive
-          ? 'bg-green-500 border-green-500 text-white hover:bg-green-600 hover:border-green-600'
-          : 'bg-white/5 border border-white/12 text-text-secondary hover:bg-white/8 hover:border-white/25'
+        ${
+          isActive
+            ? 'bg-green-500 border-green-500 text-white hover:bg-green-600 hover:border-green-600'
+            : 'bg-white/5 border border-white/12 text-text-secondary hover:bg-white/8 hover:border-white/25'
         }
         ${className}
       `}
@@ -43,12 +44,11 @@ const ActionButton: React.FC<ActionButtonProps> = ({
       {children}
     </button>
   );
-}
+};
 
 export function EditorActions() {
-  const currentImageUrl = useEditorStore((s) => s.currentImageUrl);
-  const currentShape = useEditorStore((s) => s.currentShape);
-  const shapeManipulation = useEditorStore((s) => s.shapeManipulation);
+  const currentImageUrl = useCurrentImageUrl();
+  const { currentShape, shapeManipulation } = useShapeInfo();
 
   const { livePreviewEnabled, toggleLivePreview, showStatus } = useUIStore();
   const currentHostname = usePreviewStore((s) => s.currentHostname);
@@ -56,12 +56,14 @@ export function EditorActions() {
   const [isDownloading, setIsDownloading] = useState(false);
   const [isApplying, setIsApplying] = useState(false);
 
+  const applyShape = useShape();
+
   useEditorPreview();
 
   const getCurrentImage = useCallback(async (): Promise<string | null> => {
     if (!currentImageUrl) return null;
-    return applyShapeToImage(currentImageUrl, currentShape, shapeManipulation);
-  }, [currentImageUrl, currentShape, shapeManipulation]);
+    return applyShape(currentImageUrl, currentShape, shapeManipulation);
+  }, [currentImageUrl, currentShape, shapeManipulation, applyShape]);
 
   const handleDownload = useCallback(async () => {
     const imageUrl = await getCurrentImage();

@@ -1034,91 +1034,44 @@ input[type='range']::-moz-range-thumb {
   transform: translate(-50%, -50%) scale(1.2);
 }
 
-/* Handle cursor overrides */
+/* Handle positioning and cursor overrides */
 .shape-handle-nw {
+  top: 0;
+  left: 0;
   cursor: nw-resize;
 }
 .shape-handle-n {
+  top: 0;
+  left: 50%;
   cursor: n-resize;
 }
 .shape-handle-ne {
+  top: 0;
+  left: 100%;
   cursor: ne-resize;
 }
 .shape-handle-e {
+  top: 50%;
+  left: 100%;
   cursor: e-resize;
 }
 .shape-handle-se {
+  top: 100%;
+  left: 100%;
   cursor: se-resize;
 }
 .shape-handle-s {
+  top: 100%;
+  left: 50%;
   cursor: s-resize;
 }
 .shape-handle-sw {
+  top: 100%;
+  left: 0;
   cursor: sw-resize;
 }
 .shape-handle-w {
+  top: 50%;
+  left: 0;
   cursor: w-resize;
-}
-
-/* Shape action buttons */
-.shape-actions {
-  position: absolute;
-  bottom: -44px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  gap: 8px;
-  background: rgba(20, 20, 22, 0.95);
-  padding: 6px;
-  border-radius: 8px;
-  border: 1px solid var(--color-border-medium);
-  z-index: 10;
-}
-
-.shape-action-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  padding: 0;
-  border: 1px solid var(--color-border-medium);
-  background: var(--color-bg-tertiary);
-  color: var(--color-text-primary);
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.shape-action-btn:hover {
-  background: var(--color-bg-secondary);
-}
-
-.shape-action-btn svg {
-  width: 18px;
-  height: 18px;
-}
-
-.shape-action-btn.primary {
-  background: var(--color-accent-green);
-  border-color: var(--color-accent-green);
-  color: #000;
-}
-
-.shape-action-btn.primary:hover {
-  background: #90ee90;
-}
-
-.shape-cancel-btn:hover {
-  background: rgba(255, 100, 100, 0.25);
-  border-color: rgba(255, 100, 100, 0.5);
-}
-
-/* Shape overlay dragging state */
-.shape-overlay.dragging .shape-selection {
-  cursor: grabbing;
-}
-
-.shape-overlay.dragging .shape-handle {
-  pointer-events: none;
 }

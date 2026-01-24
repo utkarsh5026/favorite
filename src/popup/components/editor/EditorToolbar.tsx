@@ -112,45 +112,30 @@ export function EditorToolbar({ disabled = false }: EditorToolbarProps) {
           break;
       }
     },
-    [
-      undo,
-      redo,
-      rotate,
-      flip,
-      enterCropMode,
-      resetToOriginal,
-    ]
+    [undo, redo, rotate, flip, enterCropMode, resetToOriginal]
   );
 
   const isButtonDisabled = useCallback(
     (id: string) => {
       if (disabled) return true;
-      if (id === 'undo') return !canUndo;
-      if (id === 'redo') return !canRedo;
+      if (id === 'undo') return !canUndo();
+      if (id === 'redo') return !canRedo();
       return false;
     },
     [disabled, canUndo, canRedo]
   );
 
-  let lastGroup: string | undefined;
-
   return (
-    <div
-      id="toolbarButtons"
-      className="flex items-center gap-1.5 flex-wrap mb-4"
-    >
-      {TOOLBAR_BUTTONS.map((btn) => {
-        const showDivider = lastGroup && btn.group !== lastGroup;
-        lastGroup = btn.group;
+    <div id="toolbarButtons" className="flex items-center gap-1.5 flex-wrap">
+      {TOOLBAR_BUTTONS.map((btn, index) => {
+        const showDivider = index > 0 && TOOLBAR_BUTTONS[index - 1].group !== btn.group;
 
         return (
           <div key={btn.id} className="contents">
-            {showDivider && (
-              <div className="w-px h-5 bg-white/10 mx-1" />
-            )}
+            {showDivider && <div className="w-px h-5 bg-white/10 mx-1" />}
             <button
               id={`editor${capitalize(btn.id)}`}
-              className="flex items-center justify-center w-7 h-7 rounded-md bg-white/3 border border-white/10 cursor-pointer transition-all duration-200 hover:enabled:bg-white/6 hover:enabled:border-white/20 disabled:opacity-40 disabled:cursor-not-allowed"
+              className={`flex items-center justify-center w-7 h-7 rounded-md bg-white/3 border border-white/10 cursor-pointer transition-all duration-200 hover:enabled:bg-white/6 hover:enabled:border-white/20 disabled:opacity-40 disabled:cursor-not-allowed${btn.id === 'reset' ? ' ml-auto' : ''}`}
               title={btn.title}
               disabled={isButtonDisabled(btn.id)}
               onClick={() => handleClick(btn.id)}

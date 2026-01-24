@@ -1,7 +1,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { getCurrentTab, CONTEXT_MENU } from '@/extension';
 import { usePreviewStore, useUIStore } from '@/popup/stores';
-import { useShape, useShapeInfo } from '../editor';
+import { useShape, useShapeInfo } from '../shape';
 import { useCurrentImageUrl } from '../image';
 import { clearTimeoutIfExists } from '@/utils';
 

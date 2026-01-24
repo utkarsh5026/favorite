@@ -1,6 +1,6 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
 import { downloadImage } from '@/utils';
-import { useShape } from './editor';
+import { useShape } from './shape';
 import {
   CHECKED_SQUARE_SIZE,
   EMPTY_CANVAS_SIZE,

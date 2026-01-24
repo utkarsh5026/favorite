@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { Download, Pencil } from 'lucide-react';
-import { useUIStore } from '@/popup/stores';
+import { useUIStore, useEditorStore } from '@/popup/stores';
 import { getFaviconDirectlyFromTab } from '@/extension';
 import { saveFaviconZIP } from '@/favicons';
 import { PreviewBox } from '../common/PreviewBox';
@@ -9,6 +9,7 @@ import { useCurrentFavicon } from '@/popup/hooks';
 export function DownloadSection() {
   const { currentFaviconUrl, setCurrentFavicon } = useCurrentFavicon();
   const switchToTab = useUIStore((state) => state.switchToTab);
+  const loadImage = useEditorStore((state) => state.loadImage);
   const [isLoading, setIsLoading] = useState(true);
   const [imageSize, setImageSize] = useState<{ width: number; height: number } | null>(null);
   const imageElementRef = useRef<HTMLImageElement | null>(null);
@@ -53,7 +54,10 @@ export function DownloadSection() {
     }
   };
 
-  const handleEdit = () => {
+  const handleEdit = async () => {
+    if (currentFaviconUrl) {
+      await loadImage(currentFaviconUrl);
+    }
     switchToTab('editor');
   };
 
@@ -88,7 +92,7 @@ export function DownloadSection() {
         <button
           className={`${buttonBaseClasses} disabled:opacity-50 disabled:cursor-not-allowed`}
           onClick={handleDownload}
-          disabled={!currentFaviconUrl || !imageElementRef.current}
+          disabled={!currentFaviconUrl || !imageSize}
           title="Download favicon as ZIP with multiple sizes"
         >
           <Download className="w-3.5 h-3.5" strokeWidth={2} />

@@ -1,17 +1,18 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import type { DragType, Point } from '@/popup/editor/overlay/types';
+import type { DragType } from '@/popup/editor/overlay/types';
+import { Position } from '@/types';
 import { addListeners } from '@/utils';
 
 export interface UseOverlayDragOptions<TState> {
   /** Initial state for the overlay */
   initialState: TState;
   /** Called during drag to compute new state from delta */
-  onDragMove: (dragType: DragType, delta: Point, startState: TState) => TState;
+  onDragMove: (dragType: DragType, delta: Position, startState: TState) => TState;
   /** Called to get mouse position relative to container */
   getMousePosition: (
     e: MouseEvent,
     containerRef: React.RefObject<HTMLElement | null>
-  ) => Point;
+  ) => Position;
   /** Container element ref for coordinate calculations */
   containerRef: React.RefObject<HTMLElement | null>;
 }
@@ -45,7 +46,7 @@ export function useOverlayDrag<TState>({
   const [isDragging, setIsDragging] = useState(false);
   const [dragType, setDragType] = useState<DragType>(null);
 
-  const dragStartRef = useRef<Point>({ x: 0, y: 0 });
+  const dragStartRef = useRef<Position>({ x: 0, y: 0 });
   const stateStartRef = useRef<TState>(initialState);
 
   const startDrag = useCallback(
@@ -79,7 +80,7 @@ export function useOverlayDrag<TState>({
       if (!container) return;
 
       const current = getMousePosition(e, containerRef);
-      const delta: Point = {
+      const delta: Position = {
         x: current.x - dragStartRef.current.x,
         y: current.y - dragStartRef.current.y,
       };

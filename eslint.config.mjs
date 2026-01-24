@@ -67,6 +67,7 @@ export default tseslint.config(
       ],
       '@typescript-eslint/no-explicit-any': 'warn',
       'no-console': 'off',
+      'react/prop-types': 'off',
     },
   },
   {

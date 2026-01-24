@@ -20,12 +20,6 @@ export const HANDLE_POSITIONS: HandlePosition[] = ['nw', 'n', 'ne', 'e', 'se', '
  */
 export type DragType = 'move' | HandlePosition | null;
 
-/** Point in 2D space (pixels) */
-export interface Point {
-  x: number;
-  y: number;
-}
-
 /** Bounding box in display coordinates */
 export interface DisplayBoundingBox {
   left: number;

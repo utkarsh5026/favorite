@@ -11,11 +11,6 @@ export interface FullBoundingBoxConfig extends BoundingBoxConfig {
   imageBounds: Rectangle;
 }
 
-type Change = {
-  dx: number;
-  dy: number;
-};
-
 /**
  * Clamps a value between minimum and maximum bounds.
  */
@@ -93,15 +88,14 @@ export function resizeBox(
   const { aspectRatio, minSize, imageBounds } = config;
 
   const newBox = aspectRatio
-    ? resizeWithAspectRatio(handle, startBox, dx, dy, aspectRatio, minSize, imageBounds)
+    ? resizeWithAspectRatio(handle, startBox, dx, dy, aspectRatio, minSize)
     : resizeFree(handle, startBox, dx, dy, minSize, imageBounds);
 
   return constrainBox(newBox, config);
 }
 
 /**
- * Resize with aspect ratio constraint (for shapes).
- * Handles boundary constraints during resize to prevent overflow.
+ * Main Resize Function
  */
 function resizeWithAspectRatio(
   handle: HandlePosition,
@@ -110,146 +104,92 @@ function resizeWithAspectRatio(
   dy: number,
   aspectRatio: number,
   minSize: number,
-  imageBounds: Rectangle
 ): BoundingBox {
-  const { x, y, width, height } = startBox;
+  // 1. Identify Handle Type
   const isCorner = handle.length === 2;
+  const isVertical = handle === 'n' || handle === 's';
+  const isHorizontal = handle === 'w' || handle === 'e';
+
+  let newBox = { ...startBox };
+
+  if (isCorner) {
+    newBox = resizeCorner(handle, startBox, dx, dy, aspectRatio, minSize);
+  } else if (isVertical) {
+    newBox = resizeVerticalEdge(handle, startBox, dy, aspectRatio, minSize);
+  } else if (isHorizontal) {
+    newBox = resizeHorizontalEdge(handle, startBox, dx, aspectRatio, minSize);
+  }
+  return newBox;
+}
+
+function resizeCorner(
+  handle: string,
+  box: BoundingBox,
+  dx: number,
+  dy: number,
+  ratio: number,
+  minSize: number
+): BoundingBox {
+  const { width, height, x, y } = box;
   const isLeft = handle.includes('w');
   const isTop = handle.includes('n');
 
-  let newSize: number;
-  let newX = x;
-  let newY = y;
+  const hDelta = isLeft ? -dx : dx;
+  const vDelta = isTop ? -dy : dy;
+  const delta = Math.abs(hDelta) > Math.abs(vDelta) ? hDelta : vDelta;
 
-  if (isCorner) {
-    console.log('Resizing from corner handle:', handle);
-    const horizontalDelta = isLeft ? -dx : dx;
-    const verticalDelta = isTop ? -dy : dy;
-
-    const delta =
-      Math.abs(horizontalDelta) > Math.abs(verticalDelta) ? horizontalDelta : verticalDelta;
-
-    newSize = Math.max(minSize, width + delta);
-
-    if (isLeft) {
-      newX = x + width - newSize;
-      // Constrain to left boundary
-      if (newX < 0) {
-        newSize = x + width;
-        newX = 0;
-      }
-    }
-    if (isTop) {
-      newY = y + height - newSize;
-      // Constrain to top boundary
-      if (newY < 0) {
-        newSize = Math.min(newSize, y + height);
-        newY = 0;
-        if (isLeft) {
-          newX = x + width - newSize;
-        }
-      }
-    }
-    // Constrain to right boundary
-    if (!isLeft && newX + newSize > imageBounds.width) {
-      newSize = imageBounds.width - newX;
-    }
-    // Constrain to bottom boundary
-    if (!isTop && newY + newSize / aspectRatio > imageBounds.height) {
-      newSize = (imageBounds.height - newY) * aspectRatio;
-    }
-  } else if (handle === 'n' || handle === 's') {
-    console.log('Resizing from vertical handle:', handle);
-    const newHeight =
-      handle === 'n' ? Math.max(minSize, height - dy) : Math.max(minSize, height + dy);
-    newSize = newHeight * aspectRatio;
-
-    // Calculate centered X, then clamp to bounds
-    newX = x + (width - newSize) / 2;
-    if (newX < 0) {
-      newX = 0;
-    } else if (newX + newSize > imageBounds.width) {
-      newX = imageBounds.width - newSize;
-      if (newX < 0) {
-        newX = 0;
-        newSize = imageBounds.width;
-      }
-    }
-
-    if (handle === 'n') {
-      newY = y + height - newHeight;
-      // Constrain to top boundary
-      if (newY < 0) {
-        const constrainedHeight = y + height;
-        newSize = constrainedHeight * aspectRatio;
-        newY = 0;
-        newX = x + (width - newSize) / 2;
-        if (newX < 0) newX = 0;
-      }
-    } else {
-      // Constrain to bottom boundary
-      if (newY + newSize / aspectRatio > imageBounds.height) {
-        newSize = (imageBounds.height - newY) * aspectRatio;
-        newX = x + (width - newSize) / 2;
-        if (newX < 0) newX = 0;
-      }
-    }
-  } else {
-    console.log('Resizing from horizontal handle:', handle);
-    const newWidth = handle === 'w' ? Math.max(minSize, width - dx) : Math.max(minSize, width + dx);
-    newSize = newWidth;
-
-    // Calculate centered Y, then clamp to bounds
-    newY = y + (height - newSize / aspectRatio) / 2;
-    if (newY < 0) {
-      newY = 0;
-    } else if (newY + newSize / aspectRatio > imageBounds.height) {
-      newY = imageBounds.height - newSize / aspectRatio;
-      if (newY < 0) {
-        newY = 0;
-        newSize = imageBounds.height * aspectRatio;
-      }
-    }
-
-    if (handle === 'w') {
-      newX = x + width - newWidth;
-      if (newX < 0) {
-        newSize = x + width;
-        newX = 0;
-        newY = y + (height - newSize / aspectRatio) / 2;
-        if (newY < 0) newY = 0;
-      }
-    } else {
-      // Constrain to right boundary
-      if (newX + newSize > imageBounds.width) {
-        newSize = imageBounds.width - newX;
-        newY = y + (height - newSize / aspectRatio) / 2;
-        if (newY < 0) newY = 0;
-      }
-    }
-  }
-
-  newSize = Math.max(minSize, newSize);
+  const newSize = Math.max(minSize, width + delta);
 
   return {
-    x: newX,
-    y: newY,
     width: newSize,
-    height: newSize / aspectRatio,
+    height: newSize / ratio,
+    x: isLeft ? x + width - newSize : x,
+    y: isTop ? y + height - (newSize / ratio) : y
   };
 }
 
-function moveCoordinate(cord: number, prevSize: number, newSize: number): number {
-  return Math.min(cord + (prevSize - newSize) / 2, 0);
+function resizeVerticalEdge(
+  handle: string,
+  box: BoundingBox,
+  dy: number,
+  ratio: number,
+  minSize: number
+): BoundingBox {
+  const { x, y, width, height } = box;
+  const newHeight = handle === 'n'
+    ? Math.max(minSize, height - dy)
+    : Math.max(minSize, height + dy);
+
+  const newWidth = newHeight * ratio;
+
+  return {
+    width: newWidth,
+    height: newHeight,
+    x: x + (width - newWidth) / 2,
+    y: handle === 'n' ? y + height - newHeight : y
+  };
 }
 
-function calculateOppositeDimension(
-  currDimension: 'h' | 'w',
-  dimension: number,
-  aspectRatio: number
-): number {
-  const result = currDimension === 'h' ? dimension * aspectRatio : dimension / aspectRatio;
-  return Math.round(result); // Keeps pixels whole
+function resizeHorizontalEdge(
+  handle: string,
+  box: BoundingBox,
+  dx: number,
+  ratio: number,
+  minSize: number
+): BoundingBox {
+  const { width, height, x, y } = box;
+  const newWidth = handle === 'w'
+    ? Math.max(minSize, width - dx)
+    : Math.max(minSize, width + dx);
+
+  const newHeight = newWidth / ratio;
+
+  return {
+    width: newWidth,
+    height: newHeight,
+    x: handle === 'w' ? x + width - newWidth : x,
+    y: y + (height - newHeight) / 2
+  };
 }
 
 /**

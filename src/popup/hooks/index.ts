@@ -4,7 +4,7 @@ export { useCanvasRenderer } from './useCanvasRenderer';
 export { useKeyboardShortcuts } from './useKeyboardShortcuts';
 export { useImageUpload } from './useImageUpload';
 export { useEditorPreview, useLivePreview } from './preview';
-export { useHistory, useImageTransform } from './editor';
+export { useHistory, useImageTransform, useOverlayKeyboard } from './editor';
 export { useCropOverlay, useCrop } from './crop';
 export {
   useShapeOverlay,

@@ -39,7 +39,9 @@
   --color-border-strong: rgba(255, 255, 255, 0.15);
 
   /* Fonts */
-  --font-mono: CascadiaCode, 'Cascadia Code', CascadiaMono, 'Cascadia Mono', 'Fira Code', 'JetBrains Mono', Consolas, Monaco, 'Courier New', monospace;
+  --font-mono:
+    CascadiaCode, 'Cascadia Code', CascadiaMono, 'Cascadia Mono', 'Fira Code', 'JetBrains Mono',
+    Consolas, Monaco, 'Courier New', monospace;
   --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 
   /* Font sizes */
@@ -173,6 +175,18 @@ input[type='range']::-moz-range-thumb {
   }
 }
 
+@keyframes pulseScale {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.8);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
 /* Animation utility classes */
 .animate-rotate {
   animation: rotate 0.8s linear infinite;
@@ -192,6 +206,10 @@ input[type='range']::-moz-range-thumb {
 
 .animate-live {
   animation: livePulse 1.5s ease-in-out infinite;
+}
+
+.animate-pulse-scale {
+  animation: pulseScale 0.3s ease-out;
 }
 
 /* ============================================
@@ -330,8 +348,20 @@ input[type='range']::-moz-range-thumb {
 
 /* Upload zone drag-over state */
 .upload-zone.drag-over {
-  border-color: #78dc96;
-  background: rgba(120, 220, 150, 0.05);
+  border-color: var(--color-accent-green) !important;
+  border-style: solid !important;
+  background: rgba(120, 220, 150, 0.08) !important;
+  box-shadow: 0 0 0 4px rgba(120, 220, 150, 0.1);
+}
+
+.upload-zone.drag-over > div:first-child {
+  background: rgba(120, 220, 150, 0.15);
+  border-color: rgba(120, 220, 150, 0.3);
+  transform: scale(1.05);
+}
+
+.upload-zone.drag-over > div:first-child svg {
+  color: var(--color-accent-green);
 }
 
 /* Button loading/success states */
@@ -536,10 +566,9 @@ input[type='range']::-moz-range-thumb {
 /* Editor Tab Styles */
 .editor-toolbar {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 0.375rem;
   margin-bottom: 1rem;
-  flex-wrap: wrap;
 }
 
 .editor-toolbar-divider {
@@ -552,6 +581,24 @@ input[type='range']::-moz-range-thumb {
 .editor-toolbar-break {
   flex-basis: 100%;
   height: 0;
+}
+
+#toolbarButtons {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  flex-wrap: wrap;
+}
+
+.shape-selector {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  flex-wrap: wrap;
+}
+
+.reset-btn-right {
+  margin-left: auto !important;
 }
 
 .editor-btn {
@@ -652,70 +699,6 @@ input[type='range']::-moz-range-thumb {
   border-color: rgba(255, 255, 255, 0.3);
 }
 
-/* Editor Actions */
-.editor-actions {
-  display: flex;
-  gap: 0.5rem;
-  margin-top: 1rem;
-}
-
-.editor-action-btn {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 10px 12px;
-  border-radius: 8px;
-  font-size: 11px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.editor-action-btn.primary {
-  background: white;
-  border: none;
-  color: var(--color-text-dark);
-}
-
-.editor-action-btn.primary:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-}
-
-.editor-action-btn.secondary {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--color-border-medium);
-  color: var(--color-text-secondary);
-}
-
-.editor-action-btn.secondary:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.25);
-}
-
-.editor-action-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.editor-action-btn.live-preview-active {
-  background: #22c55e;
-  border-color: #22c55e;
-  color: white;
-}
-
-.editor-action-btn.live-preview-active:hover:not(:disabled) {
-  background: #16a34a;
-  border-color: #16a34a;
-}
-
-.editor-action-btn svg {
-  width: 14px;
-  height: 14px;
-  stroke: currentColor;
-}
 
 /* Editor Empty State */
 .editor-empty {
@@ -779,4 +762,316 @@ input[type='range']::-moz-range-thumb {
     var(--checker-dark) 0
   );
   background-size: calc(var(--checker-size) * 2) calc(var(--checker-size) * 2);
+}
+
+/* ============================================
+   Crop Overlay Styles
+   ============================================ */
+
+.crop-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  pointer-events: auto;
+}
+
+/* Dark masks around the crop selection */
+.crop-mask {
+  position: absolute;
+  background: rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+}
+
+/* Crop selection box */
+.crop-selection {
+  position: absolute;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5);
+  cursor: move;
+  box-sizing: border-box;
+}
+
+/* Grid lines (rule of thirds) */
+.crop-grid {
+  position: absolute;
+  background: rgba(255, 255, 255, 0.3);
+  pointer-events: none;
+}
+
+.crop-grid-h1,
+.crop-grid-h2 {
+  left: 0;
+  right: 0;
+  height: 1px;
+}
+
+.crop-grid-h1 {
+  top: 33.33%;
+}
+
+.crop-grid-h2 {
+  top: 66.66%;
+}
+
+.crop-grid-v1,
+.crop-grid-v2 {
+  top: 0;
+  bottom: 0;
+  width: 1px;
+}
+
+.crop-grid-v1 {
+  left: 33.33%;
+}
+
+.crop-grid-v2 {
+  left: 66.66%;
+}
+
+/* Crop handles */
+.crop-handle {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background: #fff;
+  border: 2px solid #333;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  transform: translate(-50%, -50%);
+  z-index: 10;
+}
+
+/* Corner handles */
+.crop-handle-nw {
+  top: 0;
+  left: 0;
+  cursor: nw-resize;
+}
+
+.crop-handle-ne {
+  top: 0;
+  left: 100%;
+  cursor: ne-resize;
+}
+
+.crop-handle-sw {
+  top: 100%;
+  left: 0;
+  cursor: sw-resize;
+}
+
+.crop-handle-se {
+  top: 100%;
+  left: 100%;
+  cursor: se-resize;
+}
+
+/* Edge handles */
+.crop-handle-n {
+  top: 0;
+  left: 50%;
+  cursor: n-resize;
+}
+
+.crop-handle-s {
+  top: 100%;
+  left: 50%;
+  cursor: s-resize;
+}
+
+.crop-handle-e {
+  top: 50%;
+  left: 100%;
+  cursor: e-resize;
+}
+
+.crop-handle-w {
+  top: 50%;
+  left: 0;
+  cursor: w-resize;
+}
+
+/* Handle hover effect */
+.crop-handle:hover {
+  background: var(--color-accent-green);
+  border-color: #fff;
+  transform: translate(-50%, -50%) scale(1.2);
+}
+
+/* Crop action buttons */
+.crop-actions {
+  position: absolute;
+  bottom: -40px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  z-index: 30;
+}
+
+.crop-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--color-border-medium);
+  background: var(--color-dark);
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.crop-action-btn svg {
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
+}
+
+.crop-action-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+/* Aspect ratio button */
+.crop-aspect-btn.active {
+  background: rgba(120, 220, 150, 0.15);
+  border-color: rgba(120, 220, 150, 0.4);
+  color: var(--color-accent-green);
+}
+
+/* Apply button */
+.crop-apply-btn {
+  background: var(--color-accent-green);
+  border-color: var(--color-accent-green);
+  color: #000;
+}
+
+.crop-apply-btn:hover {
+  background: #60c880;
+  border-color: #60c880;
+}
+
+/* Cancel button */
+.crop-cancel-btn {
+  background: rgba(255, 100, 100, 0.15);
+  border-color: rgba(255, 100, 100, 0.3);
+  color: var(--color-accent-red);
+}
+
+.crop-cancel-btn:hover {
+  background: rgba(255, 100, 100, 0.25);
+  border-color: rgba(255, 100, 100, 0.5);
+}
+
+/* Dragging state */
+.crop-overlay.dragging .crop-selection {
+  cursor: grabbing;
+}
+
+.crop-overlay.dragging .crop-handle {
+  pointer-events: none;
+}
+
+/* ============================================================================
+   Shape Overlay Styles
+   Interactive shape manipulation overlay with SVG mask and drag handles
+   ============================================================================ */
+
+.shape-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 100;
+  pointer-events: none;
+}
+
+.shape-mask-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.shape-selection {
+  position: absolute;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5);
+  cursor: move;
+  pointer-events: auto;
+  box-sizing: border-box;
+}
+
+.shape-selection.dragging {
+  cursor: grabbing;
+}
+
+/* Shape handles - 8 point resize system */
+.shape-handle {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background: #fff;
+  border: 2px solid var(--color-accent-green);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: auto;
+  transition: all 0.15s ease;
+  z-index: 10;
+}
+
+.shape-handle:hover {
+  background: var(--color-accent-green);
+  transform: translate(-50%, -50%) scale(1.2);
+}
+
+/* Handle positioning and cursor overrides */
+.shape-handle-nw {
+  top: 0;
+  left: 0;
+  cursor: nw-resize;
+}
+.shape-handle-n {
+  top: 0;
+  left: 50%;
+  cursor: n-resize;
+}
+.shape-handle-ne {
+  top: 0;
+  left: 100%;
+  cursor: ne-resize;
+}
+.shape-handle-e {
+  top: 50%;
+  left: 100%;
+  cursor: e-resize;
+}
+.shape-handle-se {
+  top: 100%;
+  left: 100%;
+  cursor: se-resize;
+}
+.shape-handle-s {
+  top: 100%;
+  left: 50%;
+  cursor: s-resize;
+}
+.shape-handle-sw {
+  top: 100%;
+  left: 0;
+  cursor: sw-resize;
+}
+.shape-handle-w {
+  top: 50%;
+  left: 0;
+  cursor: w-resize;
 }

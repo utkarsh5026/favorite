@@ -4,6 +4,7 @@
  */
 
 import { loadSettings } from './settings';
+import { setItems } from './storage';
 
 /**
  * Gets the hostname of the current active tab
@@ -49,7 +50,7 @@ export async function toggleSite(hostname: string) {
     disabledSites.splice(index, 1);
   }
 
-  await chrome.storage.sync.set({ disabledSites });
+  await setItems({ disabledSites }, 'sync');
   return index === -1;
 }
 

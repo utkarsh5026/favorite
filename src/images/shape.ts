@@ -1,6 +1,7 @@
 import type { FaviconShape } from '../types';
 import { byID, setupCanvas } from '../utils';
 import { convertToDataUrl } from './canvas';
+import { getClipper, getCenteredClipper } from './clip';
 
 const IMAGE_MIME_TYPE = 'image/png';
 
@@ -15,36 +16,26 @@ export function createShapeClipPath(
   size: number,
   shape: FaviconShape
 ): void {
-  const center = size / 2;
-  const radius = size / 2;
+  return getClipper(shape)(ctx, size);
+}
 
-  switch (shape) {
-    case 'circle':
-      ctx.arc(center, center, radius, 0, Math.PI * 2);
-      break;
-    case 'rounded':
-      const cornerRadius = size * 0.2;
-      const lineLength = size - cornerRadius;
-
-      ctx.moveTo(cornerRadius, 0);
-
-      ctx.lineTo(lineLength, 0);
-      ctx.quadraticCurveTo(size, 0, size, cornerRadius);
-
-      ctx.lineTo(size, lineLength);
-      ctx.quadraticCurveTo(size, size, lineLength, size);
-
-      ctx.lineTo(cornerRadius, size);
-      ctx.quadraticCurveTo(0, size, 0, lineLength);
-
-      ctx.lineTo(0, cornerRadius);
-      ctx.quadraticCurveTo(0, 0, cornerRadius, 0);
-      break;
-    case 'square':
-    default:
-      ctx.rect(0, 0, size, size);
-      break;
-  }
+/**
+ * Creates a shape clip path centered at the specified position.
+ * Used for shape manipulation with custom position and scale.
+ * @param ctx - The canvas rendering context
+ * @param centerX - Center X position in canvas coordinates
+ * @param centerY - Center Y position in canvas coordinates
+ * @param size - Size of the shape in pixels
+ * @param shape - The shape type
+ */
+export function createCenteredShapeClipPath(
+  ctx: CanvasRenderingContext2D,
+  centerX: number,
+  centerY: number,
+  size: number,
+  shape: FaviconShape
+): void {
+  return getCenteredClipper(shape)(ctx, centerX, centerY, size);
 }
 
 /**

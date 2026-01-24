@@ -1,4 +1,5 @@
 import type { ExtensionConfig, ExtensionState, UserSettings } from './types';
+import { getItem, getItems } from './storage';
 
 export const DEFAULT_SETTINGS: UserSettings = {
   faviconShape: 'circle',
@@ -46,54 +47,44 @@ export const state: ExtensionState = {
  * Loads user settings from chrome. Storage and updates CONFIG
  */
 export async function loadSettings(): Promise<void> {
-  return new Promise((resolve) => {
-    if (typeof chrome === 'undefined' || !chrome.storage) {
-      resolve();
-      return;
-    }
+  if (typeof chrome === 'undefined' || !chrome.storage) {
+    return;
+  }
 
-    chrome.storage.sync.get(DEFAULT_SETTINGS, (result) => {
-      const settings = result as UserSettings;
-      CONFIG.faviconShape = settings.faviconShape;
-      CONFIG.hoverDelay = settings.hoverDelay;
-      CONFIG.restoreDelay = settings.restoreDelay;
-      CONFIG.faviconSize = settings.faviconSize;
-      resolve();
-    });
-  });
+  const keys = Object.keys(DEFAULT_SETTINGS);
+  const result = await getItems<UserSettings>(keys, 'sync', 'Failed to load settings');
+  const { faviconShape, faviconSize, hoverDelay, restoreDelay } = {
+    ...DEFAULT_SETTINGS,
+    ...result,
+  };
+
+  CONFIG.faviconShape = faviconShape;
+  CONFIG.hoverDelay = hoverDelay;
+  CONFIG.restoreDelay = restoreDelay;
+  CONFIG.faviconSize = faviconSize;
 }
 
 /**
  * Checks if the extension is disabled for a given hostname
  */
 export async function isSiteDisabled(hostname: string): Promise<boolean> {
-  return new Promise((resolve) => {
-    if (typeof chrome === 'undefined' || !chrome.storage) {
-      resolve(false);
-      return;
-    }
+  if (typeof chrome === 'undefined' || !chrome.storage) {
+    return false;
+  }
 
-    chrome.storage.sync.get({ disabledSites: [] }, (result) => {
-      const disabledSites = result.disabledSites as string[];
-      resolve(disabledSites.includes(hostname));
-    });
-  });
+  const disabledSites = await getItem<string[]>('disabledSites', [], 'sync');
+  return disabledSites.includes(hostname) ?? false;
 }
 
 /**
  * Checks if the extension is globally enabled
  */
 export async function isExtensionEnabled(): Promise<boolean> {
-  return new Promise((resolve) => {
-    if (typeof chrome === 'undefined' || !chrome.storage) {
-      resolve(true);
-      return;
-    }
+  if (typeof chrome === 'undefined' || !chrome.storage) {
+    return true;
+  }
 
-    chrome.storage.sync.get({ extensionEnabled: true }, (result) => {
-      resolve(result.extensionEnabled as boolean);
-    });
-  });
+  return getItem('extensionEnabled', true, 'sync');
 }
 
 /**

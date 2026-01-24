@@ -2,7 +2,8 @@
  * Types for the image editor
  */
 
-import type { FaviconShape } from './transforms/types';
+import type { FaviconShape } from '@/types';
+import type { ShapeManipulationData } from './shapes/types';
 
 /**
  * State of the image editor
@@ -20,6 +21,8 @@ export interface EditorState {
   maxHistorySize: number;
   /** Current shape for preview and export */
   currentShape: FaviconShape;
+  /** Shape manipulation data (position, scale) - null means default centered */
+  shapeManipulation: ShapeManipulationData | null;
 }
 
 /**

@@ -14,3 +14,4 @@ export {
 export * from './types';
 export * from './state';
 export * from './message';
+export * from './storage';

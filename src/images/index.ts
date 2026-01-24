@@ -1,6 +1,12 @@
 export { clipImageToShape } from './shape';
 export { applyShapeToPreview } from './shape';
-export { resizeImageToBlob, convertToDataUrl } from './canvas';
+export {
+  resizeImageToBlob,
+  convertToDataUrl,
+  getImageAsDataUrl,
+  fetchImageAsDataUrl,
+} from './canvas';
 export { findImage } from './finder';
 export { extractImageData } from './extraction';
 export * from './types';
+export { toDataUrl } from './data-url';

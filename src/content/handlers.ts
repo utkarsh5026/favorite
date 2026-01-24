@@ -3,9 +3,53 @@
  */
 import { CONFIG, state, clearHoverTimeout, clearRestoreTimeout, loadSettings } from '@/extension';
 import { changeFavicon, restoreToDefaultFavicon } from '@/favicons';
-import { findImage, extractImageData, ImageExtractionResult } from '@/images';
+import {
+  findImage,
+  extractImageData,
+  ImageExtractionResult,
+  getImageAsDataUrl,
+  fetchImageAsDataUrl,
+} from '@/images';
+import { addListeners as addEventListeners } from '@/utils';
 import { scriptState } from './state';
-import { broadcastHoverState } from './broadcast';
+
+const BROADCAST_THROTTLE = 100; // ms
+const PREVIEW_SIZE = 64;
+
+/**
+ * Broadcasts hover state to popup via background script
+ * Now includes pre-processed image data for instant display
+ */
+export async function broadcastHoverState(
+  imageUrl: string | null,
+  imageInfo?: { width: number; height: number; imageType: string },
+  imgElement?: HTMLImageElement
+): Promise<void> {
+  const now = Date.now();
+  if (imageUrl && now - scriptState.lastBroadcast < BROADCAST_THROTTLE) return;
+  scriptState.updateLastBroadcast(now);
+
+  const fetchImage = async () => {
+    if (!imgElement) return null;
+    const processedImage = getImageAsDataUrl(imgElement, PREVIEW_SIZE);
+    if (!processedImage && imageUrl && !imageUrl.startsWith('data:')) {
+      return await fetchImageAsDataUrl(imageUrl, PREVIEW_SIZE);
+    }
+    return processedImage;
+  };
+
+  const processedImageUrl = await fetchImage();
+  const message = {
+    type: 'hover-update',
+    imageUrl,
+    processedImageUrl: processedImageUrl || undefined,
+    imageInfo,
+  };
+
+  chrome.runtime.sendMessage(message).catch((error) => {
+    console.log('[Content] Failed to broadcast:', error);
+  });
+}
 
 /**
  * Checks if an element meets minimum size requirements
@@ -20,7 +64,13 @@ function meetsMinimumSize(element: Element): boolean {
  */
 export function handleImageHover(event: MouseEvent): void {
   if (scriptState.isGloballyDisabled || scriptState.isCurrentSiteDisabled) {
-    console.log('[Content] Hover ignored - disabled (global:', scriptState.isGloballyDisabled, 'site:', scriptState.isCurrentSiteDisabled, ')');
+    console.log(
+      '[Content] Hover ignored - disabled (global:',
+      scriptState.isGloballyDisabled,
+      'site:',
+      scriptState.isCurrentSiteDisabled,
+      ')'
+    );
     return;
   }
 
@@ -61,9 +111,7 @@ async function broadcastToPopup(img: Element, imageResult: ImageExtractionResult
   changeFavicon(imageResult.url);
 
   const { width, height } = img.getBoundingClientRect();
-
-  // Load settings to get current shape preference
-  const settings = await loadSettings();
+  await loadSettings();
 
   await broadcastHoverState(
     imageResult.url,
@@ -72,8 +120,7 @@ async function broadcastToPopup(img: Element, imageResult: ImageExtractionResult
       height: Math.round(height),
       imageType: imageResult.type.toUpperCase(),
     },
-    img,
-    settings.faviconShape
+    img as HTMLImageElement
   );
 }
 
@@ -92,18 +139,22 @@ export function handleImageLeave(_event: MouseEvent): void {
   }, CONFIG.restoreDelay);
 }
 
+let cleanupListeners: (() => void) | null = null;
+
 /**
  *  Adds event listeners for mouse events
  */
 export function addListeners() {
-  document.addEventListener('mouseover', handleImageHover);
-  document.addEventListener('mouseout', handleImageLeave);
+  cleanupListeners = addEventListeners(document, {
+    mouseover: handleImageHover,
+    mouseout: handleImageLeave,
+  });
 }
 
 /**
  *  Removes event listeners for mouse events
  */
 export function removeListeners() {
-  document.removeEventListener('mouseover', handleImageHover);
-  document.removeEventListener('mouseout', handleImageLeave);
+  cleanupListeners?.();
+  cleanupListeners = null;
 }

@@ -1,4 +1,4 @@
-import { setupCanvas } from '@/utils';
+import { setupCanvas, loadImage } from '@/utils';
 
 const IMAGE_MIME_TYPE = 'image/png';
 
@@ -17,34 +17,30 @@ export async function convertToDataUrl(
   error?: string;
 }> {
   return new Promise((resolve) => {
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
+    loadImage(
+      imageUrl,
+      (img) => {
+        try {
+          const canvasSize =
+            size || Math.max(img.naturalWidth || img.width, img.naturalHeight || img.height);
+          const canvas = setupCanvas(canvasSize, canvasSize);
 
-    img.onload = () => {
-      try {
-        const canvasSize = size || Math.max(img.naturalWidth || img.width, img.naturalHeight || img.height);
-        const canvas = setupCanvas(canvasSize, canvasSize);
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            resolve({ url: '', error: 'Failed to get canvas context' });
+            return;
+          }
 
-        const ctx = canvas.getContext('2d');
-        if (!ctx) {
-          resolve({ url: '', error: 'Failed to get canvas context' });
-          return;
+          beforeDraw?.(ctx, canvasSize);
+          ctx.drawImage(img, 0, 0, canvasSize, canvasSize);
+          const dataUrl = canvas.toDataURL(IMAGE_MIME_TYPE);
+          resolve({ url: dataUrl });
+        } catch (error) {
+          resolve({ url: '', error: error instanceof Error ? error.message : 'Unknown error' });
         }
-
-        beforeDraw?.(ctx, canvasSize);
-        ctx.drawImage(img, 0, 0, canvasSize, canvasSize);
-        const dataUrl = canvas.toDataURL(IMAGE_MIME_TYPE);
-        resolve({ url: dataUrl });
-      } catch (error) {
-        resolve({ url: '', error: error instanceof Error ? error.message : 'Unknown error' });
-      }
-    };
-
-    img.onerror = () => {
-      resolve({ url: '', error: 'Failed to load image' });
-    };
-
-    img.src = imageUrl;
+      },
+      () => resolve({ url: '', error: 'Failed to load image' })
+    );
   });
 }
 
@@ -61,6 +57,58 @@ function canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob> {
 }
 
 export async function resizeImageToBlob(img: HTMLImageElement, size: number): Promise<Blob> {
+  return await canvasToBlob(draw(img, size));
+}
+
+export function getImageAsDataUrl(img: HTMLImageElement, size: number): string | null {
+  if (!img.complete || !img.naturalWidth || img.naturalWidth === 0) {
+    return null;
+  }
+
+  try {
+    return draw(img, size).toDataURL(IMAGE_MIME_TYPE);
+  } catch (error) {
+    console.error('[Canvas] Failed to convert image to data URL:', error);
+    return null;
+  }
+}
+
+/**
+ * Fetches an image URL and converts it to a data URL using fetch.
+ * This works for cross-origin images in extensions with host_permissions.
+ * @param imageUrl - The URL of the image to fetch
+ * @param size - Size to resize the image to
+ * @returns The data URL or null if failed
+ */
+export async function fetchImageAsDataUrl(imageUrl: string, size: number): Promise<string | null> {
+  try {
+    const response = await fetch(imageUrl);
+    if (!response.ok) {
+      console.error('[Canvas] Failed to fetch image:', response.status);
+      return null;
+    }
+
+    const blob = await response.blob();
+    const imageBitmap = await createImageBitmap(blob);
+
+    const canvas = setupCanvas(size, size);
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      return null;
+    }
+
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(imageBitmap, 0, 0, size, size);
+
+    return canvas.toDataURL(IMAGE_MIME_TYPE);
+  } catch (error) {
+    console.error('[Canvas] Failed to fetch and convert image:', error);
+    return null;
+  }
+}
+
+function draw(img: HTMLImageElement, size: number) {
   const canvas = setupCanvas(size, size);
 
   const ctx = canvas.getContext('2d');
@@ -71,6 +119,5 @@ export async function resizeImageToBlob(img: HTMLImageElement, size: number): Pr
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = 'high';
   ctx.drawImage(img, 0, 0, size, size);
-
-  return await canvasToBlob(canvas);
+  return canvas;
 }

@@ -1,4 +1,3 @@
-import { getFaviconDirectlyFromTab } from '@/extension';
 import type { FaviconState, FaviconStates } from '@/types';
 
 const FAVICON_STATES_KEY = 'faviconStates';
@@ -34,22 +33,13 @@ async function saveNewState(
 }
 
 /**
- * Get the favicon state for a specific hostname
- * If state doesn't exist, attempts to get favicon from tab and initializes state
+ * Get the favicon state for a specific hostname.
+ * Returns null if no state exists - the content script must initialize state first
+ * via initializeFaviconState() to ensure the true original is captured.
  */
 export async function getFaviconState(hostname: string): Promise<FaviconState | null> {
   const states = await getFaviconStates();
-
-  if (states[hostname]) {
-    return states[hostname];
-  }
-
-  const original = await getFaviconDirectlyFromTab();
-  if (!original) {
-    return null;
-  }
-
-  return saveNewState(hostname, original, original);
+  return states[hostname] || null;
 }
 
 /**
@@ -72,21 +62,16 @@ export async function initializeFaviconState(
 }
 
 /**
- * Set the current favicon for a hostname (user's custom choice)
+ * Set the current favicon for a hostname (user's custom choice).
+ * Requires state to already exist (content script must have initialized first).
  */
 export async function setCurrentFavicon(hostname: string, faviconUrl: string): Promise<void> {
   const states = await getFaviconStates();
-  if (states[hostname]) {
-    const { original } = states[hostname];
-    saveNewState(hostname, original, faviconUrl);
-    return;
+  if (!states[hostname]) {
+    throw new Error('Favicon state not initialized - content script must initialize first');
   }
 
-  const original = await getFaviconDirectlyFromTab();
-  if (!original) {
-    throw new Error('Unable to get original favicon from tab');
-  }
-
+  const { original } = states[hostname];
   await saveNewState(hostname, original, faviconUrl);
 }
 

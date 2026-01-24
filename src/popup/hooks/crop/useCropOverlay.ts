@@ -47,6 +47,7 @@ export function useCropOverlay({ minCropSize }: UseCropOptions) {
 
   const {
     box,
+    displayBox,
     isDragging,
     dragType,
     startDrag,
@@ -59,6 +60,7 @@ export function useCropOverlay({ minCropSize }: UseCropOptions) {
 
   return {
     state: box as CropData,
+    displayBox,
     isDragging,
     dragType,
     startDrag,

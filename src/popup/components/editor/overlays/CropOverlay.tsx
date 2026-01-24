@@ -1,19 +1,18 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback } from 'react';
 import { useUIStore } from '@/popup/stores';
-import { useCanvasContext } from '@/popup/canvas';
 import { HANDLE_POSITIONS } from '@/popup/editor/overlay/types';
 import { ResizeHandle } from './ResizeHandle';
 import { OverlayActions } from './OverlayActions';
-import { useImageTransform, useCropOverlay } from '@/popup/hooks';
-import { addListeners } from '@/utils';
+import { useImageTransform, useCropOverlay, useOverlayKeyboard } from '@/popup/hooks';
 
 const CLASS_PREFIX = 'crop';
 const MIN_CROP_SIZE = 16;
 
 export function CropOverlay() {
-  const { cropImage } = useImageTransform()
-  const { isDragging, startDrag, state: crop } = useCropOverlay({ minCropSize: MIN_CROP_SIZE });
-  const { getBoundary, displayScale } = useCanvasContext();
+  const { cropImage } = useImageTransform();
+  const { isDragging, startDrag, state: crop, displayBox } = useCropOverlay({
+    minCropSize: MIN_CROP_SIZE,
+  });
   const exitOverlayMode = useUIStore((s) => s.exitOverlayMode);
 
   const handleApply = useCallback(async () => {
@@ -34,32 +33,10 @@ export function CropOverlay() {
     exitOverlayMode();
   }, [exitOverlayMode]);
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        handleCancel();
-      } else if (e.key === 'Enter') {
-        e.preventDefault();
-        void handleApply();
-      }
-    };
-
-    const cleanup = addListeners(document, {
-      keydown: handleKeyDown
-    })
-
-    return cleanup;
-  }, [handleApply, handleCancel]);
-
-
-  const boundary = getBoundary();
-  const displayBox = {
-    left: boundary.x + crop.x * displayScale,
-    top: boundary.y + crop.y * displayScale,
-    width: crop.width * displayScale,
-    height: crop.height * displayScale,
-  };
+  useOverlayKeyboard({
+    onApply: () => void handleApply(),
+    onCancel: handleCancel,
+  });
 
   return (
     <div className={`${CLASS_PREFIX}-overlay ${isDragging ? 'dragging' : ''}`}>

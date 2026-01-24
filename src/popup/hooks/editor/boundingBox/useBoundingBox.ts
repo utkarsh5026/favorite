@@ -37,7 +37,7 @@ export function useBoundingBox({
   initialBox,
   config,
 }: UseBoundingBoxOptions): UseBoundingBoxReturn {
-  const { displayScale, imageWidth, imageHeight, canvasRef } = useCanvasContext();
+  const { displayScale, imageWidth, imageHeight, canvasRef, getBoundary } = useCanvasContext();
 
   const fullConfig = useMemo<FullBoundingBoxConfig>(
     () => ({
@@ -95,15 +95,15 @@ export function useBoundingBox({
     getMousePosition,
   });
 
-  const displayBox = useMemo<DisplayBoundingBox>(
-    () => ({
-      left: box.x * displayScale,
-      top: box.y * displayScale,
+  const displayBox = useMemo<DisplayBoundingBox>(() => {
+    const boundary = getBoundary();
+    return {
+      left: boundary.x + box.x * displayScale,
+      top: boundary.y + box.y * displayScale,
       width: box.width * displayScale,
       height: box.height * displayScale,
-    }),
-    [box, displayScale]
-  );
+    };
+  }, [box, displayScale, getBoundary]);
 
   return {
     box,

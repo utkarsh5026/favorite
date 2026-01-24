@@ -1,11 +1,10 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback } from 'react';
 import type { FaviconShape } from '@/types';
 import { useUIStore } from '@/popup/stores/uiStore';
-import { useShapeOverlay, useShapePath, useShapeInfo } from '@/popup/hooks';
+import { useShapeOverlay, useShapePath, useShapeInfo, useOverlayKeyboard } from '@/popup/hooks';
 import { HANDLE_POSITIONS } from '@/popup/editor/overlay/types';
 import { ResizeHandle } from './ResizeHandle';
 import { OverlayActions } from './OverlayActions';
-import { addListeners } from '@/utils';
 
 const CLASS_PREFIX = 'shape';
 
@@ -43,19 +42,7 @@ export function ShapeOverlay() {
     exitOverlayMode();
   }, [exitOverlayMode]);
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        handleCancel();
-      } else if (e.key === 'Enter') {
-        e.preventDefault();
-        handleApply();
-      }
-    };
-
-    return addListeners(document, { keydown: handleKeyDown });
-  }, [handleApply, handleCancel]);
+  useOverlayKeyboard({ onApply: handleApply, onCancel: handleCancel });
 
   const shapePath = getShapeSVGPath(shape, displayBox.width);
 

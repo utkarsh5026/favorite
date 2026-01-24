@@ -10,10 +10,10 @@ export interface UseOverlayDragOptions<TState> {
   /** Called to get mouse position relative to container */
   getMousePosition: (
     e: MouseEvent,
-    containerRef: React.RefObject<HTMLCanvasElement | null>
+    containerRef: React.RefObject<HTMLElement | null>
   ) => Point;
   /** Container element ref for coordinate calculations */
-  containerRef: React.RefObject<HTMLCanvasElement | null>;
+  containerRef: React.RefObject<HTMLElement | null>;
 }
 
 export interface UseOverlayDragReturn<TState> {

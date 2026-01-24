@@ -5,7 +5,7 @@ import { RotationDegrees, FlipDirection } from './types';
 import { CropData } from '@/popup/editor/crop';
 import { useRotate } from './useRotate';
 import { useFlip } from './useFlip';
-import { useCrop } from './useCrop';
+import { useCrop } from '../crop/useCrop';
 
 /**
  * Hook for image transformation operations (rotate, flip, crop)

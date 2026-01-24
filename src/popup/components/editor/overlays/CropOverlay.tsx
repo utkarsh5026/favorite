@@ -4,7 +4,7 @@ import { useCanvasContext } from '@/popup/canvas';
 import { HANDLE_POSITIONS } from '@/popup/editor/overlay/types';
 import { ResizeHandle } from './ResizeHandle';
 import { OverlayActions } from './OverlayActions';
-import { useImageTransform, useCrop } from '@/popup/hooks';
+import { useImageTransform, useCropOverlay } from '@/popup/hooks';
 import { addListeners } from '@/utils';
 
 const CLASS_PREFIX = 'crop';
@@ -12,7 +12,7 @@ const MIN_CROP_SIZE = 16;
 
 export function CropOverlay() {
   const { cropImage } = useImageTransform()
-  const { isDragging, startDrag, state: crop } = useCrop({ minCropSize: MIN_CROP_SIZE });
+  const { isDragging, startDrag, state: crop } = useCropOverlay({ minCropSize: MIN_CROP_SIZE });
   const { getBoundary, displayScale } = useCanvasContext();
   const exitOverlayMode = useUIStore((s) => s.exitOverlayMode);
 

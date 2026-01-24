@@ -5,6 +5,7 @@ export { useKeyboardShortcuts } from './useKeyboardShortcuts';
 export { useImageUpload } from './useImageUpload';
 export { useEditorPreview, useLivePreview } from './preview';
 export { useHistory, useImageTransform, useShapeInfo } from './editor';
-export { useCrop } from './overlays/useImageCrop';
+export { useCropOverlay, useCrop } from './crop';
+export { useShapeOverlay } from './overlays/useShapeOverlay';
 export { useOriginalFavicon, useCurrentFavicon } from './favicon';
 export { useCurrentImageUrl } from './image';

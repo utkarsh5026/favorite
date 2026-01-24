@@ -1,13 +1,13 @@
 import { useCallback, useRef, useEffect, useMemo } from 'react';
-import type { CropData, DragType, HandlePosition, Point } from '@/popup/editor/crop/types';
+import type { CropData, DragType, HandlePosition, Point } from './types';
 import { useCanvasContext } from '@/popup/canvas';
-import { useOverlayDrag } from './useOverlayDrag';
+import { useOverlayDrag } from '../editor';
 
 interface UseCropOptions {
   minCropSize: number;
 }
 
-export function useCrop({ minCropSize }: UseCropOptions) {
+export function useCropOverlay({ minCropSize }: UseCropOptions) {
   const { displayScale, imageWidth, imageHeight, canvasRef } = useCanvasContext();
 
   const crop = useMemo<CropData>(() => {
@@ -27,12 +27,15 @@ export function useCrop({ minCropSize }: UseCropOptions) {
     minCropSizeRef.current = minCropSize;
   });
 
-  const getMousePos = useCallback((e: MouseEvent, containerRef: React.RefObject<HTMLCanvasElement | null>): Point => {
-    const canvas = containerRef.current;
-    if (!canvas) return { x: 0, y: 0 };
-    const rect = canvas.getBoundingClientRect();
-    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
-  }, []);
+  const getMousePos = useCallback(
+    (e: MouseEvent, containerRef: React.RefObject<HTMLElement | null>): Point => {
+      const canvas = containerRef.current;
+      if (!canvas) return { x: 0, y: 0 };
+      const rect = canvas.getBoundingClientRect();
+      return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    },
+    []
+  );
 
   const computeDragResult = useCallback(
     (dragType: DragType, delta: Point, startState: CropData): CropData => {
@@ -46,16 +49,8 @@ export function useCrop({ minCropSize }: UseCropOptions) {
         return constrainCrop({ ...startState, x: x + dx, y: y + dy }, imageHeight, imageWidth, min);
       }
 
-      const type = dragType || '' as HandlePosition;
-      const updates = resizeCrop(
-        type,
-        startState,
-        dx,
-        dy,
-        imageHeight,
-        imageWidth,
-        min
-      );
+      const type = dragType || ('' as HandlePosition);
+      const updates = resizeCrop(type, startState, dx, dy, imageHeight, imageWidth, min);
       return constrainCrop({ ...startState, ...updates }, imageHeight, imageWidth, min);
     },
     [displayScale, imageWidth, imageHeight]

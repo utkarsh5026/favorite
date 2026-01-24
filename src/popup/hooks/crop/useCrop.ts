@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
-import { useCanvasTransform } from './useCanvasTransform';
-import type { CropData } from '@/popup/editor/crop/types';
+import { useCanvasTransform } from '../editor/useCanvasTransform';
+import type { CropData } from './types';
 
 export function useCrop() {
   const { executeTransform } = useCanvasTransform();

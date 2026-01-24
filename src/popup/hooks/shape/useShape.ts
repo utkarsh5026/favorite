@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { useCanvasTransform } from './useCanvasTransform';
+import { useCanvasTransform } from '../editor/useCanvasTransform';
 import { createCenteredShapeClipPath } from '@/images/shape';
 import type { FaviconShape } from '@/types';
 import {

@@ -6,6 +6,6 @@ export { useImageUpload } from './useImageUpload';
 export { useEditorPreview, useLivePreview } from './preview';
 export { useHistory, useImageTransform } from './editor';
 export { useCropOverlay, useCrop } from './crop';
-export { useShapeOverlay, useShapeInfo, useShape } from './shape';
+export { useShapeOverlay, useShapeInfo, useShape, useShapeManipulation } from './shape';
 export { useOriginalFavicon, useCurrentFavicon } from './favicon';
 export { useCurrentImageUrl } from './image';

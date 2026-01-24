@@ -1,6 +1,5 @@
-import { useCallback } from 'react';
 import type { FaviconShape } from '@/types';
-import { useEditorStore, useUIStore } from '@/popup/stores';
+import { useShapeInfo, useShapeManipulation } from '@/popup/hooks';
 
 interface ShapeConfig {
   shape: FaviconShape;
@@ -42,29 +41,11 @@ interface ShapeSelectorProps {
 }
 
 export function ShapeSelector({ disabled = false }: ShapeSelectorProps) {
-  const { currentShape, setShape, setShapeManipulation, hasImage } =
-    useEditorStore();
-  const enterShapeEditMode = useUIStore((s) => s.enterShapeEditMode);
-
-  const handleShapeClick = useCallback(
-    (shape: FaviconShape) => {
-      if (shape === 'square') {
-        // Square shape applies immediately (no manipulation needed)
-        setShape(shape);
-        setShapeManipulation(null);
-      } else if (hasImage()) {
-        // For non-square shapes, enter shape edit mode
-        enterShapeEditMode(shape);
-      } else {
-        // No image loaded, just set the shape for when image is loaded
-        setShape(shape);
-      }
-    },
-    [setShape, setShapeManipulation, hasImage, enterShapeEditMode]
-  );
+  const { currentShape } = useShapeInfo();
+  const { handleShapeClick } = useShapeManipulation();
 
   return (
-    <div id="shapeSelector" className="shape-selector mb-4">
+    <div id="shapeSelector" className="shape-selector">
       {SHAPES.map(({ shape, title, svgContent }) => (
         <button
           key={shape}

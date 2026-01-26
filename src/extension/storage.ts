@@ -46,7 +46,8 @@ export async function getItem<T>(
   return tryCatchAsync<T | undefined>(
     async () => {
       const result = await getStorageArea(storageType).get(key);
-      return result[key] ?? defaultValue;
+      const value = result[key] as T | undefined;
+      return value ?? defaultValue;
     },
     errorMessage || `Failed to get item "${key}" from storage:`,
     defaultValue

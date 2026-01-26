@@ -43,7 +43,7 @@ export async function getItem<T>(
   storageType: StorageType = 'local',
   errorMessage?: string
 ): Promise<T | undefined> {
-  return tryCatchAsync(
+  return tryCatchAsync<T | undefined>(
     async () => {
       const result = await getStorageArea(storageType).get(key);
       return result[key] ?? defaultValue;
@@ -65,11 +65,12 @@ export async function getItems<T extends Record<string, any>>(
   storageType: StorageType = 'local',
   errorMessage?: string
 ): Promise<Partial<T>> {
-  return tryCatchAsync(
+  const defaultValue: Partial<T> = {};
+  return tryCatchAsync<Partial<T>>(
     async () => (await getStorageArea(storageType).get(keys)) as Partial<T>,
     errorMessage || `Failed to get items from storage:`,
-    {} as Partial<T>
-  ) as Promise<Partial<T>>;
+    defaultValue
+  );
 }
 
 /**

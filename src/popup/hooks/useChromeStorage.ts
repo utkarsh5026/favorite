@@ -35,7 +35,8 @@ export function useChromeStorage<T>(
 
     const listener = (changes: { [key: string]: chrome.storage.StorageChange }, area: string) => {
       if (area === storageType && key in changes) {
-        setValue(changes[key].newValue ?? defaultValue);
+        const newValue = (changes[key].newValue as T | undefined) ?? defaultValue;
+        setValue(newValue);
       }
     };
 
